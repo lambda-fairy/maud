@@ -1,0 +1,6 @@
+language: rust
+script:
+  - cd htmlthing_macros
+  - cargo build --verbose
+  - cargo test --verbose
+  - cargo doc --verbose
