@@ -1,18 +1,18 @@
 [package]
 
-name = "htmlthing_macros"
+name = "maud_macros"
 version = "0.0.1"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 
 license = "MIT/Apache-2.0"
-repository = "https://github.com/lfairy/htmlthing"
+repository = "https://github.com/lfairy/maud"
 description = """
 Compile-time HTML templates.
 """
 
-[dependencies.htmlthing]
-path = "../htmlthing"
+[dependencies.maud]
+path = "../maud"
 
 [lib]
-name = "htmlthing_macros"
+name = "maud_macros"
 plugin = true

@@ -1,5 +1,5 @@
-htmlthing
-=========
+maud
+====
 
 Compile-time HTML templates.
 

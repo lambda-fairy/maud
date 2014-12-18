@@ -1,7 +1,7 @@
 //! Internal HTML utilities
 
 #![experimental = "These functions should not be called directly.
-Use the macros in `htmlthing_macros` instead."]
+Use the macros in `maud_macros` instead."]
 
 use std::io::IoResult;
 
