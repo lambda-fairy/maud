@@ -27,3 +27,28 @@ pub fn escape_non_attribute(c: char, w: &mut Writer) -> IoResult<()> {
         _ => w.write_char(c),
     }
 }
+
+pub fn escape_attribute_string(s: &str) -> String {
+    render(|w| {
+        for c in s.chars() {
+            try!(escape_attribute(c, w));
+        }
+        Ok(())
+    })
+}
+
+pub fn escape_non_attribute_string(s: &str) -> String {
+    render(|w| {
+        for c in s.chars() {
+            try!(escape_non_attribute(c, w));
+        }
+        Ok(())
+    })
+}
+
+/// Render a template into a `String`.
+pub fn render<F: FnOnce(&mut Vec<u8>) -> IoResult<()>>(template: F) -> String {
+    let mut buf = vec![];
+    callback(&mut buf).unwrap();
+    String::from_utf8(buf).unwrap()
+}

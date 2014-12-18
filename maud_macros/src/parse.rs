@@ -12,17 +12,44 @@ pub enum Markup {
 }
 
 #[deriving(Show)]
-pub enum Value {
+pub struct Value {
+    pub value: Value_,
+    pub escape: Escape,
+}
+
+impl Value {
+    pub fn escape(value: Value_) -> Value {
+        Value {
+            value: value,
+            escape: Escape::Escape,
+        }
+    }
+
+    pub fn no_escape(value: Value_) -> Value {
+        Value {
+            value: value,
+            escape: Escape::NoEscape,
+        }
+    }
+}
+
+#[deriving(Show)]
+pub enum Value_ {
     Literal(String),
     Splice(P<Expr>),
 }
 
+#[deriving(Copy, PartialEq, Show)]
+pub enum Escape {
+    NoEscape,
+    Escape,
+}
+
 pub fn parse(cx: &mut ExtCtxt, mut args: &[TokenTree]) -> Option<Vec<Markup>> {
-    use self::Markup::*;
     let mut result = vec![];
     loop {
         match parse_markup(cx, &mut args) {
-            Empty => break,
+            Markup::Empty => break,
             markup => result.push(markup),
         }
     }
@@ -35,16 +62,14 @@ pub fn parse(cx: &mut ExtCtxt, mut args: &[TokenTree]) -> Option<Vec<Markup>> {
 }
 
 fn parse_markup(cx: &mut ExtCtxt, args: &mut &[TokenTree]) -> Markup {
-    use self::Markup::*;
-    use self::Value::*;
     if let Some(s) = parse_literal(cx, args) {
-        Value(Literal(s))
+        Markup::Value(Value::escape(Value_::Literal(s)))
     } else {
         match *args {
-            [] => Empty,
+            [] => Markup::Empty,
             [ref tt, ..] => {
                 cx.span_err(tt.get_span(), "invalid syntax");
-                Empty
+                Markup::Empty
             },
         }
     }

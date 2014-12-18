@@ -5,9 +5,14 @@ extern crate maud;
 
 #[test]
 fn it_works() {
-    let mut buf = vec![];
     html! test_template("du\tcks" -23 3.14 '\n' "geese");
-    test_template(&mut buf).unwrap();
-    let s = String::from_utf8(buf).unwrap();
+    let s = maud::render(test_template);
     assert_eq!(&*s, "du\tcks-233.14\ngeese");
+}
+
+#[test]
+fn escaping() {
+    html! template("<flim&flam>");
+    let s = maud::render(template);
+    assert_eq!(&*s, "&lt;flim&amp;flam&gt;");
 }

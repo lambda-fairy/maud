@@ -3,7 +3,8 @@ use syntax::ext::base::ExtCtxt;
 use syntax::parse::token;
 use syntax::ptr::P;
 
-use super::parse::Markup;
+use super::parse::{Markup, Value};
+use maud;
 
 pub fn render(cx: &mut ExtCtxt, ident: Ident, markups: &[Markup]) -> Option<P<Item>> {
     let w = Ident::new(token::intern("w"));
@@ -21,13 +22,48 @@ pub fn render(cx: &mut ExtCtxt, ident: Ident, markups: &[Markup]) -> Option<P<It
 
 fn render_markup(cx: &mut ExtCtxt, markup: &Markup, w: Ident, out: &mut Vec<P<Stmt>>) {
     use super::parse::Markup::*;
-    use super::parse::Value::*;
     match *markup {
         Empty => {},
         Element(..) => unimplemented!(),
-        Value(Literal(ref s)) => {
-            out.push(quote_stmt!(cx, try!($w.write_str($s))));
+        Value(ref value) => {
+            let stmt = render_value(cx, value, w, false);
+            out.push(stmt);
         },
-        Value(Splice(_)) => unimplemented!(),
+    }
+}
+
+fn render_value(cx: &mut ExtCtxt, value: &Value, w: Ident, is_attr: bool) -> P<Stmt> {
+    use super::parse::Escape::*;
+    use super::parse::Value_::*;
+    let &Value { ref value, escape } = value;
+    match *value {
+        Literal(ref s) => {
+            let s = match escape {
+                NoEscape => (&**s).into_cow(),
+                Escape => if is_attr {
+                    maud::escape_attribute_string(&**s).into_cow()
+                } else {
+                    maud::escape_non_attribute_string(&**s).into_cow()
+                },
+            };
+            quote_stmt!(cx, {
+                try!($w.write_str($s))
+            })
+        },
+        Splice(ref expr) => match escape {
+            NoEscape => quote_stmt!(cx, {
+                try!(write!($w, "{}", $expr));
+            }),
+            Escape => quote_stmt!(cx, {
+                let s = $expr.to_string();
+                for c in s.chars() {
+                    try!(if $is_attr {
+                            ::maud::escape_attribute(c, $w)
+                        } else {
+                            ::maud::escape_non_attribute(c, $w)
+                        });
+                }
+            }),
+        },
     }
 }

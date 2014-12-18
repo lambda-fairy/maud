@@ -3,6 +3,7 @@
 
 extern crate syntax;
 extern crate rustc;
+extern crate maud;
 
 use syntax::ast::{Ident, TokenTree};
 use syntax::codemap::Span;
