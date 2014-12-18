@@ -4,7 +4,7 @@ use syntax::parse::token;
 use syntax::ptr::P;
 
 use super::parse::{Markup, Value};
-use maud;
+use maud::escape;
 
 pub fn render(cx: &mut ExtCtxt, ident: Ident, markups: &[Markup]) -> Option<P<Item>> {
     let w = Ident::new(token::intern("w"));
@@ -41,9 +41,9 @@ fn render_value(cx: &mut ExtCtxt, value: &Value, w: Ident, is_attr: bool) -> P<S
             let s = match escape {
                 NoEscape => (&**s).into_cow(),
                 Escape => if is_attr {
-                    maud::escape_attribute_string(&**s).into_cow()
+                    escape::attribute(&**s).into_cow()
                 } else {
-                    maud::escape_non_attribute_string(&**s).into_cow()
+                    escape::non_attribute(&**s).into_cow()
                 },
             };
             quote_stmt!(cx, {
@@ -58,9 +58,9 @@ fn render_value(cx: &mut ExtCtxt, value: &Value, w: Ident, is_attr: bool) -> P<S
                 let s = $expr.to_string();
                 for c in s.chars() {
                     try!(if $is_attr {
-                            ::maud::escape_attribute(c, $w)
+                            ::maud::rt::escape_attribute(c, $w)
                         } else {
-                            ::maud::escape_non_attribute(c, $w)
+                            ::maud::rt::escape_non_attribute(c, $w)
                         });
                 }
             }),
