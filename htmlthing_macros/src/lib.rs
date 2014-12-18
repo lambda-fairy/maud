@@ -1,29 +1,29 @@
 #![crate_type = "dylib"]
-#![feature(plugin_registrar)]
+#![feature(globs, plugin_registrar, quote, macro_rules)]
 
 extern crate syntax;
 extern crate rustc;
 
+use syntax::ast::{Ident, TokenTree};
 use syntax::codemap::Span;
+use syntax::ext::base::{DummyResult, ExtCtxt, IdentTT, MacItems, MacResult};
 use syntax::parse::token;
-use syntax::ast::{TokenTree, TtToken};
-use syntax::ext::base::{ExtCtxt, MacResult, DummyResult, MacExpr};
-use syntax::ext::build::AstBuilder;
 use rustc::plugin::Registry;
 
-fn expand_html(cx: &mut ExtCtxt, sp: Span, args: &[TokenTree]) -> Box<MacResult + 'static> {
-    let s = match args {
-        [TtToken(_, token::Ident(s, _))] => token::get_ident(s),
-        _ => {
-            cx.span_err(sp, "argument should be a single identifier");
-            return DummyResult::any(sp);
-        },
-    };
+mod parse;
+mod render;
 
-    MacExpr::new(cx.expr_str(sp, s))
+fn expand_html<'cx>(cx: &'cx mut ExtCtxt, sp: Span, ident: Ident, args: Vec<TokenTree>) -> Box<MacResult + 'cx> {
+    match parse::parse(cx, &*args) {
+        Some(markups) => {
+            let item = render::render(cx, ident, &*markups);
+            MacItems::new(item.into_iter())
+        },
+        None => DummyResult::any(sp),
+    }
 }
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
-    reg.register_macro("html", expand_html);
+    reg.register_syntax_extension(token::intern("html"), IdentTT(box expand_html, None));
 }
