@@ -1,6 +1,8 @@
+env:
+  global:
+    - secure: GDyZxxtv9s3d20bmGFxdFPYESdglEGHStCEkRRWZx3XL+hqgScbKIVnLRPJV1TNepj6Wigj9yC6nPpsHAOAxkACChbvTQ8rlJ56Emjv3hwDJKB263qxyLpo2Pf4Y69xZzQZdc5A/pVUSkCzNUGrOWy3IH+p2r2KoWax6k7D3ML0=
 language: rust
 script:
-  - cd maud_macros
-  - cargo build --verbose
-  - cargo test --verbose
-  - cargo doc --verbose
+  - ( cd maud_macros && cargo build --verbose && cargo test --verbose && cargo doc --verbose )
+after_script:
+  - mv maud_macros/target/doc doc && curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
