@@ -24,13 +24,13 @@ fn render_markup(cx: &mut ExtCtxt, markup: &Markup, w: Ident, out: &mut Vec<P<St
         Empty => {},
         Element(..) => unimplemented!(),
         Value(ref value) => {
-            let stmt = render_value(cx, value, w, false);
-            out.push(stmt);
+            let expr = render_value(cx, value, w, false);
+            out.push(quote_stmt!(cx, $expr));
         },
     }
 }
 
-fn render_value(cx: &mut ExtCtxt, value: &Value, w: Ident, is_attr: bool) -> P<Stmt> {
+fn render_value(cx: &mut ExtCtxt, value: &Value, w: Ident, is_attr: bool) -> P<Expr> {
     use super::parse::Escape::*;
     use super::parse::Value_::*;
     let &Value { ref value, escape } = value;
@@ -44,15 +44,15 @@ fn render_value(cx: &mut ExtCtxt, value: &Value, w: Ident, is_attr: bool) -> P<S
                     escape::non_attribute(&**s).into_cow()
                 },
             };
-            quote_stmt!(cx, {
+            quote_expr!(cx, {
                 try!($w.write_str($s))
             })
         },
         Splice(ref expr) => match escape {
-            NoEscape => quote_stmt!(cx, {
+            NoEscape => quote_expr!(cx, {
                 try!(write!($w, "{}", $expr));
             }),
-            Escape => quote_stmt!(cx, {
+            Escape => quote_expr!(cx, {
                 let s = $expr.to_string();
                 for c in s.chars() {
                     try!(if $is_attr {
