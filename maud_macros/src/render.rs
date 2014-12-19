@@ -1,4 +1,4 @@
-use syntax::ast::{Ident, Item, Stmt};
+use syntax::ast::{Expr, Ident, Stmt};
 use syntax::ext::base::ExtCtxt;
 use syntax::parse::token;
 use syntax::ptr::P;
@@ -6,18 +6,16 @@ use syntax::ptr::P;
 use super::parse::{Markup, Value};
 use maud::escape;
 
-pub fn render(cx: &mut ExtCtxt, ident: Ident, markups: &[Markup]) -> Option<P<Item>> {
+pub fn render(cx: &mut ExtCtxt, markups: &[Markup]) -> P<Expr> {
     let w = Ident::new(token::intern("w"));
     let mut stmts = vec![];
     for markup in markups.iter() {
         render_markup(cx, markup, w, &mut stmts);
     }
-    quote_item!(cx,
-        fn $ident<W: ::std::io::Writer>($w: &mut W) -> ::std::io::IoResult<()> {
-            $stmts;
-            Ok(())
-        }
-    )
+    quote_expr!(cx, |&: $w: &mut ::std::io::Writer| -> ::std::io::IoResult<()> {
+        $stmts
+        Ok(())
+    })
 }
 
 fn render_markup(cx: &mut ExtCtxt, markup: &Markup, w: Ident, out: &mut Vec<P<Stmt>>) {

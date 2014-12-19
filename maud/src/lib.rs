@@ -63,7 +63,7 @@ pub mod rt {
 }
 
 /// Render a template into a `String`.
-pub fn render<F: FnOnce(&mut Vec<u8>) -> IoResult<()>>(template: F) -> String {
+pub fn render<F: FnOnce(&mut Writer) -> IoResult<()>>(template: F) -> String {
     let mut buf = vec![];
     template(&mut buf).unwrap();
     String::from_utf8(buf).unwrap()

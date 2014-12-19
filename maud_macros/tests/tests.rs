@@ -5,14 +5,14 @@ extern crate maud;
 
 #[test]
 fn it_works() {
-    html! test_template("du\tcks" -23 3.14 '\n' "geese");
-    let s = maud::render(test_template);
+    let template = html!("du\tcks" -23 3.14 '\n' "geese");
+    let s = maud::render(template);
     assert_eq!(&*s, "du\tcks-233.14\ngeese");
 }
 
 #[test]
 fn escaping() {
-    html! template("<flim&flam>");
+    let template = html!("<flim&flam>");
     let s = maud::render(template);
     assert_eq!(&*s, "&lt;flim&amp;flam&gt;");
 }
