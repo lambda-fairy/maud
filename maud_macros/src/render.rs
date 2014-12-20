@@ -35,7 +35,7 @@ fn render_value(cx: &mut ExtCtxt, value: &Value, w: Ident, is_attr: bool) -> P<E
     let &Value { ref value, escape } = value;
     match *value {
         Literal(ref s) => {
-            let s = match escape {
+            let s = &*match escape {
                 NoEscape => (&**s).into_cow(),
                 Escape => if is_attr {
                     escape::attribute(&**s).into_cow()

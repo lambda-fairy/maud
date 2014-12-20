@@ -44,15 +44,14 @@ pub enum Escape {
     Escape,
 }
 
-macro_rules! minus(
-    () => (TtToken(_, token::BinOp(token::Minus)))
-)
-
-macro_rules! literal(
-    () => (TtToken(_, token::Literal(..)))
-)
-
 pub fn parse(cx: &mut ExtCtxt, mut args: &[TokenTree]) -> Option<Vec<Markup>> {
+    macro_rules! minus {
+        () => (TtToken(_, token::BinOp(token::Minus)))
+    }
+    macro_rules! literal {
+        () => (TtToken(_, token::Literal(..)))
+    }
+
     let mut result = vec![];
     loop {
         match match args {
