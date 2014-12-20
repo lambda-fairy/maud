@@ -6,7 +6,6 @@ use syntax::ptr::P;
 
 #[deriving(Show)]
 pub enum Markup {
-    Empty,
     Element(Vec<(String, Value)>, Vec<Markup>),
     Value(Value),
 }
@@ -45,54 +44,46 @@ pub enum Escape {
     Escape,
 }
 
+macro_rules! minus(
+    () => (TtToken(_, token::BinOp(token::Minus)))
+)
+
+macro_rules! literal(
+    () => (TtToken(_, token::Literal(..)))
+)
+
 pub fn parse(cx: &mut ExtCtxt, mut args: &[TokenTree]) -> Option<Vec<Markup>> {
     let mut result = vec![];
     loop {
-        match parse_markup(cx, &mut args) {
-            Markup::Empty => break,
-            markup => result.push(markup),
+        match match args {
+            [minus!(), ref tt @ literal!(), ..] => {
+                args.shift(2);
+                parse_literal(cx, tt, true)
+            },
+            [ref tt @ literal!(), ..] => {
+                args.shift(1);
+                parse_literal(cx, tt, false)
+            },
+            _ => None,
+        } {
+            Some(x) => result.push(x),
+            None => break,
         }
     }
-    // If not all tokens were consumed, then there must have been an
-    // error somewhere
     match args {
         [] => Some(result),
-        _ => None,
-    }
-}
-
-fn parse_markup(cx: &mut ExtCtxt, args: &mut &[TokenTree]) -> Markup {
-    if let Some(s) = parse_literal(cx, args) {
-        Markup::Value(Value::escape(Value_::Literal(s)))
-    } else {
-        match *args {
-            [] => Markup::Empty,
-            [ref tt, ..] => {
-                cx.span_err(tt.get_span(), "invalid syntax");
-                Markup::Empty
-            },
+        [ref tt, ..] => {
+            cx.span_err(tt.get_span(), "invalid syntax");
+            None
         }
     }
 }
 
-fn parse_literal(cx: &mut ExtCtxt, args: &mut &[TokenTree]) -> Option<String> {
-    let minus = match *args {
-        [TtToken(_, token::BinOp(token::Minus)), ..] => {
-            args.shift(1);
-            true
-        },
-        _ => false,
-    };
-
-    match *args {
-        [ref tt @ TtToken(_, token::Literal(..)), ..] => {
-            args.shift(1);
-            let mut parser = parse::tts_to_parser(cx.parse_sess, vec![tt.clone()], cx.cfg.clone());
-            let lit = parser.parse_lit();
-            lit_to_string(cx, lit, minus)
-        },
-        _ => None,
-    }
+fn parse_literal(cx: &mut ExtCtxt, tt: &TokenTree, minus: bool) -> Option<Markup> {
+    let mut parser = parse::tts_to_parser(cx.parse_sess, vec![tt.clone()], cx.cfg.clone());
+    let lit = parser.parse_lit();
+    lit_to_string(cx, lit, minus)
+        .map(|s| Markup::Value(Value::escape(Value_::Literal(s))))
 }
 
 fn lit_to_string(cx: &mut ExtCtxt, lit: Lit, minus: bool) -> Option<String> {

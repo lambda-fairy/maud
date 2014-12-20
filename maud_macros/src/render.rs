@@ -21,7 +21,6 @@ pub fn render(cx: &mut ExtCtxt, markups: &[Markup]) -> P<Expr> {
 fn render_markup(cx: &mut ExtCtxt, markup: &Markup, w: Ident, out: &mut Vec<P<Stmt>>) {
     use super::parse::Markup::*;
     match *markup {
-        Empty => {},
         Element(..) => unimplemented!(),
         Value(ref value) => {
             let expr = render_value(cx, value, w, false);
