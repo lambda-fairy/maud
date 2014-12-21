@@ -45,6 +45,9 @@ pub enum Escape {
 }
 
 pub fn parse(cx: &mut ExtCtxt, mut args: &[TokenTree]) -> Option<Vec<Markup>> {
+    macro_rules! semi {
+        () => (TtToken(_, token::Semi))
+    }
     macro_rules! minus {
         () => (TtToken(_, token::BinOp(token::Minus)))
     }
@@ -55,6 +58,10 @@ pub fn parse(cx: &mut ExtCtxt, mut args: &[TokenTree]) -> Option<Vec<Markup>> {
     let mut result = vec![];
     loop {
         match match args {
+            [semi!(), ..] => {
+                args.shift(1);
+                continue
+            },
             [minus!(), ref tt @ literal!(), ..] => {
                 args.shift(2);
                 parse_literal(cx, tt, true)
