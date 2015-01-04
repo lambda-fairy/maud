@@ -4,13 +4,13 @@ use syntax::parse;
 use syntax::parse::token;
 use syntax::ptr::P;
 
-#[deriving(Show)]
+#[derive(Show)]
 pub enum Markup {
     Element(Vec<(String, Value)>, Vec<Markup>),
     Value(Value),
 }
 
-#[deriving(Show)]
+#[derive(Show)]
 pub struct Value {
     pub value: Value_,
     pub escape: Escape,
@@ -32,13 +32,13 @@ impl Value {
     }
 }
 
-#[deriving(Show)]
+#[derive(Show)]
 pub enum Value_ {
     Literal(String),
     Splice(P<Expr>),
 }
 
-#[deriving(Copy, PartialEq, Show)]
+#[derive(Copy, PartialEq, Show)]
 pub enum Escape {
     NoEscape,
     Escape,

@@ -1,3 +1,4 @@
+use std::borrow::IntoCow;
 use syntax::ast::{Expr, Ident, Stmt};
 use syntax::ext::base::ExtCtxt;
 use syntax::parse::token;
