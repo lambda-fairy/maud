@@ -14,7 +14,7 @@ mod parse;
 mod render;
 
 fn expand_html<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree]) -> Box<MacResult + 'cx> {
-    match parse::parse(cx, &*args) {
+    match parse::parse(cx, args) {
         Some(markups) => {
             let expr = render::render(cx, &*markups);
             MacExpr::new(expr)

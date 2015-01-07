@@ -23,6 +23,11 @@ fn render_markup(cx: &mut ExtCtxt, markup: &Markup, w: Ident, out: &mut Vec<P<St
     use super::parse::Markup::*;
     match *markup {
         Element(..) => unimplemented!(),
+        Block(ref markups) => {
+            for markup in markups.iter() {
+                render_markup(cx, markup, w, out);
+            }
+        }
         Value(ref value) => {
             let expr = render_value(cx, value, w, false);
             out.push(quote_stmt!(cx, $expr));
