@@ -1,7 +1,7 @@
-#![feature(phase)]
+#![feature(plugin)]
 
 extern crate maud;
-#[phase(plugin)] extern crate maud_macros;
+#[plugin] #[no_link] extern crate maud_macros;
 
 #[test]
 fn it_works() {

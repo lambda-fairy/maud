@@ -1,5 +1,5 @@
 #![crate_type = "dylib"]
-#![feature(globs, plugin_registrar, quote, macro_rules, slicing_syntax)]
+#![feature(plugin_registrar, quote, slicing_syntax)]
 
 extern crate syntax;
 extern crate rustc;
