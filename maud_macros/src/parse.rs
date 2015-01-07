@@ -206,7 +206,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
         match self.input {
             [TtDelimited(_, ref d), ..] if d.delim == token::DelimToken::Brace => {
                 self.shift(1);
-                Parser { cx: self.cx, input: &*d.tts }.markups()
+                Parser { cx: self.cx, input: d.tts[] }.markups()
                     .map(Markup::Block)
             },
             _ => None,
@@ -228,7 +228,7 @@ fn lit_to_string(cx: &mut ExtCtxt, lit: Lit, minus: bool) -> Option<String> {
             return None;
         },
         LitChar(c) => result.push(c),
-        LitInt(x, _) => result.push_str(&*x.to_string()),
+        LitInt(x, _) => result.push_str(x.to_string()[]),
         LitFloat(s, _) | LitFloatUnsuffixed(s) => result.push_str(s.get()),
         LitBool(b) => result.push_str(if b { "true" } else { "false" }),
     };

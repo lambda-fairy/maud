@@ -7,14 +7,14 @@ extern crate maud;
 fn it_works() {
     let template = html!("du\tcks" -23 3.14 '\n' "geese");
     let s = maud::render(template);
-    assert_eq!(&*s, "du\tcks-233.14\ngeese");
+    assert_eq!(s, "du\tcks-233.14\ngeese");
 }
 
 #[test]
 fn escaping() {
     let template = html!("<flim&flam>");
     let s = maud::render(template);
-    assert_eq!(&*s, "&lt;flim&amp;flam&gt;");
+    assert_eq!(s, "&lt;flim&amp;flam&gt;");
 }
 
 #[test]
@@ -27,7 +27,7 @@ fn blocks() {
         }
         " swans"
     });
-    assert_eq!(&*s, "hello ducks geese swans");
+    assert_eq!(s, "hello ducks geese swans");
 }
 
 mod splice {
@@ -36,13 +36,13 @@ mod splice {
     #[test]
     fn literal() {
         let s = maud::render(html! { $"<pinkie>" });
-        assert_eq!(&*s, "&lt;pinkie&gt;");
+        assert_eq!(s, "&lt;pinkie&gt;");
     }
 
     #[test]
     fn raw_literal() {
         let s = maud::render(html! { $$"<pinkie>" });
-        assert_eq!(&*s, "<pinkie>");
+        assert_eq!(s, "<pinkie>");
     }
 
     #[test]
@@ -56,7 +56,7 @@ mod splice {
                 result
             }
         });
-        assert_eq!(&*s, "3628800");
+        assert_eq!(s, "3628800");
     }
 
     static BEST_PONY: &'static str = "Pinkie Pie";
@@ -64,7 +64,7 @@ mod splice {
     #[test]
     fn statics() {
         let s = maud::render(html! { $BEST_PONY });
-        assert_eq!(&*s, "Pinkie Pie");
+        assert_eq!(s, "Pinkie Pie");
     }
 
     // FIXME: See <https://github.com/rust-lang/rust/issues/15962>
@@ -74,7 +74,7 @@ mod splice {
     fn closure() {
         let best_pony = "Pinkie Pie";
         let s = maud::render(html! { $best_pony });
-        assert_eq!(&*s, "Pinkie Pie");
+        assert_eq!(s, "Pinkie Pie");
     }
     */
 }

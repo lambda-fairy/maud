@@ -27,7 +27,7 @@ fn render_markup(cx: &mut ExtCtxt, markup: &Markup, w: Ident, out: &mut Vec<P<St
             for markup in markups.iter() {
                 render_markup(cx, markup, w, out);
             }
-        }
+        },
         Value(ref value) => {
             let expr = render_value(cx, value, w, false);
             out.push(quote_stmt!(cx, $expr));
@@ -41,14 +41,15 @@ fn render_value(cx: &mut ExtCtxt, value: &Value, w: Ident, is_attr: bool) -> P<E
     let &Value { ref value, escape } = value;
     match *value {
         Literal(ref s) => {
-            let s = &*match escape {
-                NoEscape => (&**s).into_cow(),
+            let s = match escape {
+                NoEscape => s[].into_cow(),
                 Escape => if is_attr {
-                    escape::attribute(&**s).into_cow()
+                    escape::attribute(s[]).into_cow()
                 } else {
-                    escape::non_attribute(&**s).into_cow()
+                    escape::non_attribute(s[]).into_cow()
                 },
             };
+            let s = s[];
             quote_expr!(cx, {
                 try!($w.write_str($s))
             })

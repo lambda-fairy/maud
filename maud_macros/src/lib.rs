@@ -1,5 +1,5 @@
 #![crate_type = "dylib"]
-#![feature(globs, plugin_registrar, quote, macro_rules)]
+#![feature(globs, plugin_registrar, quote, macro_rules, slicing_syntax)]
 
 extern crate syntax;
 extern crate rustc;
@@ -16,7 +16,7 @@ mod render;
 fn expand_html<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree]) -> Box<MacResult + 'cx> {
     match parse::parse(cx, args) {
         Some(markups) => {
-            let expr = render::render(cx, &*markups);
+            let expr = render::render(cx, markups[]);
             MacExpr::new(expr)
         },
         None => DummyResult::any(sp),
