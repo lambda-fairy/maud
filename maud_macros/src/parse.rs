@@ -1,4 +1,5 @@
 use syntax::ast::{Expr, Lit, TokenTree, TtDelimited, TtToken};
+use syntax::codemap::Span;
 use syntax::ext::base::ExtCtxt;
 use syntax::parse;
 use syntax::parse::parser::Parser as RustParser;
@@ -9,25 +10,6 @@ use super::render::{Escape, Renderer};
 
 macro_rules! guard {
     ($e:expr) => (if !$e { return false; })
-}
-
-macro_rules! branch {
-    ($self_:expr;) => (return false);
-    ($self_:expr; $e:expr) => (branch!($self_; $e,));
-    ($self_:expr; $e:expr, $($es:expr),*) => ({
-        let start_ptr = $self_.input.as_ptr();
-        if $e {
-            true
-        } else {
-            if $self_.input.as_ptr() == start_ptr {
-                // Parsing failed, but did not consume input.
-                // Keep going.
-                branch!($self_; $($es),*)
-            } else {
-                return false;
-            }
-        }
-    })
 }
 
 macro_rules! dollar {
@@ -46,7 +28,8 @@ macro_rules! literal {
     () => (TtToken(_, token::Literal(..)))
 }
 macro_rules! ident {
-    ($x:pat) => (TtToken(_, token::Ident($x, token::IdentStyle::Plain)))
+    ($x:pat) => (ident!(_, $x));
+    ($sp:pat, $x:pat) => (TtToken($sp, token::Ident($x, token::IdentStyle::Plain)))
 }
 
 pub fn parse(cx: &mut ExtCtxt, input: &[TokenTree]) -> Option<P<Expr>> {
@@ -88,36 +71,52 @@ impl<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> Parser<'cx, 's, 'i, 'r, 'o> {
             match self.input {
                 [] => return true,
                 [semi!(), ..] => self.shift(1),
-                [ref tt, ..] => {
-                    if !self.markup() {
-                        self.render.cx.span_err(tt.get_span(), "invalid syntax");
-                        return false;
-                    }
-                }
+                [_, ..] => guard!(self.markup()),
             }
         }
     }
 
     fn markup(&mut self) -> bool {
-        branch!(self;
-            self.literal(),
-            self.splice(),
-            self.block(),
-            !self.in_attr && self.element())
-    }
-
-    fn literal(&mut self) -> bool {
-        let (tt, minus) = match self.input {
+        match self.input {
+            // Literal
             [minus!(), ref tt @ literal!(), ..] => {
                 self.shift(2);
-                (tt, true)
+                self.literal(tt, true)
             },
             [ref tt @ literal!(), ..] => {
                 self.shift(1);
-                (tt, false)
+                self.literal(tt, false)
             },
-            _ => return false,
-        };
+            // Splice
+            [ref tt @ dollar!(), dollar!(), ..] => {
+                self.shift(2);
+                self.splice(Escape::PassThru, tt.get_span())
+            },
+            [ref tt @ dollar!(), ..] => {
+                self.shift(1);
+                self.splice(Escape::Escape, tt.get_span())
+            },
+            // Element
+            [ident!(sp, name), ..] => {
+                self.shift(1);
+                self.element(name.as_str(), sp)
+            },
+            // Block
+            [TtDelimited(_, ref d), ..] if d.delim == token::DelimToken::Brace => {
+                self.shift(1);
+                self.block(d.tts.as_slice())
+            },
+            // ???
+            _ => {
+                if let [ref tt, ..] = self.input {
+                    self.render.cx.span_err(tt.get_span(), "invalid syntax");
+                }
+                false
+            },
+        }
+    }
+
+    fn literal(&mut self, tt: &TokenTree, minus: bool) -> bool {
         let lit = self.new_rust_parser(vec![tt.clone()]).parse_lit();
         match lit_to_string(self.render.cx, lit, minus) {
             Some(s) => self.render.string(s.as_slice(), Escape::Escape),
@@ -126,18 +125,7 @@ impl<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> Parser<'cx, 's, 'i, 'r, 'o> {
         true
     }
 
-    fn splice(&mut self) -> bool {
-        let (escape, sp) = match self.input {
-            [ref tt @ dollar!(), dollar!(), ..] => {
-                self.shift(2);
-                (Escape::PassThru, tt.get_span())
-            },
-            [ref tt @ dollar!(), ..] => {
-                self.shift(1);
-                (Escape::Escape, tt.get_span())
-            },
-            _ => return false,
-        };
+    fn splice(&mut self, escape: Escape, sp: Span) -> bool {
         let tt = match self.input {
             [ref tt, ..] => {
                 self.shift(1);
@@ -152,15 +140,11 @@ impl<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> Parser<'cx, 's, 'i, 'r, 'o> {
         true
     }
 
-    fn element(&mut self) -> bool {
-        let name = match self.input {
-            [ident!(name), ..] => {
-                self.shift(1);
-                name.as_str().to_string()
-            },
-            _ => return false,
-        };
-        let name = name.as_slice();
+    fn element(&mut self, name: &str, sp: Span) -> bool {
+        if self.in_attr {
+            self.render.cx.span_err(sp, "unexpected element, you silly bumpkin");
+            return false;
+        }
         self.render.element_open_start(name);
         guard!(self.attrs());
         self.render.element_open_end();
@@ -184,18 +168,12 @@ impl<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> Parser<'cx, 's, 'i, 'r, 'o> {
         true
     }
 
-    fn block(&mut self) -> bool {
-        match self.input {
-            [TtDelimited(_, ref d), ..] if d.delim == token::DelimToken::Brace => {
-                self.shift(1);
-                Parser {
-                    in_attr: self.in_attr,
-                    input: d.tts.as_slice(),
-                    render: self.render,
-                }.markups()
-            },
-            _ => false,
-        }
+    fn block(&mut self, tts: &[TokenTree]) -> bool {
+        Parser {
+            in_attr: self.in_attr,
+            input: tts,
+            render: self.render,
+        }.markups()
     }
 }
 
