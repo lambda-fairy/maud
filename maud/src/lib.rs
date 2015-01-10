@@ -1,6 +1,9 @@
 //! Super fast HTML template engine.
 
-use std::io::IoResult;
+use std::fmt;
+use std::fmt::Writer as FmtWriter;
+
+pub type FmtResult<T> = Result<T, fmt::Error>;
 
 /// Utilities for escaping HTML5 markup.
 ///
@@ -9,27 +12,19 @@ use std::io::IoResult;
 ///
 /// [1]: http://www.w3.org/TR/html51/syntax.html#escapingString
 pub mod escape {
+    use std::fmt::Writer as FmtWriter;
+
     use super::render;
     use super::rt;
 
     /// Escape a double-quoted attribute value, as per HTML5 rules.
     pub fn attribute(s: &str) -> String {
-        render(|w| {
-            for c in s.chars() {
-                try!(rt::escape_attribute(c, w));
-            }
-            Ok(())
-        })
+        render(|w| rt::escape_attribute(w, |w| w.write_str(s)))
     }
 
     /// Escape non-attribute text content, as per HTML5 rules.
     pub fn non_attribute(s: &str) -> String {
-        render(|w| {
-            for c in s.chars() {
-                try!(rt::escape_non_attribute(c, w));
-            }
-            Ok(())
-        })
+        render(|w| rt::escape_non_attribute(w, |w| w.write_str(s)))
     }
 }
 
@@ -38,33 +33,66 @@ pub mod escape {
 #[experimental = "These functions should not be called directly.
 Use the macros in `maud_macros` instead."]
 pub mod rt {
-    use std::io::IoResult;
+    use std::fmt::Writer as FmtWriter;
+    use super::FmtResult;
 
-    #[inline]
-    pub fn escape_attribute(c: char, w: &mut Writer) -> IoResult<()> {
-        match c {
-            '&' => w.write_str("&amp;"),
-            '\u{A0}' => w.write_str("&nbsp;"),
-            '"' => w.write_str("&quot;"),
-            _ => w.write_char(c),
+    struct AttrEscaper<'a, 'b: 'a> {
+        inner: &'a mut (FmtWriter + 'b),
+    }
+
+    impl<'a, 'b> FmtWriter for AttrEscaper<'a, 'b> {
+        fn write_str(&mut self, s: &str) -> FmtResult<()> {
+            for c in s.chars() {
+                try!(match c {
+                    '&' => self.inner.write_str("&amp;"),
+                    '\u{A0}' => self.inner.write_str("&nbsp;"),
+                    '"' => self.inner.write_str("&quot;"),
+                    _ => write!(self.inner, "{}", c),
+                });
+            }
+            Ok(())
+        }
+    }
+
+    struct NonAttrEscaper<'a, 'b: 'a> {
+        inner: &'a mut (FmtWriter + 'b),
+    }
+
+    impl<'a, 'b> FmtWriter for NonAttrEscaper<'a, 'b> {
+        fn write_str(&mut self, s: &str) -> FmtResult<()> {
+            for c in s.chars() {
+                try!(match c {
+                    '&' => self.inner.write_str("&amp;"),
+                    '\u{A0}' => self.inner.write_str("&nbsp;"),
+                    '<' => self.inner.write_str("&lt;"),
+                    '>' => self.inner.write_str("&gt;"),
+                    _ => write!(self.inner, "{}", c),
+                });
+            }
+            Ok(())
         }
     }
 
     #[inline]
-    pub fn escape_non_attribute(c: char, w: &mut Writer) -> IoResult<()> {
-        match c {
-            '&' => w.write_str("&amp;"),
-            '\u{A0}' => w.write_str("&nbsp;"),
-            '<' => w.write_str("&lt;"),
-            '>' => w.write_str("&gt;"),
-            _ => w.write_char(c),
-        }
+    pub fn escape_attribute<F>(w: &mut FmtWriter, f: F) -> FmtResult<()> where
+        F: FnOnce(&mut FmtWriter) -> FmtResult<()>
+    {
+        f(&mut AttrEscaper { inner: w })
+    }
+
+    #[inline]
+    pub fn escape_non_attribute<F>(w: &mut FmtWriter, f: F) -> FmtResult<()> where
+        F: FnOnce(&mut FmtWriter) -> FmtResult<()>
+    {
+        f(&mut NonAttrEscaper { inner: w })
     }
 }
 
 /// Render a template into a `String`.
-pub fn render<F: FnOnce(&mut Writer) -> IoResult<()>>(template: F) -> String {
-    let mut buf = vec![];
+pub fn render<F>(template: F) -> String where
+    F: FnOnce(&mut FmtWriter) -> FmtResult<()>
+{
+    let mut buf = String::new();
     template(&mut buf).unwrap();
-    String::from_utf8(buf).unwrap()
+    buf
 }

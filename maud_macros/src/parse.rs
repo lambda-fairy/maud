@@ -5,56 +5,34 @@ use syntax::parse::parser::Parser as RustParser;
 use syntax::parse::token;
 use syntax::ptr::P;
 
-#[derive(Show)]
-pub enum Markup {
-    Element(String, Vec<(String, Value)>, Option<Box<Markup>>),
-    Block(Vec<Markup>),
-    Value(Value),
-}
-
-#[derive(Show)]
-pub struct Value {
-    pub value: Value_,
-    pub escape: Escape,
-}
-
-#[derive(Show)]
-pub enum Value_ {
-    Literal(String),
-    Splice(P<Expr>),
-}
+use super::render::Renderer;
 
 #[derive(Copy, PartialEq, Show)]
 pub enum Escape {
-    NoEscape,
-    Escape,
+    None,
+    Attr,
+    Body,
 }
 
-macro_rules! some {
-    ($e:expr) => (
-        match $e {
-            Some(x) => x,
-            None => return None,
-        }
-    )
+macro_rules! guard {
+    ($e:expr) => (if !$e { return false; })
 }
 
-macro_rules! any {
-    ($self_:expr;) => (None);
-    ($self_:expr; $e:expr) => (any!($self_; $e,));
+macro_rules! branch {
+    ($self_:expr;) => (return false);
+    ($self_:expr; $e:expr) => (branch!($self_; $e,));
     ($self_:expr; $e:expr, $($es:expr),*) => ({
         let start_ptr = $self_.input.as_ptr();
-        match $e {
-            Some(x) => Some(x),
-            None => {
-                if $self_.input.as_ptr() == start_ptr {
-                    // Parsing failed, but did not consume input.
-                    // Keep going.
-                    any!($self_; $($es),*)
-                } else {
-                    return None;
-                }
-            },
+        if $e {
+            true
+        } else {
+            if $self_.input.as_ptr() == start_ptr {
+                // Parsing failed, but did not consume input.
+                // Keep going.
+                branch!($self_; $($es),*)
+            } else {
+                return false;
+            }
         }
     })
 }
@@ -78,59 +56,72 @@ macro_rules! ident {
     ($x:pat) => (TtToken(_, token::Ident($x, token::IdentStyle::Plain)))
 }
 
-pub fn parse(cx: &mut ExtCtxt, input: &[TokenTree]) -> Option<Vec<Markup>> {
-    Parser { cx: cx, input: input }.markups()
+pub fn parse(cx: &mut ExtCtxt, input: &[TokenTree]) -> Option<P<Expr>> {
+    let mut success = true;
+    let expr = Renderer::with(cx, |render| {
+        let mut parser = Parser {
+            in_attr: false,
+            input: input,
+            render: render,
+        };
+        success = parser.markups();
+    });
+    if success {
+        Some(expr)
+    } else {
+        None
+    }
 }
 
-struct Parser<'cx, 's: 'cx, 'i> {
-    cx: &'cx mut ExtCtxt<'s>,
+struct Parser<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> {
+    in_attr: bool,
     input: &'i [TokenTree],
+    render: &'r mut Renderer<'cx, 's, 'o>,
 }
 
-impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
+impl<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> Parser<'cx, 's, 'i, 'r, 'o> {
     /// Consume `n` items from the input.
-    fn shift(&mut self, n: uint) {
+    fn shift(&mut self, n: usize) {
         self.input = self.input.slice_from(n);
+    }
+
+    fn choose_escape(&self) -> Escape {
+        if self.in_attr {
+            Escape::Attr
+        } else {
+            Escape::Body
+        }
     }
 
     /// Construct a Rust AST parser from the given token tree.
     fn new_rust_parser(&self, tts: Vec<TokenTree>) -> RustParser<'s> {
-        parse::tts_to_parser(self.cx.parse_sess, tts, self.cx.cfg.clone())
+        parse::tts_to_parser(self.render.cx.parse_sess, tts, self.render.cx.cfg.clone())
     }
 
-    fn markups(&mut self) -> Option<Vec<Markup>> {
-        let mut result = vec![];
+    fn markups(&mut self) -> bool {
         loop {
             match self.input {
-                [] => return Some(result),
+                [] => return true,
                 [semi!(), ..] => self.shift(1),
                 [ref tt, ..] => {
-                    match self.markup() {
-                        Some(markup) => result.push(markup),
-                        None => {
-                            self.cx.span_err(tt.get_span(), "invalid syntax");
-                            return None;
-                        },
+                    if !self.markup() {
+                        self.render.cx.span_err(tt.get_span(), "invalid syntax");
+                        return false;
                     }
                 }
             }
         }
     }
 
-    fn markup(&mut self) -> Option<Markup> {
-        any!(self;
-            self.value().map(Markup::Value),
-            self.block(),
-            self.element())
-    }
-
-    fn value(&mut self) -> Option<Value> {
-        any!(self;
+    fn markup(&mut self) -> bool {
+        branch!(self;
             self.literal(),
-            self.splice())
+            self.splice(),
+            self.block(),
+            !self.in_attr && self.element())
     }
 
-    fn literal(&mut self) -> Option<Value> {
+    fn literal(&mut self) -> bool {
         let (tt, minus) = match self.input {
             [minus!(), ref tt @ literal!(), ..] => {
                 self.shift(2);
@@ -140,27 +131,30 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
                 self.shift(1);
                 (tt, false)
             },
-            _ => return None,
+            _ => return false,
         };
         let lit = self.new_rust_parser(vec![tt.clone()]).parse_lit();
-        lit_to_string(self.cx, lit, minus)
-            .map(|s| Value {
-                value: Value_::Literal(s),
-                escape: Escape::Escape,
-            })
+        match lit_to_string(self.render.cx, lit, minus) {
+            Some(s) => {
+                let escape = self.choose_escape();
+                self.render.string(s.as_slice(), escape);
+            },
+            None => return false,
+        }
+        true
     }
 
-    fn splice(&mut self) -> Option<Value> {
+    fn splice(&mut self) -> bool {
         let (escape, sp) = match self.input {
             [ref tt @ dollar!(), dollar!(), ..] => {
                 self.shift(2);
-                (Escape::NoEscape, tt.get_span())
+                (Escape::None, tt.get_span())
             },
             [ref tt @ dollar!(), ..] => {
                 self.shift(1);
-                (Escape::Escape, tt.get_span())
+                (self.choose_escape(), tt.get_span())
             },
-            _ => return None,
+            _ => return false,
         };
         let tt = match self.input {
             [ref tt, ..] => {
@@ -168,48 +162,57 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
                 self.new_rust_parser(vec![tt.clone()]).parse_expr()
             },
             _ => {
-                self.cx.span_err(sp, "expected expression for this splice");
-                return None;
+                self.render.cx.span_err(sp, "expected expression for this splice");
+                return false;
             },
         };
-        Some(Value {
-            value: Value_::Splice(tt),
-            escape: escape,
-        })
+        self.render.splice(tt, escape);
+        true
     }
 
-    fn element(&mut self) -> Option<Markup> {
+    fn element(&mut self) -> bool {
         let name = match self.input {
             [ident!(name), ..] => {
                 self.shift(1);
                 name.as_str().to_string()
             },
-            _ => return None,
+            _ => return false,
         };
-        let attrs = some!(self.attrs());
-        let body = any!(self; self.markup());
-        Some(Markup::Element(name, attrs, body.map(|body| box body)))
+        let name = name.as_slice();
+        self.render.element_open_start(name);
+        guard!(self.attrs());
+        self.render.element_open_end();
+        guard!(self.markup());
+        self.render.element_close(name);
+        true
     }
 
-    fn attrs(&mut self) -> Option<Vec<(String, Value)>> {
-        let mut attrs = vec![];
+    fn attrs(&mut self) -> bool {
         while let [ident!(name), eq!(), ..] = self.input {
             self.shift(2);
-            let name = name.as_str().to_string();
-            let value = some!(self.value());
-            attrs.push((name, value));
+            self.render.attribute_start(name.as_str());
+            {
+                let old_in_attr = self.in_attr;
+                self.in_attr = true;
+                guard!(self.markup());
+                self.in_attr = old_in_attr;
+            }
+            self.render.attribute_end();
         }
-        Some(attrs)
+        true
     }
 
-    fn block(&mut self) -> Option<Markup> {
+    fn block(&mut self) -> bool {
         match self.input {
             [TtDelimited(_, ref d), ..] if d.delim == token::DelimToken::Brace => {
                 self.shift(1);
-                Parser { cx: self.cx, input: d.tts[] }.markups()
-                    .map(Markup::Block)
+                Parser {
+                    in_attr: self.in_attr,
+                    input: d.tts.as_slice(),
+                    render: self.render,
+                }.markups()
             },
-            _ => None,
+            _ => false,
         }
     }
 }
@@ -228,7 +231,7 @@ fn lit_to_string(cx: &mut ExtCtxt, lit: Lit, minus: bool) -> Option<String> {
             return None;
         },
         LitChar(c) => result.push(c),
-        LitInt(x, _) => result.push_str(x.to_string()[]),
+        LitInt(x, _) => result.push_str(x.to_string().as_slice()),
         LitFloat(s, _) | LitFloatUnsuffixed(s) => result.push_str(s.get()),
         LitBool(b) => result.push_str(if b { "true" } else { "false" }),
     };

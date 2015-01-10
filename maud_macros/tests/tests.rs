@@ -1,4 +1,5 @@
 #![feature(plugin)]
+#![allow(unstable)]
 
 extern crate maud;
 #[plugin] #[no_link] extern crate maud_macros;
