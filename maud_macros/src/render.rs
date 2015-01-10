@@ -5,7 +5,12 @@ use syntax::parse::token;
 use syntax::ptr::P;
 
 use maud;
-use super::parse::Escape;
+
+#[derive(Copy, PartialEq, Show)]
+pub enum Escape {
+    PassThru,
+    Escape,
+}
 
 pub struct Renderer<'cx, 's: 'cx, 'o> {
     pub cx: &'cx mut ExtCtxt<'s>,

@@ -5,13 +5,7 @@ use syntax::parse::parser::Parser as RustParser;
 use syntax::parse::token;
 use syntax::ptr::P;
 
-use super::render::Renderer;
-
-#[derive(Copy, PartialEq, Show)]
-pub enum Escape {
-    PassThru,
-    Escape,
-}
+use super::render::{Escape, Renderer};
 
 macro_rules! guard {
     ($e:expr) => (if !$e { return false; })
