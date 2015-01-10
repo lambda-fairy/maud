@@ -4,8 +4,8 @@ use syntax::ext::base::ExtCtxt;
 use syntax::parse::token;
 use syntax::ptr::P;
 
+use maud;
 use super::parse::Escape;
-use maud::escape;
 
 pub struct Renderer<'cx, 's: 'cx, 'o> {
     pub cx: &'cx mut ExtCtxt<'s>,
@@ -43,9 +43,8 @@ impl<'cx, 's: 'cx, 'o> Renderer<'cx, 's, 'o> {
     /// Append a literal string, with the specified escaping method.
     pub fn string(&mut self, s: &str, escape: Escape) {
         let s = match escape {
-            Escape::None => s.into_cow(),
-            Escape::Attr => escape::attribute(s).into_cow(),
-            Escape::Body => escape::non_attribute(s).into_cow(),
+            Escape::PassThru => s.into_cow(),
+            Escape::Escape => maud::escape(s).into_cow(),
         };
         self.write(s.as_slice());
     }
@@ -54,13 +53,10 @@ impl<'cx, 's: 'cx, 'o> Renderer<'cx, 's, 'o> {
     pub fn splice(&mut self, expr: P<Expr>, escape: Escape) {
         let w = self.w;
         self.stmts.push(match escape {
-            Escape::None => quote_stmt!(self.cx, try!(write!($w, "{}", $expr))),
-            Escape::Attr =>
+            Escape::PassThru => quote_stmt!(self.cx, try!(write!($w, "{}", $expr))),
+            Escape::Escape =>
                 quote_stmt!(self.cx,
-                    try!(::maud::rt::escape_attribute($w, |w| write!(w, "{}", $expr)))),
-            Escape::Body =>
-                quote_stmt!(self.cx,
-                    try!(::maud::rt::escape_non_attribute($w, |w| write!(w, "{}", $expr)))),
+                    try!(::maud::rt::escape($w, |w| write!(w, "{}", $expr)))),
         });
     }
 

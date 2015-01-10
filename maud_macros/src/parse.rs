@@ -9,9 +9,8 @@ use super::render::Renderer;
 
 #[derive(Copy, PartialEq, Show)]
 pub enum Escape {
-    None,
-    Attr,
-    Body,
+    PassThru,
+    Escape,
 }
 
 macro_rules! guard {
@@ -85,14 +84,6 @@ impl<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> Parser<'cx, 's, 'i, 'r, 'o> {
         self.input = self.input.slice_from(n);
     }
 
-    fn choose_escape(&self) -> Escape {
-        if self.in_attr {
-            Escape::Attr
-        } else {
-            Escape::Body
-        }
-    }
-
     /// Construct a Rust AST parser from the given token tree.
     fn new_rust_parser(&self, tts: Vec<TokenTree>) -> RustParser<'s> {
         parse::tts_to_parser(self.render.cx.parse_sess, tts, self.render.cx.cfg.clone())
@@ -135,10 +126,7 @@ impl<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> Parser<'cx, 's, 'i, 'r, 'o> {
         };
         let lit = self.new_rust_parser(vec![tt.clone()]).parse_lit();
         match lit_to_string(self.render.cx, lit, minus) {
-            Some(s) => {
-                let escape = self.choose_escape();
-                self.render.string(s.as_slice(), escape);
-            },
+            Some(s) => self.render.string(s.as_slice(), Escape::Escape),
             None => return false,
         }
         true
@@ -148,11 +136,11 @@ impl<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> Parser<'cx, 's, 'i, 'r, 'o> {
         let (escape, sp) = match self.input {
             [ref tt @ dollar!(), dollar!(), ..] => {
                 self.shift(2);
-                (Escape::None, tt.get_span())
+                (Escape::PassThru, tt.get_span())
             },
             [ref tt @ dollar!(), ..] => {
                 self.shift(1);
-                (self.choose_escape(), tt.get_span())
+                (Escape::Escape, tt.get_span())
             },
             _ => return false,
         };
