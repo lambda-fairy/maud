@@ -1,5 +1,7 @@
 //! Super fast HTML template engine.
 
+#![allow(unstable)]
+
 use std::fmt;
 use std::fmt::Writer as FmtWriter;
 
