@@ -24,6 +24,9 @@ macro_rules! semi {
 macro_rules! minus {
     () => (TtToken(_, token::BinOp(token::Minus)))
 }
+macro_rules! slash {
+    () => (TtToken(_, token::BinOp(token::Slash)))
+}
 macro_rules! literal {
     () => (TtToken(_, token::Literal(..)))
 }
@@ -148,8 +151,12 @@ impl<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> Parser<'cx, 's, 'i, 'r, 'o> {
         self.render.element_open_start(name);
         guard!(self.attrs());
         self.render.element_open_end();
-        guard!(self.markup());
-        self.render.element_close(name);
+        if let [slash!(), ..] = self.input {
+            self.shift(1);
+        } else {
+            guard!(self.markup());
+            self.render.element_close(name);
+        }
         true
     }
 
