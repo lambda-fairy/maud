@@ -1,6 +1,5 @@
-maud
-====
+# <img align="right" src="maud.png" alt="HTML5 rocks" title="HTML5 rocks"> maud [![Build Status](https://img.shields.io/travis/lfairy/maud.svg)](http://travis-ci.org/lfairy/maud)
 
-Compile-time HTML templates.
+Maud is a macro for generating HTML.
 
-More to come.
+See [Rust CI](http://www.rust-ci.org/lfairy/maud/doc/maud/) for documentation, including a quick tutorial.
