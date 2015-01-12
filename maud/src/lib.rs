@@ -3,10 +3,7 @@
 #![allow(unstable)]
 
 use std::fmt;
-use std::fmt::Writer as FmtWriter;
 use std::io::{IoError, IoErrorKind, IoResult};
-
-pub type FmtResult<T> = Result<T, fmt::Error>;
 
 /// Escape an HTML value.
 pub fn escape(s: &str) -> String {
@@ -17,7 +14,7 @@ pub fn escape(s: &str) -> String {
 
 /// A block of HTML markup, as returned by the `html!` macro.
 pub struct Markup<'a, 'b: 'a> {
-    callback: &'a (Fn(&mut FmtWriter) -> FmtResult<()> + 'b),
+    callback: &'a (Fn(&mut fmt::Writer) -> fmt::Result + 'b),
 }
 
 impl<'a, 'b> Markup<'a, 'b> {
@@ -33,8 +30,8 @@ impl<'a, 'b> Markup<'a, 'b> {
         struct WriterWrapper<'a, 'b: 'a> {
             inner: &'a mut (Writer + 'b),
         }
-        impl<'a, 'b> FmtWriter for WriterWrapper<'a, 'b> {
-            fn write_str(&mut self, s: &str) -> FmtResult<()> {
+        impl<'a, 'b> fmt::Writer for WriterWrapper<'a, 'b> {
+            fn write_str(&mut self, s: &str) -> fmt::Result {
                 self.inner.write_str(s).map_err(|_| fmt::Error)
             }
         }
@@ -47,7 +44,7 @@ impl<'a, 'b> Markup<'a, 'b> {
     }
 
     /// Render the markup to a `std::fmt::Writer`.
-    pub fn render_fmt(&self, w: &mut FmtWriter) -> FmtResult<()> {
+    pub fn render_fmt(&self, w: &mut fmt::Writer) -> fmt::Result {
         (self.callback)(w)
     }
 }
@@ -57,20 +54,20 @@ impl<'a, 'b> Markup<'a, 'b> {
 #[experimental = "These functions should not be called directly.
 Use the macros in `maud_macros` instead."]
 pub mod rt {
-    use std::fmt::Writer as FmtWriter;
-    use super::{FmtResult, Markup};
+    use std::fmt;
+    use super::Markup;
 
     #[inline]
-    pub fn make_markup<'a, 'b>(f: &'a (Fn(&mut FmtWriter) -> FmtResult<()> + 'b)) -> Markup<'a, 'b> {
+    pub fn make_markup<'a, 'b>(f: &'a (Fn(&mut fmt::Writer) -> fmt::Result + 'b)) -> Markup<'a, 'b> {
         Markup { callback: f }
     }
 
     struct Escaper<'a, 'b: 'a> {
-        inner: &'a mut (FmtWriter + 'b),
+        inner: &'a mut (fmt::Writer + 'b),
     }
 
-    impl<'a, 'b> FmtWriter for Escaper<'a, 'b> {
-        fn write_str(&mut self, s: &str) -> FmtResult<()> {
+    impl<'a, 'b> fmt::Writer for Escaper<'a, 'b> {
+        fn write_str(&mut self, s: &str) -> fmt::Result {
             for c in s.chars() {
                 try!(match c {
                     '&' => self.inner.write_str("&amp;"),
@@ -86,8 +83,8 @@ pub mod rt {
     }
 
     #[inline]
-    pub fn escape<F>(w: &mut FmtWriter, f: F) -> FmtResult<()> where
-        F: FnOnce(&mut FmtWriter) -> FmtResult<()>
+    pub fn escape<F>(w: &mut fmt::Writer, f: F) -> fmt::Result where
+        F: FnOnce(&mut fmt::Writer) -> fmt::Result
     {
         f(&mut Escaper { inner: w })
     }
