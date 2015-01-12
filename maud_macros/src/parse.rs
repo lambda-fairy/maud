@@ -8,10 +8,6 @@ use syntax::ptr::P;
 
 use super::render::{Escape, Renderer};
 
-macro_rules! guard {
-    ($e:expr) => (if !$e { return false; })
-}
-
 macro_rules! dollar {
     () => (TtToken(_, token::Dollar))
 }
@@ -35,22 +31,15 @@ macro_rules! ident {
     ($sp:pat, $x:pat) => (TtToken($sp, token::Ident($x, token::IdentStyle::Plain)))
 }
 
-pub fn parse(cx: &mut ExtCtxt, input: &[TokenTree], sp: Span) -> Option<P<Expr>> {
-    let mut success = true;
-    let expr = Renderer::with(cx, |render| {
-        let mut parser = Parser {
+pub fn parse(cx: &mut ExtCtxt, input: &[TokenTree], sp: Span) -> P<Expr> {
+    Renderer::with(cx, |render| {
+        Parser {
             in_attr: false,
             input: input,
             span: sp,
             render: render,
-        };
-        success = parser.markups();
-    });
-    if success {
-        Some(expr)
-    } else {
-        None
-    }
+        }.markups();
+    })
 }
 
 struct Parser<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> {
@@ -71,12 +60,12 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
         parse::tts_to_parser(self.render.cx.parse_sess, tts, self.render.cx.cfg.clone())
     }
 
-    fn markups(&mut self) -> bool {
+    fn markups(&mut self) {
         loop {
             match self.input {
-                [] => return true,
+                [] => return,
                 [semi!(), ..] => self.shift(1),
-                [_, ..] => guard!(self.markup()),
+                [_, ..] => if !self.markup() { return },
             }
         }
     }
@@ -118,21 +107,21 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
                 } else {
                     self.render.cx.span_err(self.span, "unexpected end of block");
                 }
-                false
+                return false;
             },
-        }
-    }
-
-    fn literal(&mut self, tt: &TokenTree, minus: bool) -> bool {
-        let lit = self.new_rust_parser(vec![tt.clone()]).parse_lit();
-        match lit_to_string(self.render.cx, lit, minus) {
-            Some(s) => self.render.string(s.as_slice(), Escape::Escape),
-            None => return false,
         }
         true
     }
 
-    fn splice(&mut self, escape: Escape, sp: Span) -> bool {
+    fn literal(&mut self, tt: &TokenTree, minus: bool) {
+        let lit = self.new_rust_parser(vec![tt.clone()]).parse_lit();
+        match lit_to_string(self.render.cx, lit, minus) {
+            Some(s) => self.render.string(s.as_slice(), Escape::Escape),
+            None => {},
+        }
+    }
+
+    fn splice(&mut self, escape: Escape, sp: Span) {
         let tt = match self.input {
             [ref tt, ..] => {
                 self.shift(1);
@@ -140,52 +129,49 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
             },
             _ => {
                 self.render.cx.span_err(sp, "expected expression for this splice");
-                return false;
+                return;
             },
         };
         self.render.splice(tt, escape);
-        true
     }
 
-    fn element(&mut self, name: &str, sp: Span) -> bool {
+    fn element(&mut self, name: &str, sp: Span) {
         if self.in_attr {
             self.render.cx.span_err(sp, "unexpected element, you silly bumpkin");
-            return false;
+            return;
         }
         self.render.element_open_start(name);
-        guard!(self.attrs());
+        self.attrs();
         self.render.element_open_end();
         if let [slash!(), ..] = self.input {
             self.shift(1);
         } else {
-            guard!(self.markup());
+            self.markup();
             self.render.element_close(name);
         }
-        true
     }
 
-    fn attrs(&mut self) -> bool {
+    fn attrs(&mut self) {
         while let [ident!(name), eq!(), ..] = self.input {
             self.shift(2);
             self.render.attribute_start(name.as_str());
             {
                 let old_in_attr = self.in_attr;
                 self.in_attr = true;
-                guard!(self.markup());
+                self.markup();
                 self.in_attr = old_in_attr;
             }
             self.render.attribute_end();
         }
-        true
     }
 
-    fn block(&mut self, tts: &[TokenTree]) -> bool {
+    fn block(&mut self, tts: &[TokenTree]) {
         Parser {
             in_attr: self.in_attr,
             input: tts,
             span: self.span,
             render: self.render,
-        }.markups()
+        }.markups();
     }
 }
 
