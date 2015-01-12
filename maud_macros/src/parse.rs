@@ -35,12 +35,13 @@ macro_rules! ident {
     ($sp:pat, $x:pat) => (TtToken($sp, token::Ident($x, token::IdentStyle::Plain)))
 }
 
-pub fn parse(cx: &mut ExtCtxt, input: &[TokenTree]) -> Option<P<Expr>> {
+pub fn parse(cx: &mut ExtCtxt, input: &[TokenTree], sp: Span) -> Option<P<Expr>> {
     let mut success = true;
     let expr = Renderer::with(cx, |render| {
         let mut parser = Parser {
             in_attr: false,
             input: input,
+            span: sp,
             render: render,
         };
         success = parser.markups();
@@ -55,6 +56,7 @@ pub fn parse(cx: &mut ExtCtxt, input: &[TokenTree]) -> Option<P<Expr>> {
 struct Parser<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> {
     in_attr: bool,
     input: &'i [TokenTree],
+    span: Span,
     render: &'r mut Renderer<'cx, 's, 'o>,
 }
 
@@ -113,6 +115,8 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
             _ => {
                 if let [ref tt, ..] = self.input {
                     self.render.cx.span_err(tt.get_span(), "invalid syntax");
+                } else {
+                    self.render.cx.span_err(self.span, "unexpected end of block");
                 }
                 false
             },
@@ -179,6 +183,7 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
         Parser {
             in_attr: self.in_attr,
             input: tts,
+            span: self.span,
             render: self.render,
         }.markups()
     }
