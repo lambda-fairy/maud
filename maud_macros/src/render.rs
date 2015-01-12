@@ -33,10 +33,11 @@ impl<'cx, 's: 'cx, 'o> Renderer<'cx, 's, 'o> {
             f(&mut render);
             render.cx
         };
-        quote_expr!(cx, |&: $w: &mut ::std::fmt::Writer| -> ::std::result::Result<(), ::std::fmt::Error> {
-            $stmts
-            Ok(())
-        })
+        quote_expr!(cx,
+            ::maud::rt::make_markup(&|&: $w: &mut ::std::fmt::Writer| -> Result<(), ::std::fmt::Error> {
+                $stmts
+                Ok(())
+            }))
     }
 
     /// Append a literal pre-escaped string.

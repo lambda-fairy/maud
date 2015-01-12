@@ -6,49 +6,45 @@ extern crate maud;
 
 #[test]
 fn it_works() {
-    let template = html!("du\tcks" -23 3.14 '\n' "geese");
-    let s = maud::render(template);
+    let s = html!("du\tcks" -23 3.14 '\n' "geese").render();
     assert_eq!(s, "du\tcks-233.14\ngeese");
 }
 
 #[test]
 fn escaping() {
-    let template = html!("<flim&flam>");
-    let s = maud::render(template);
+    let s = html!("<flim&flam>").render();
     assert_eq!(s, "&lt;flim&amp;flam&gt;");
 }
 
 #[test]
 fn blocks() {
-    let s = maud::render(html! {
+    let s = html! {
         "hello"
         {
             " ducks";
             " geese";
         }
         " swans"
-    });
+    }.render();
     assert_eq!(s, "hello ducks geese swans");
 }
 
 mod splice {
-    use super::maud;  // lol
-
     #[test]
     fn literal() {
-        let s = maud::render(html! { $"<pinkie>" });
+        let s = html! { $"<pinkie>" }.render();
         assert_eq!(s, "&lt;pinkie&gt;");
     }
 
     #[test]
     fn raw_literal() {
-        let s = maud::render(html! { $$"<pinkie>" });
+        let s = html! { $$"<pinkie>" }.render();
         assert_eq!(s, "<pinkie>");
     }
 
     #[test]
     fn block() {
-        let s = maud::render(html! {
+        let s = html! {
             ${
                 let mut result = 1i32;
                 for i in range(2, 11) {
@@ -56,7 +52,7 @@ mod splice {
                 }
                 result
             }
-        });
+        }.render();
         assert_eq!(s, "3628800");
     }
 
@@ -64,7 +60,7 @@ mod splice {
 
     #[test]
     fn statics() {
-        let s = maud::render(html! { $BEST_PONY });
+        let s = html! { $BEST_PONY }.render();
         assert_eq!(s, "Pinkie Pie");
     }
 
@@ -74,7 +70,7 @@ mod splice {
     #[test]
     fn closure() {
         let best_pony = "Pinkie Pie";
-        let s = maud::render(html! { $best_pony });
+        let s = html! { $best_pony }.render();
         assert_eq!(s, "Pinkie Pie");
     }
     */
