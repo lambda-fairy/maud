@@ -58,7 +58,7 @@ struct Parser<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> {
     render: &'r mut Renderer<'cx, 's, 'o>,
 }
 
-impl<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> Parser<'cx, 's, 'i, 'r, 'o> {
+impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
     /// Consume `n` items from the input.
     fn shift(&mut self, n: usize) {
         self.input = self.input.slice_from(n);

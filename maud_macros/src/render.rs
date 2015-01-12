@@ -18,7 +18,7 @@ pub struct Renderer<'cx, 's: 'cx, 'o> {
     w: Ident,
 }
 
-impl<'cx, 's: 'cx, 'o> Renderer<'cx, 's, 'o> {
+impl<'cx, 's, 'o> Renderer<'cx, 's, 'o> {
     pub fn with<F>(cx: &'cx mut ExtCtxt<'s>, f: F) -> P<Expr> where
         F: for<'o_> FnOnce(&mut Renderer<'cx, 's, 'o_>)
     {
