@@ -14,6 +14,9 @@ macro_rules! dollar {
 macro_rules! eq {
     () => (TtToken(_, token::Eq))
 }
+macro_rules! not {
+    () => (TtToken(_, token::Not))
+}
 macro_rules! semi {
     () => (TtToken(_, token::Semi))
 }
@@ -154,14 +157,22 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
     fn attrs(&mut self) {
         while let [ident!(name), eq!(), ..] = self.input {
             self.shift(2);
-            self.render.attribute_start(name.as_str());
-            {
-                let old_in_attr = self.in_attr;
-                self.in_attr = true;
-                self.markup();
-                self.in_attr = old_in_attr;
+            if let [not!(), ..] = self.input {
+                // Empty attribute
+                self.shift(1);
+                self.render.attribute_empty(name.as_str());
+            } else {
+                // Non-empty attribute
+                self.render.attribute_start(name.as_str());
+                {
+                    // Parse a value under an attribute context
+                    let old_in_attr = self.in_attr;
+                    self.in_attr = true;
+                    self.markup();
+                    self.in_attr = old_in_attr;
+                }
+                self.render.attribute_end();
             }
-            self.render.attribute_end();
         }
     }
 

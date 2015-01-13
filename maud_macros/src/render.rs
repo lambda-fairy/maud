@@ -77,6 +77,11 @@ impl<'cx, 's, 'o> Renderer<'cx, 's, 'o> {
         self.write("=\"");
     }
 
+    pub fn attribute_empty(&mut self, name: &str) {
+        self.write(" ");
+        self.write(name);
+    }
+
     pub fn attribute_end(&mut self) {
         self.write("\"");
     }
