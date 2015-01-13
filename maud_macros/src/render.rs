@@ -41,7 +41,7 @@ impl<'cx, 's, 'o> Renderer<'cx, 's, 'o> {
     }
 
     /// Append a literal pre-escaped string.
-    pub fn write(&mut self, s: &str) {
+    fn write(&mut self, s: &str) {
         let w = self.w;
         self.stmts.push(quote_stmt!(self.cx, try!($w.write_str($s))));
     }
