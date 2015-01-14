@@ -13,11 +13,11 @@ pub fn escape(s: &str) -> String {
 }
 
 /// A block of HTML markup, as returned by the `html!` macro.
-pub struct Markup<'a, 'b: 'a> {
-    callback: &'a (Fn(&mut fmt::Writer) -> fmt::Result + 'b),
+pub struct Markup<'a> {
+    callback: &'a (Fn(&mut fmt::Writer) -> fmt::Result + 'a),
 }
 
-impl<'a, 'b> Markup<'a, 'b> {
+impl<'a> Markup<'a> {
     /// Render the markup to a `String`.
     pub fn render(&self) -> String {
         let mut buf = String::new();
@@ -58,7 +58,7 @@ pub mod rt {
     use super::Markup;
 
     #[inline]
-    pub fn make_markup<'a, 'b>(f: &'a (Fn(&mut fmt::Writer) -> fmt::Result + 'b)) -> Markup<'a, 'b> {
+    pub fn make_markup<'a>(f: &'a (Fn(&mut fmt::Writer) -> fmt::Result + 'a)) -> Markup<'a> {
         Markup { callback: f }
     }
 
