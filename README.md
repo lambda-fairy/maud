@@ -2,4 +2,4 @@
 
 Maud is a macro for generating HTML.
 
-See [Rust CI](http://www.rust-ci.org/lfairy/maud/doc/maud/) for documentation, including a quick tutorial.
+See <https://lambda.xyz/maud/doc/maud/> for documentation, including a quick tutorial.
