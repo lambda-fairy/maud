@@ -51,8 +51,7 @@ impl<'a> Markup<'a> {
 
 /// Internal functions used by the `maud_macros` package. You should
 /// never need to call these directly.
-#[experimental = "These functions should not be called directly.
-Use the macros in `maud_macros` instead."]
+#[doc(hidden)]
 pub mod rt {
     use std::fmt;
     use super::Markup;
