@@ -7,8 +7,9 @@ use std::io::{IoError, IoErrorKind, IoResult};
 
 /// Escape an HTML value.
 pub fn escape(s: &str) -> String {
+    use std::fmt::Writer;
     let mut buf = String::new();
-    rt::escape(&mut buf, |w| w.write_str(s)).unwrap();
+    rt::Escaper { inner: &mut buf }.write_str(s).unwrap();
     buf
 }
 
@@ -71,8 +72,8 @@ pub mod rt {
         write!(w, "{}", value)
     }
 
-    struct Escaper<'a, 'b: 'a> {
-        inner: &'a mut (fmt::Writer + 'b),
+    pub struct Escaper<'a, 'b: 'a> {
+        pub inner: &'a mut (fmt::Writer + 'b),
     }
 
     impl<'a, 'b> fmt::Writer for Escaper<'a, 'b> {
@@ -89,12 +90,5 @@ pub mod rt {
             }
             Ok(())
         }
-    }
-
-    #[inline]
-    pub fn escape<F>(w: &mut fmt::Writer, f: F) -> fmt::Result where
-        F: FnOnce(&mut fmt::Writer) -> fmt::Result
-    {
-        f(&mut Escaper { inner: w })
     }
 }

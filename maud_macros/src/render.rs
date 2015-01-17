@@ -71,7 +71,9 @@ impl<'cx, 's, 'o> Renderer<'cx, 's, 'o> {
                 quote_expr!(self.cx, ::maud::rt::write_fmt($w, $expr)),
             Escape::Escape =>
                 quote_expr!(self.cx,
-                    ::maud::rt::escape($w, |w| ::maud::rt::write_fmt(w, $expr))),
+                    ::maud::rt::write_fmt(
+                        &mut ::maud::rt::Escaper { inner: $w },
+                        $expr)),
         };
         self.push(expr);
     }
