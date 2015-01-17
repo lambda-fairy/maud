@@ -116,13 +116,20 @@ mod splices {
         assert_eq!(s, "Pinkie Pie");
     }
 
-    // FIXME: See <https://github.com/rust-lang/rust/issues/15962>
-    // for why this is commented out
-    /*
     #[test]
     fn closures() {
         let best_pony = "Pinkie Pie";
         let s = html! { $best_pony }.render();
+        assert_eq!(s, "Pinkie Pie");
+    }
+
+    // FIXME: See <https://github.com/rust-lang/rust/issues/16617>
+    // for why this is commented out
+    /*
+    #[test]
+    fn nested_macro_invocation() {
+        let best_pony = "Pinkie Pie";
+        let s = html! { $(format!("{}", best_pony)) }.render();
         assert_eq!(s, "Pinkie Pie");
     }
     */

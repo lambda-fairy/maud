@@ -1,6 +1,7 @@
 use std::borrow::IntoCow;
 use syntax::ast::{Expr, Ident, Stmt};
 use syntax::ext::base::ExtCtxt;
+use syntax::ext::build::AstBuilder;
 use syntax::parse::token;
 use syntax::ptr::P;
 
@@ -40,10 +41,17 @@ impl<'cx, 's, 'o> Renderer<'cx, 's, 'o> {
             }))
     }
 
+    /// Push an expression statement, also wrapping it with `try!`.
+    fn push(&mut self, expr: P<Expr>) {
+        let expr = self.cx.stmt_expr(self.cx.expr_try(expr.span, expr));
+        self.stmts.push(expr);
+    }
+
     /// Append a literal pre-escaped string.
     fn write(&mut self, s: &str) {
         let w = self.w;
-        self.stmts.push(quote_stmt!(self.cx, try!($w.write_str($s))));
+        let expr = quote_expr!(self.cx, $w.write_str($s));
+        self.push(expr);
     }
 
     /// Append a literal string, with the specified escaping method.
@@ -58,12 +66,14 @@ impl<'cx, 's, 'o> Renderer<'cx, 's, 'o> {
     /// Append the result of an expression, with the specified escaping method.
     pub fn splice(&mut self, expr: P<Expr>, escape: Escape) {
         let w = self.w;
-        self.stmts.push(match escape {
-            Escape::PassThru => quote_stmt!(self.cx, try!(write!($w, "{}", $expr))),
+        let expr = match escape {
+            Escape::PassThru =>
+                quote_expr!(self.cx, ::maud::rt::write_fmt($w, $expr)),
             Escape::Escape =>
-                quote_stmt!(self.cx,
-                    try!(::maud::rt::escape($w, |w| write!(w, "{}", $expr)))),
-        });
+                quote_expr!(self.cx,
+                    ::maud::rt::escape($w, |w| ::maud::rt::write_fmt(w, $expr))),
+        };
+        self.push(expr);
     }
 
     pub fn element_open_start(&mut self, name: &str) {
