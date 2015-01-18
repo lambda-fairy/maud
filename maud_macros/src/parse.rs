@@ -11,6 +11,9 @@ use super::render::{Escape, Renderer};
 macro_rules! dollar {
     () => (TtToken(_, token::Dollar))
 }
+macro_rules! dot {
+    () => (TtToken(_, token::Dot))
+}
 macro_rules! eq {
     () => (TtToken(_, token::Eq))
 }
@@ -125,17 +128,34 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
     }
 
     fn splice(&mut self, escape: Escape, sp: Span) {
-        let tt = match self.input {
-            [ref tt, ..] => {
-                self.shift(1);
-                self.new_rust_parser(vec![tt.clone()]).parse_expr()
-            },
-            _ => {
-                self.render.cx.span_err(sp, "expected expression for this splice");
-                return;
-            },
-        };
-        self.render.splice(tt, escape);
+        let mut tts = vec![];
+        // First, munch a single token tree
+        if let [ref tt, ..] = self.input {
+            self.shift(1);
+            tts.push(tt.clone());
+        }
+        loop {
+            match self.input {
+                // Munch attribute lookups e.g. `$person.address.street`
+                [ref dot @ dot!(), ref ident @ ident!(_), ..] => {
+                    self.shift(2);
+                    tts.push(dot.clone());
+                    tts.push(ident.clone());
+                },
+                // Munch function calls `()` and indexing operations `[]`
+                [TtDelimited(sp, ref d), ..] if d.delim != token::DelimToken::Brace => {
+                    self.shift(1);
+                    tts.push(TtDelimited(sp, d.clone()));
+                },
+                _ => break,
+            }
+        }
+        if tts.is_empty() {
+            self.render.cx.span_err(sp, "expected expression for this splice");
+        } else {
+            let expr = self.new_rust_parser(tts).parse_expr();
+            self.render.splice(expr, escape);
+        }
     }
 
     fn element(&mut self, name: &str, sp: Span) {

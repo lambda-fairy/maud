@@ -123,6 +123,33 @@ mod splices {
         assert_eq!(s, "Pinkie Pie");
     }
 
+    /// An example struct, for testing purposes only
+    struct Creature {
+        name: &'static str,
+        /// Rating out of 10, where:
+        /// * 0 is a naked mole rat with dysentery
+        /// * 10 is Sweetie Belle in a milkshake
+        adorableness: u8,
+    }
+
+    impl Creature {
+        fn repugnance(&self) -> u8 {
+            10 - self.adorableness
+        }
+    }
+
+    #[test]
+    fn structs() {
+        let pinkie = Creature {
+            name: "Pinkie Pie",
+            adorableness: 9,
+        };
+        let s = html! {
+            "Name: " $pinkie.name ". Rating: " $pinkie.repugnance()
+        }.render();
+        assert_eq!(s, "Name: Pinkie Pie. Rating: 1");
+    }
+
     // FIXME: See <https://github.com/rust-lang/rust/issues/16617>
     // for why this is commented out
     /*
