@@ -162,6 +162,9 @@ pub fn escape(s: &str) -> String {
 }
 
 /// A block of HTML markup, as returned by the `html!` macro.
+///
+/// Use `.render()` to convert it to a `String`, or `.render_to()` to
+/// write it directly to a handle.
 pub struct Markup<'a> {
     callback: &'a (Fn(&mut fmt::Writer) -> fmt::Result + 'a),
 }
@@ -175,6 +178,9 @@ impl<'a> Markup<'a> {
     }
 
     /// Render the markup to a `std::io::Writer`.
+    ///
+    /// If you're writing to, say, a file or a socket, this may be more
+    /// efficient than calling `.render()`.
     pub fn render_to(&self, w: &mut Writer) -> IoResult<()> {
         struct WriterWrapper<'a, 'b: 'a> {
             inner: &'a mut (Writer + 'b),
