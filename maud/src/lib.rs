@@ -37,6 +37,9 @@
 //!
 //! Maud uses its own syntax, loosely inspired by HTML and Rust.
 //!
+//! **Note:** The markup you see below has been cleaned up a bit. In
+//! reality, Maud doesn't add extra whitespace to the HTML it generates.
+//!
 //! ## Literals
 //!
 //! ```
@@ -53,7 +56,8 @@
 //! <script>alert("XSS")</script>
 //! ```
 //!
-//! Literal strings use the same syntax as Rust.
+//! Literal strings use the same syntax as Rust. Wrap them in
+//! double quotes, and use a backslash for escapes.
 //!
 //! By default, HTML special characters are escaped automatically. Add a
 //! `$$` prefix to disable this escaping.
