@@ -145,6 +145,9 @@
 //! ```
 //!
 //! Use `$(expr)` syntax to splice a Rust expression into the output.
+//! The expression may evaluate to anything that implements
+//! `std::fmt::Display`.
+//!
 //! You can omit the brackets if it's just a variable (`$var`), indexing
 //! operation (`$var[0]`), method call (`$var.method()`), or property
 //! lookup (`$var.property`).
