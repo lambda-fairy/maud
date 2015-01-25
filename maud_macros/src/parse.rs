@@ -58,7 +58,7 @@ struct Parser<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> {
 impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
     /// Consume `n` items from the input.
     fn shift(&mut self, n: usize) {
-        self.input = self.input.slice_from(n);
+        self.input = &self.input[n..];
     }
 
     /// Construct a Rust AST parser from the given token tree.
