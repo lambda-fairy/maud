@@ -171,11 +171,11 @@ pub fn escape(s: &str) -> String {
 ///
 /// Use `.render()` to convert it to a `String`, or `.render_to()` to
 /// write it directly to a handle.
-pub struct Markup<'a> {
-    callback: &'a (Fn(&mut fmt::Writer) -> fmt::Result + 'a),
+pub struct Markup<F> {
+    callback: F,
 }
 
-impl<'a> Markup<'a> {
+impl<F> Markup<F> where F: Fn(&mut fmt::Writer) -> fmt::Result {
     /// Render the markup to a `String`.
     pub fn render(&self) -> String {
         let mut buf = String::new();
@@ -218,7 +218,9 @@ pub mod rt {
     use super::Markup;
 
     #[inline]
-    pub fn make_markup<'a>(f: &'a (Fn(&mut fmt::Writer) -> fmt::Result + 'a)) -> Markup<'a> {
+    pub fn make_markup<F>(f: F) -> Markup<F>
+        where F: Fn(&mut fmt::Writer) -> fmt::Result
+    {
         Markup { callback: f }
     }
 
