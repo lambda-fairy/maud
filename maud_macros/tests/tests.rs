@@ -161,3 +161,9 @@ mod splices {
     }
     */
 }
+
+#[test]
+fn issue_1() {
+    let markup = html! { "Test" };
+    let _ = markup.render();
+}
