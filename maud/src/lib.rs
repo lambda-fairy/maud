@@ -35,8 +35,6 @@
 //!
 //! # Syntax
 //!
-//! Maud uses its own syntax, loosely inspired by HTML and Rust.
-//!
 //! **Note:** The markup you see below has been cleaned up a bit. In
 //! reality, Maud doesn't add extra whitespace to the HTML it generates.
 //!
@@ -60,7 +58,8 @@
 //! double quotes, and use a backslash for escapes.
 //!
 //! By default, HTML special characters are escaped automatically. Add a
-//! `$$` prefix to disable this escaping.
+//! `$$` prefix to disable this escaping. (This is a special case of the
+//! *splice* syntax described below.)
 //!
 //! ## Elements
 //!
@@ -186,8 +185,8 @@ impl<'a> Markup<'a> {
 
     /// Render the markup to a `std::io::Writer`.
     ///
-    /// If you're writing to, say, a file or a socket, this may be more
-    /// efficient than calling `.render()`.
+    /// This may be more efficient than calling `.render()`, as it
+    /// doesn't allocate an intermediate `String`.
     pub fn render_to(&self, w: &mut Writer) -> IoResult<()> {
         struct WriterWrapper<'a, 'b: 'a> {
             inner: &'a mut (Writer + 'b),
