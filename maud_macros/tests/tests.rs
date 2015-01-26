@@ -6,13 +6,13 @@ extern crate maud;
 
 #[test]
 fn literals() {
-    let s = html!("du\tcks" -23 3.14 '\n' "geese").render();
+    let s = html!("du\tcks" -23 3.14 '\n' "geese").to_string();
     assert_eq!(s, "du\tcks-233.14\ngeese");
 }
 
 #[test]
 fn escaping() {
-    let s = html!("<flim&flam>").render();
+    let s = html!("<flim&flam>").to_string();
     assert_eq!(s, "&lt;flim&amp;flam&gt;");
 }
 
@@ -24,7 +24,7 @@ fn semicolons() {
         "three";
         ;;;;;;;;;;;;;;;;;;;;;;;;
         "four";
-    }.render();
+    }.to_string();
     assert_eq!(s, "onetwothreefour");
 }
 
@@ -36,7 +36,7 @@ fn blocks() {
             " ducks" " geese"
         }
         " swans"
-    }.render();
+    }.to_string();
     assert_eq!(s, "hello ducks geese swans");
 }
 
@@ -45,19 +45,19 @@ mod elements {
     fn simple() {
         let s = html! {
             p { b { "pickle" } "barrel" i { "kumquat" } }
-        }.render();
+        }.to_string();
         assert_eq!(s, "<p><b>pickle</b>barrel<i>kumquat</i></p>");
     }
 
     #[test]
     fn nesting() {
-        let s = html!(html body div p sup "butts").render();
+        let s = html!(html body div p sup "butts").to_string();
         assert_eq!(s, "<html><body><div><p><sup>butts</sup></p></div></body></html>");
     }
 
     #[test]
     fn empty() {
-        let s = html!("pinkie" br/ "pie").render();
+        let s = html!("pinkie" br/ "pie").to_string();
         assert_eq!(s, "pinkie<br>pie");
     }
 
@@ -68,7 +68,7 @@ mod elements {
             section id="midriff" {
                 p class="hotpink" "Hello!"
             }
-        }.render();
+        }.to_string();
         assert_eq!(s, concat!(
                 r#"<link rel="stylesheet" href="styles.css">"#,
                 r#"<section id="midriff"><p class="hotpink">Hello!</p></section>"#));
@@ -76,7 +76,7 @@ mod elements {
 
     #[test]
     fn empty_attributes() {
-        let s = html! { div readonly=! input type="checkbox" checked=! / }.render();
+        let s = html! { div readonly=! input type="checkbox" checked=! / }.to_string();
         assert_eq!(s, r#"<div readonly><input type="checkbox" checked></div>"#);
     }
 }
@@ -84,13 +84,13 @@ mod elements {
 mod splices {
     #[test]
     fn literals() {
-        let s = html! { $"<pinkie>" }.render();
+        let s = html! { $"<pinkie>" }.to_string();
         assert_eq!(s, "&lt;pinkie&gt;");
     }
 
     #[test]
     fn raw_literals() {
-        let s = html! { $$"<pinkie>" }.render();
+        let s = html! { $$"<pinkie>" }.to_string();
         assert_eq!(s, "<pinkie>");
     }
 
@@ -104,7 +104,7 @@ mod splices {
                 }
                 result
             }
-        }.render();
+        }.to_string();
         assert_eq!(s, "3628800");
     }
 
@@ -112,14 +112,14 @@ mod splices {
 
     #[test]
     fn statics() {
-        let s = html! { $BEST_PONY }.render();
+        let s = html! { $BEST_PONY }.to_string();
         assert_eq!(s, "Pinkie Pie");
     }
 
     #[test]
     fn closures() {
         let best_pony = "Pinkie Pie";
-        let s = html! { $best_pony }.render();
+        let s = html! { $best_pony }.to_string();
         assert_eq!(s, "Pinkie Pie");
     }
 
@@ -146,7 +146,7 @@ mod splices {
         };
         let s = html! {
             "Name: " $pinkie.name ". Rating: " $pinkie.repugnance()
-        }.render();
+        }.to_string();
         assert_eq!(s, "Name: Pinkie Pie. Rating: 1");
     }
 
@@ -156,7 +156,7 @@ mod splices {
     #[test]
     fn nested_macro_invocation() {
         let best_pony = "Pinkie Pie";
-        let s = html! { $(format!("{}", best_pony)) }.render();
+        let s = html! { $(format!("{}", best_pony)) }.to_string();
         assert_eq!(s, "Pinkie Pie");
     }
     */
@@ -165,5 +165,5 @@ mod splices {
 #[test]
 fn issue_1() {
     let markup = html! { "Test" };
-    let _ = markup.render();
+    let _ = markup.to_string();
 }

@@ -29,7 +29,7 @@
 //!     let markup = html! {
 //!         p { "Hi, " $name "!" }
 //!     };
-//!     assert_eq!(markup.render(), "<p>Hi, Lyra!</p>");
+//!     assert_eq!(markup.to_string(), "<p>Hi, Lyra!</p>");
 //! }
 //! ```
 //!
@@ -169,25 +169,15 @@ pub fn escape(s: &str) -> String {
 
 /// A block of HTML markup, as returned by the `html!` macro.
 ///
-/// Use `.render()` to convert it to a `String`, or `.render_to()` to
+/// Use `.to_string()` to convert it to a `String`, or `.render()` to
 /// write it directly to a handle.
 pub struct Markup<F> {
     callback: F,
 }
 
 impl<F> Markup<F> where F: Fn(&mut fmt::Writer) -> fmt::Result {
-    /// Render the markup to a `String`.
-    pub fn render(&self) -> String {
-        let mut buf = String::new();
-        self.render_fmt(&mut buf).unwrap();
-        buf
-    }
-
     /// Render the markup to a `std::io::Writer`.
-    ///
-    /// This may be more efficient than calling `.render()`, as it
-    /// doesn't allocate an intermediate `String`.
-    pub fn render_to(&self, w: &mut Writer) -> IoResult<()> {
+    pub fn render(&self, w: &mut Writer) -> IoResult<()> {
         struct WriterWrapper<'a, 'b: 'a> {
             inner: &'a mut (Writer + 'b),
         }
@@ -207,6 +197,14 @@ impl<F> Markup<F> where F: Fn(&mut fmt::Writer) -> fmt::Result {
     /// Render the markup to a `std::fmt::Writer`.
     pub fn render_fmt(&self, w: &mut fmt::Writer) -> fmt::Result {
         (self.callback)(w)
+    }
+}
+
+impl<F> ToString for Markup<F> where F: Fn(&mut fmt::Writer) -> fmt::Result {
+    fn to_string(&self) -> String {
+        let mut buf = String::new();
+        self.render_fmt(&mut buf).unwrap();
+        buf
     }
 }
 
