@@ -43,8 +43,13 @@ impl<'cx, 's, 'o> Renderer<'cx, 's, 'o> {
 
     /// Push an expression statement, also wrapping it with `try!`.
     fn push(&mut self, expr: P<Expr>) {
-        let expr = self.cx.stmt_expr(self.cx.expr_try(expr.span, expr));
-        self.stmts.push(expr);
+        let stmt = self.make_stmt(expr);
+        self.stmts.push(stmt);
+    }
+
+    /// Create an expression statement, also wrapping it with `try!`.
+    fn make_stmt(&mut self, expr: P<Expr>) -> P<Stmt> {
+        self.cx.stmt_expr(self.cx.expr_try(expr.span, expr))
     }
 
     /// Append a literal pre-escaped string.
@@ -92,6 +97,19 @@ impl<'cx, 's, 'o> Renderer<'cx, 's, 'o> {
     pub fn attribute_empty(&mut self, name: &str) {
         self.write(" ");
         self.write(name);
+    }
+
+    pub fn attribute_empty_if(&mut self, name: &str, expr: P<Expr>) {
+        let s: String = [" ", name].concat();
+        let s = &s[];
+        let w = self.w;
+        let expr = quote_expr!(self.cx,
+            if $expr {
+                $w.write_str($s)
+            } else {
+                Ok(())
+            });
+        self.push(expr);
     }
 
     pub fn attribute_end(&mut self) {

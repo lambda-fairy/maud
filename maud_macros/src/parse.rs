@@ -20,6 +20,9 @@ macro_rules! eq {
 macro_rules! not {
     () => (TtToken(_, token::Not))
 }
+macro_rules! question {
+    () => (TtToken(_, token::Question))
+}
 macro_rules! semi {
     () => (TtToken(_, token::Semi))
 }
@@ -90,11 +93,13 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
             // Splice
             [ref tt @ dollar!(), dollar!(), ..] => {
                 self.shift(2);
-                self.splice(Escape::PassThru, tt.get_span())
+                let expr = self.splice(tt.get_span());
+                self.render.splice(expr, Escape::PassThru);
             },
             [ref tt @ dollar!(), ..] => {
                 self.shift(1);
-                self.splice(Escape::Escape, tt.get_span())
+                let expr = self.splice(tt.get_span());
+                self.render.splice(expr, Escape::Escape);
             },
             // Element
             [ident!(sp, name), ..] => {
@@ -127,7 +132,7 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
         }
     }
 
-    fn splice(&mut self, escape: Escape, sp: Span) {
+    fn splice(&mut self, sp: Span) -> P<Expr> {
         let mut tts = vec![];
         // First, munch a single token tree
         if let [ref tt, ..] = self.input {
@@ -151,10 +156,9 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
             }
         }
         if tts.is_empty() {
-            self.render.cx.span_err(sp, "expected expression for this splice");
+            self.render.cx.span_fatal(sp, "expected expression for this splice");
         } else {
-            let expr = self.new_rust_parser(tts).parse_expr();
-            self.render.splice(expr, escape);
+            self.new_rust_parser(tts).parse_expr()
         }
     }
 
@@ -175,14 +179,10 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
     }
 
     fn attrs(&mut self) {
-        while let [ident!(name), eq!(), ..] = self.input {
-            self.shift(2);
-            if let [not!(), ..] = self.input {
-                // Empty attribute
-                self.shift(1);
-                self.render.attribute_empty(name.as_str());
-            } else {
+        loop { match self.input {
+            [ident!(name), eq!(), ..] => {
                 // Non-empty attribute
+                self.shift(2);
                 self.render.attribute_start(name.as_str());
                 {
                     // Parse a value under an attribute context
@@ -192,8 +192,22 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
                     self.in_attr = old_in_attr;
                 }
                 self.render.attribute_end();
-            }
-        }
+            },
+            [ident!(name), question!(), ..] => {
+                // Empty attribute
+                self.shift(2);
+                if let [ref tt @ eq!(), ..] = self.input {
+                    // Toggle the attribute based on a boolean expression
+                    self.shift(1);
+                    let expr = self.splice(tt.get_span());
+                    self.render.attribute_empty_if(name.as_str(), expr);
+                } else {
+                    // Write the attribute unconditionally
+                    self.render.attribute_empty(name.as_str());
+                }
+            },
+            _ => return,
+        }}
     }
 
     fn block(&mut self, tts: &[TokenTree]) {

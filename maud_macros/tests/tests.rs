@@ -76,7 +76,7 @@ mod elements {
 
     #[test]
     fn empty_attributes() {
-        let s = html! { div readonly=! input type="checkbox" checked=! / }.to_string();
+        let s = html! { div readonly? input type="checkbox" checked? / }.to_string();
         assert_eq!(s, r#"<div readonly><input type="checkbox" checked></div>"#);
     }
 }
@@ -106,6 +106,22 @@ mod splices {
             }
         }.to_string();
         assert_eq!(s, "3628800");
+    }
+
+    #[test]
+    fn attributes() {
+        let rocks = true;
+        let s = html! {
+            input checked?=true /
+            input checked?=false /
+            input checked?=rocks /
+            input checked?=(!rocks) /
+        }.to_string();
+        assert_eq!(s, concat!(
+                r#"<input checked>"#,
+                r#"<input>"#,
+                r#"<input checked>"#,
+                r#"<input>"#));
     }
 
     static BEST_PONY: &'static str = "Pinkie Pie";

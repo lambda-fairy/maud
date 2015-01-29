@@ -99,7 +99,7 @@
 //! html! {
 //!     form method="POST" {
 //!         label for="waffles" "Do you like waffles?"
-//!         input name="waffles" type="checkbox" checked=! /
+//!         input name="waffles" type="checkbox" checked? /
 //!     }
 //! }
 //! ```
@@ -114,7 +114,7 @@
 //! Add attributes using the syntax `attr="value"`. Attributes must be
 //! quoted: they are parsed as string literals.
 //!
-//! To declare an empty attribute, use `!` for the value: `checked=!`.
+//! To declare an empty attribute, use a `?` suffix: `checked?`.
 //!
 //! ## Splices
 //!
