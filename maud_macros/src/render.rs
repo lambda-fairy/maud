@@ -1,5 +1,5 @@
 use std::borrow::IntoCow;
-use syntax::ast::{Expr, Ident, Stmt};
+use syntax::ast::{Expr, ExprParen, Ident, Stmt};
 use syntax::ext::base::ExtCtxt;
 use syntax::ext::build::AstBuilder;
 use syntax::parse::token;
@@ -103,6 +103,11 @@ impl<'cx, 's, 'o> Renderer<'cx, 's, 'o> {
         let s: String = [" ", name].concat();
         let s = &s[];
         let w = self.w;
+        // Silence "unnecessary parentheses" warnings
+        let expr = match expr.node {
+            ExprParen(ref inner) => inner.clone(),
+            _ => expr.clone(),
+        };
         let expr = quote_expr!(self.cx,
             if $expr {
                 $w.write_str($s)
