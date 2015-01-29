@@ -1,6 +1,6 @@
 env:
   global:
-    - secure: aXA1rURuwGHa+JpCv3bkff8glnWI77bAPYJ4T06Fyst9r9PooA0TvPKFl2UK2hkVoZmqm9sF/mxBnQJ/hh4vfDHDGSmgLZCRFa9hHtRRQyXPmDCfbWXdw6rhT9EH4QWxDeFcxHSeVLquenOCXDxLG/pmMXLqbYy7iA57WmiNcUo=
+    - secure: JeUiscyDQ7KwyI1GC6sfieToEEPRi4jdskciDAR1FuuUeMzVwLANxwFn9vjra4/cGBSLZz4A/H+aomHAhveHfx3nHXLCeCzHegB2oFgNBJeSd+a4+Cv1kXGIEKn42pgxQPhrOa/MGFw3jjx/9x5EYcG9DmVLp1D498h4w6mXFgg=
 language: rust
 script:
   - ( cd maud_macros && cargo build --verbose && cargo test --verbose && cargo doc --verbose )
