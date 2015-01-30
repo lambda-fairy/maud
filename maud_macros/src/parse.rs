@@ -40,25 +40,25 @@ macro_rules! ident {
     ($sp:pat, $x:pat) => (TtToken($sp, token::Ident($x, token::IdentStyle::Plain)))
 }
 
-pub fn parse(cx: &mut ExtCtxt, input: &[TokenTree], sp: Span) -> P<Expr> {
-    Renderer::with(cx, |render| {
-        Parser {
-            in_attr: false,
-            input: input,
-            span: sp,
-            render: render,
-        }.markups();
-    })
+pub fn parse(cx: &ExtCtxt, input: &[TokenTree], sp: Span) -> P<Expr> {
+    let mut render = Renderer::new(cx);
+    Parser {
+        in_attr: false,
+        input: input,
+        span: sp,
+        render: &mut render,
+    }.markups();
+    render.into_expr()
 }
 
-struct Parser<'cx: 'r, 's: 'cx, 'i, 'r, 'o: 'r> {
+struct Parser<'cx: 'r, 's: 'cx, 'i, 'r> {
     in_attr: bool,
     input: &'i [TokenTree],
     span: Span,
-    render: &'r mut Renderer<'cx, 's, 'o>,
+    render: &'r mut Renderer<'cx, 's>,
 }
 
-impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
+impl<'cx, 's, 'i, 'r> Parser<'cx, 's, 'i, 'r> {
     /// Consume `n` items from the input.
     fn shift(&mut self, n: usize) {
         self.input = &self.input[n..];
@@ -221,7 +221,7 @@ impl<'cx, 's, 'i, 'r, 'o> Parser<'cx, 's, 'i, 'r, 'o> {
 }
 
 /// Convert a literal to a string.
-fn lit_to_string(cx: &mut ExtCtxt, lit: Lit, minus: bool) -> Option<String> {
+fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> Option<String> {
     use syntax::ast::Lit_::*;
     let mut result = String::new();
     if minus {
