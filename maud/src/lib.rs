@@ -157,7 +157,7 @@
 #![allow(unstable)]
 
 use std::fmt;
-use std::io::{IoError, IoErrorKind, IoResult};
+use std::old_io::{IoError, IoErrorKind, IoResult};
 
 /// Escape an HTML value.
 pub fn escape(s: &str) -> String {
