@@ -7,7 +7,7 @@ use syntax::ptr::P;
 
 use maud;
 
-#[derive(Copy, PartialEq, Show)]
+#[derive(Copy)]
 pub enum Escape {
     PassThru,
     Escape,
@@ -68,7 +68,7 @@ impl<'cx, 's> Renderer<'cx, 's> {
             Escape::PassThru => s.into_cow(),
             Escape::Escape => maud::escape(s).into_cow(),
         };
-        self.write(s.as_slice());
+        self.write(&s);
     }
 
     /// Append the result of an expression, with the specified escaping method.

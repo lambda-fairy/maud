@@ -19,7 +19,6 @@
 //!
 //! ```rust
 //! #![feature(plugin)]
-//! #![allow(unstable)]
 //!
 //! extern crate maud;
 //! #[plugin] #[no_link] extern crate maud_macros;
@@ -154,7 +153,7 @@
 //! As with literals, expression values are escaped by default. Use a
 //! `$$` prefix to disable this behavior.
 
-#![allow(unstable)]
+#![feature(core, io)]
 
 use std::fmt;
 use std::old_io::{IoError, IoErrorKind, IoResult};

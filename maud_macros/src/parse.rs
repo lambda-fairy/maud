@@ -109,7 +109,7 @@ impl<'cx, 's, 'i, 'r> Parser<'cx, 's, 'i, 'r> {
             // Block
             [TtDelimited(_, ref d), ..] if d.delim == token::DelimToken::Brace => {
                 self.shift(1);
-                self.block(d.tts.as_slice())
+                self.block(&d.tts)
             },
             // ???
             _ => {
@@ -127,7 +127,7 @@ impl<'cx, 's, 'i, 'r> Parser<'cx, 's, 'i, 'r> {
     fn literal(&mut self, tt: &TokenTree, minus: bool) {
         let lit = self.new_rust_parser(vec![tt.clone()]).parse_lit();
         match lit_to_string(self.render.cx, lit, minus) {
-            Some(s) => self.render.string(s.as_slice(), Escape::Escape),
+            Some(s) => self.render.string(&s, Escape::Escape),
             None => {},
         }
     }
@@ -234,7 +234,7 @@ fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> Option<String> {
             return None;
         },
         LitChar(c) => result.push(c),
-        LitInt(x, _) => result.push_str(x.to_string().as_slice()),
+        LitInt(x, _) => result.push_str(&x.to_string()),
         LitFloat(s, _) | LitFloatUnsuffixed(s) => result.push_str(s.get()),
         LitBool(b) => result.push_str(if b { "true" } else { "false" }),
     };
