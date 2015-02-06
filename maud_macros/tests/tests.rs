@@ -98,7 +98,7 @@ mod splices {
         let s = html! {
             ${
                 let mut result = 1i32;
-                for i in range(2, 11) {
+                for i in 2..11 {
                     result *= i;
                 }
                 result
