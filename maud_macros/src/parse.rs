@@ -199,8 +199,8 @@ impl<'cx, 's, 'i, 'r> Parser<'cx, 's, 'i, 'r> {
                 if let [ref tt @ eq!(), ..] = self.input {
                     // Toggle the attribute based on a boolean expression
                     self.shift(1);
-                    let expr = self.splice(tt.get_span());
-                    self.render.attribute_empty_if(name.as_str(), expr);
+                    let cond = self.splice(tt.get_span());
+                    self.render.attribute_empty_if(name.as_str(), cond);
                 } else {
                     // Write the attribute unconditionally
                     self.render.attribute_empty(name.as_str());

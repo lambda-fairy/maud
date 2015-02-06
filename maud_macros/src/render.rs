@@ -20,6 +20,7 @@ pub struct Renderer<'cx, 's: 'cx> {
 }
 
 impl<'cx, 's> Renderer<'cx, 's> {
+    /// Create a new `Renderer` using the given extension context.
     pub fn new(cx: &'cx ExtCtxt<'s>) -> Renderer<'cx, 's> {
         Renderer {
             cx: cx,
@@ -28,6 +29,16 @@ impl<'cx, 's> Renderer<'cx, 's> {
         }
     }
 
+    /// Create a new `Renderer` under the same context as `self`.
+    pub fn fork(&self) -> Renderer<'cx, 's> {
+        Renderer {
+            cx: self.cx,
+            stmts: vec![],
+            w: self.w,
+        }
+    }
+
+    /// Reify the `Renderer` into a block of markup.
     pub fn into_expr(self) -> P<Expr> {
         let Renderer { cx, stmts, w } = self;
         quote_expr!(cx,
@@ -37,16 +48,10 @@ impl<'cx, 's> Renderer<'cx, 's> {
             }))
     }
 
-    fn make_stmts<F>(&self, f: F) -> Vec<P<Stmt>> where
-        F: FnOnce(&mut Renderer<'cx, 's>)
-    {
-        let mut render = Renderer {
-            cx: self.cx,
-            stmts: vec![],
-            w: self.w,
-        };
-        f(&mut render);
-        render.stmts
+    /// Reify the `Renderer` into a raw list of statements.
+    pub fn into_stmts(self) -> Vec<P<Stmt>> {
+        let Renderer { stmts, .. } = self;
+        stmts
     }
 
     /// Push an expression statement, also wrapping it with `try!`.
@@ -102,17 +107,19 @@ impl<'cx, 's> Renderer<'cx, 's> {
         self.write(name);
     }
 
-    pub fn attribute_empty_if(&mut self, name: &str, expr: P<Expr>) {
+    pub fn attribute_empty_if(&mut self, name: &str, cond: P<Expr>) {
         // Silence "unnecessary parentheses" warnings
-        let expr = match expr.node {
+        let cond = match cond.node {
             ExprParen(ref inner) => inner.clone(),
-            _ => expr.clone(),
+            _ => cond.clone(),
         };
-        let stmts = self.make_stmts(|r| {
+        let body = {
+            let mut r = self.fork();
             r.write(" ");
             r.write(name);
-        });
-        let stmt = quote_stmt!(self.cx, if $expr { $stmts });
+            r.into_stmts()
+        };
+        let stmt = quote_stmt!(self.cx, if $cond { $body });
         self.stmts.push(stmt);
     }
 
