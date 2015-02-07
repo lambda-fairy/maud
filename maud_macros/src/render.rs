@@ -54,6 +54,11 @@ impl<'cx, 's> Renderer<'cx, 's> {
         stmts
     }
 
+    /// Append the list of statements to the output.
+    pub fn push_stmts(&mut self, mut stmts: Vec<P<Stmt>>) {
+        self.stmts.append(&mut stmts);
+    }
+
     /// Push an expression statement, also wrapping it with `try!`.
     fn push_try(&mut self, expr: P<Expr>) {
         let stmt = self.cx.stmt_expr(self.cx.expr_try(expr.span, expr));

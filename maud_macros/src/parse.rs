@@ -1,4 +1,4 @@
-use syntax::ast::{Expr, Lit, TokenTree, TtDelimited, TtToken};
+use syntax::ast::{Expr, Lit, Stmt, TokenTree, TtDelimited, TtToken};
 use syntax::codemap::Span;
 use syntax::ext::base::ExtCtxt;
 use syntax::parse;
@@ -41,24 +41,30 @@ macro_rules! ident {
 }
 
 pub fn parse(cx: &ExtCtxt, input: &[TokenTree], sp: Span) -> P<Expr> {
-    let mut render = Renderer::new(cx);
-    Parser {
+    let mut parser = Parser {
         in_attr: false,
         input: input,
         span: sp,
-        render: &mut render,
-    }.markups();
-    render.into_expr()
+        render: Renderer::new(cx),
+    };
+    parser.markups();
+    parser.into_render().into_expr()
 }
 
-struct Parser<'cx: 'r, 's: 'cx, 'i, 'r> {
+struct Parser<'cx, 's: 'cx, 'i> {
     in_attr: bool,
     input: &'i [TokenTree],
     span: Span,
-    render: &'r mut Renderer<'cx, 's>,
+    render: Renderer<'cx, 's>,
 }
 
-impl<'cx, 's, 'i, 'r> Parser<'cx, 's, 'i, 'r> {
+impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
+    /// Finalize the `Parser`, returning the `Renderer` underneath.
+    fn into_render(self) -> Renderer<'cx, 's> {
+        let Parser { render, .. } = self;
+        render
+    }
+
     /// Consume `n` items from the input.
     fn shift(&mut self, n: usize) {
         self.input = &self.input[n..];
@@ -109,7 +115,8 @@ impl<'cx, 's, 'i, 'r> Parser<'cx, 's, 'i, 'r> {
             // Block
             [TtDelimited(sp, ref d), ..] if d.delim == token::DelimToken::Brace => {
                 self.shift(1);
-                self.block(sp, &d.tts)
+                let stmts = self.block(sp, &d.tts);
+                self.render.push_stmts(stmts);
             },
             // ???
             _ => {
@@ -210,13 +217,15 @@ impl<'cx, 's, 'i, 'r> Parser<'cx, 's, 'i, 'r> {
         }}
     }
 
-    fn block(&mut self, sp: Span, tts: &[TokenTree]) {
-        Parser {
+    fn block(&mut self, sp: Span, tts: &[TokenTree]) -> Vec<P<Stmt>> {
+        let mut parse = Parser {
             in_attr: self.in_attr,
             input: tts,
             span: sp,
-            render: self.render,
-        }.markups();
+            render: Renderer::new(self.render.cx),
+        };
+        parse.markups();
+        parse.into_render().into_stmts()
     }
 }
 
