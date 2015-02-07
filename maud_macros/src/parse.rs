@@ -107,9 +107,9 @@ impl<'cx, 's, 'i, 'r> Parser<'cx, 's, 'i, 'r> {
                 self.element(name.as_str(), sp)
             },
             // Block
-            [TtDelimited(_, ref d), ..] if d.delim == token::DelimToken::Brace => {
+            [TtDelimited(sp, ref d), ..] if d.delim == token::DelimToken::Brace => {
                 self.shift(1);
-                self.block(&d.tts)
+                self.block(sp, &d.tts)
             },
             // ???
             _ => {
@@ -210,11 +210,11 @@ impl<'cx, 's, 'i, 'r> Parser<'cx, 's, 'i, 'r> {
         }}
     }
 
-    fn block(&mut self, tts: &[TokenTree]) {
+    fn block(&mut self, sp: Span, tts: &[TokenTree]) {
         Parser {
             in_attr: self.in_attr,
             input: tts,
-            span: self.span,
+            span: sp,
             render: self.render,
         }.markups();
     }
