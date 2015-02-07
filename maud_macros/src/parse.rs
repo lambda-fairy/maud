@@ -104,7 +104,7 @@ impl<'cx, 's, 'i, 'r> Parser<'cx, 's, 'i, 'r> {
             // Element
             [ident!(sp, name), ..] => {
                 self.shift(1);
-                self.element(name.as_str(), sp)
+                self.element(sp, name.as_str())
             },
             // Block
             [TtDelimited(sp, ref d), ..] if d.delim == token::DelimToken::Brace => {
@@ -162,7 +162,7 @@ impl<'cx, 's, 'i, 'r> Parser<'cx, 's, 'i, 'r> {
         }
     }
 
-    fn element(&mut self, name: &str, sp: Span) {
+    fn element(&mut self, sp: Span, name: &str) {
         if self.in_attr {
             self.render.cx.span_err(sp, "unexpected element, you silly bumpkin");
             return;
