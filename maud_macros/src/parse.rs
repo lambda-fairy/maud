@@ -237,14 +237,14 @@ fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> Option<String> {
         result.push('-');
     }
     match lit.node {
-        LitStr(s, _) => result.push_str(s.get()),
+        LitStr(s, _) => result.push_str(&s),
         LitBinary(..) | LitByte(..) => {
             cx.span_err(lit.span, "cannot splice binary data");
             return None;
         },
         LitChar(c) => result.push(c),
         LitInt(x, _) => result.push_str(&x.to_string()),
-        LitFloat(s, _) | LitFloatUnsuffixed(s) => result.push_str(s.get()),
+        LitFloat(s, _) | LitFloatUnsuffixed(s) => result.push_str(&s),
         LitBool(b) => result.push_str(if b { "true" } else { "false" }),
     };
     Some(result)
