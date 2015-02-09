@@ -1,5 +1,5 @@
 use std::borrow::IntoCow;
-use syntax::ast::{Expr, ExprParen, Ident, Stmt};
+use syntax::ast::{Expr, Ident, Stmt};
 use syntax::ext::base::ExtCtxt;
 use syntax::ext::build::AstBuilder;
 use syntax::parse::token;
@@ -112,22 +112,6 @@ impl<'cx, 's> Renderer<'cx, 's> {
         self.write(name);
     }
 
-    pub fn attribute_empty_if(&mut self, name: &str, cond: P<Expr>) {
-        // Silence "unnecessary parentheses" warnings
-        let cond = match cond.node {
-            ExprParen(ref inner) => inner.clone(),
-            _ => cond.clone(),
-        };
-        let body = {
-            let mut r = self.fork();
-            r.write(" ");
-            r.write(name);
-            r.into_stmts()
-        };
-        let stmt = quote_stmt!(self.cx, if $cond { $body });
-        self.stmts.push(stmt);
-    }
-
     pub fn attribute_end(&mut self) {
         self.write("\"");
     }
@@ -140,5 +124,15 @@ impl<'cx, 's> Renderer<'cx, 's> {
         self.write("</");
         self.write(name);
         self.write(">");
+    }
+
+    pub fn emit_if(&mut self, cond: P<Expr>, if_body: Vec<P<Stmt>>,
+                   else_body: Option<Vec<P<Stmt>>>) {
+        let stmt = match else_body {
+            None => quote_stmt!(self.cx, if $cond { $if_body }),
+            Some(else_body) =>
+                quote_stmt!(self.cx, if $cond { $if_body } else { $else_body }),
+        };
+        self.stmts.push(stmt);
     }
 }

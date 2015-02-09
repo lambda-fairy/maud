@@ -1,4 +1,4 @@
-use syntax::ast::{Expr, Lit, Stmt, TokenTree, TtDelimited, TtToken};
+use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree, TtDelimited, TtToken};
 use syntax::codemap::Span;
 use syntax::ext::base::ExtCtxt;
 use syntax::parse;
@@ -207,7 +207,14 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
                     // Toggle the attribute based on a boolean expression
                     self.shift(1);
                     let cond = self.splice(tt.get_span());
-                    self.render.attribute_empty_if(name.as_str(), cond);
+                    // Silence "unnecessary parentheses" warnings
+                    let cond = strip_outer_parens(cond);
+                    let body = {
+                        let mut r = self.render.fork();
+                        r.attribute_empty(name.as_str());
+                        r.into_stmts()
+                    };
+                    self.render.emit_if(cond, body, None);
                 } else {
                     // Write the attribute unconditionally
                     self.render.attribute_empty(name.as_str());
@@ -248,4 +255,12 @@ fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> Option<String> {
         LitBool(b) => result.push_str(if b { "true" } else { "false" }),
     };
     Some(result)
+}
+
+/// If the expression is wrapped in parentheses, strip them off.
+fn strip_outer_parens(expr: P<Expr>) -> P<Expr> {
+    expr.and_then(|expr| match expr {
+        Expr { node: ExprParen(inner), .. } => inner,
+        expr => P(expr),
+    })
 }
