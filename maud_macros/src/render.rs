@@ -42,7 +42,7 @@ impl<'cx, 's> Renderer<'cx, 's> {
     pub fn into_expr(self) -> P<Expr> {
         let Renderer { cx, stmts, w } = self;
         quote_expr!(cx,
-            ::maud::rt::make_markup(|&: $w: &mut ::std::fmt::Writer| -> Result<(), ::std::fmt::Error> {
+            ::maud::rt::make_markup(|$w: &mut ::std::fmt::Writer| -> Result<(), ::std::fmt::Error> {
                 $stmts
                 Ok(())
             }))
