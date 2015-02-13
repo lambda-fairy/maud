@@ -19,9 +19,9 @@
 //!
 //! ```rust
 //! #![feature(plugin)]
+//! #![plugin(maud_macros)]
 //!
 //! extern crate maud;
-//! #[plugin] #[no_link] extern crate maud_macros;
 //!
 //! fn main() {
 //!     let name = "Lyra";
@@ -153,7 +153,7 @@
 //! As with literals, expression values are escaped by default. Use a
 //! `$$` prefix to disable this behavior.
 
-#![feature(core, io)]
+#![feature(io)]
 
 use std::fmt;
 use std::old_io::{IoError, IoErrorKind, IoResult};

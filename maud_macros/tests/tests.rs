@@ -1,7 +1,7 @@
 #![feature(plugin)]
+#![plugin(maud_macros)]
 
 extern crate maud;
-#[plugin] #[no_link] extern crate maud_macros;
 
 #[test]
 fn literals() {
