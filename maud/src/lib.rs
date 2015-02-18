@@ -156,11 +156,11 @@
 #![feature(io)]
 
 use std::fmt;
-use std::old_io::{IoError, IoErrorKind, IoResult};
+use std::io;
 
 /// Escape an HTML value.
 pub fn escape(s: &str) -> String {
-    use std::fmt::Writer;
+    use std::fmt::Write;
     let mut buf = String::new();
     rt::Escaper { inner: &mut buf }.write_str(s).unwrap();
     buf
@@ -174,32 +174,40 @@ pub struct Markup<F> {
     callback: F,
 }
 
-impl<F> Markup<F> where F: Fn(&mut fmt::Writer) -> fmt::Result {
-    /// Render the markup to a `std::io::Writer`.
-    pub fn render(&self, w: &mut Writer) -> IoResult<()> {
-        struct WriterWrapper<'a, 'b: 'a> {
-            inner: &'a mut (Writer + 'b),
+impl<F> Markup<F> where F: Fn(&mut fmt::Write) -> fmt::Result {
+    /// Render the markup to a `std::io::Write`.
+    pub fn render<W: io::Write>(&self, w: &mut W) -> io::Result<()> {
+        struct Adaptor<'a, W: ?Sized + 'a> {
+            inner: &'a mut W,
+            error: io::Result<()>,
         }
-        impl<'a, 'b> fmt::Writer for WriterWrapper<'a, 'b> {
+
+        impl<'a, W: ?Sized + io::Write> fmt::Write for Adaptor<'a, W> {
             fn write_str(&mut self, s: &str) -> fmt::Result {
-                self.inner.write_str(s).map_err(|_| fmt::Error)
+                match self.inner.write_all(s.as_bytes()) {
+                    Ok(()) => Ok(()),
+                    Err(e) => {
+                        self.error = Err(e);
+                        Err(fmt::Error)
+                    },
+                }
             }
         }
-        self.render_fmt(&mut WriterWrapper { inner: w })
-            .map_err(|_| IoError {
-                kind: IoErrorKind::OtherIoError,
-                desc: "formatting error",
-                detail: None,
-            })
+
+        let mut output = Adaptor { inner: w, error: Ok(()) };
+        match self.render_fmt(&mut output) {
+            Ok(()) => Ok(()),
+            Err(_) => output.error,
+        }
     }
 
-    /// Render the markup to a `std::fmt::Writer`.
-    pub fn render_fmt(&self, w: &mut fmt::Writer) -> fmt::Result {
+    /// Render the markup to a `std::fmt::Write`.
+    pub fn render_fmt(&self, w: &mut fmt::Write) -> fmt::Result {
         (self.callback)(w)
     }
 }
 
-impl<F> ToString for Markup<F> where F: Fn(&mut fmt::Writer) -> fmt::Result {
+impl<F> ToString for Markup<F> where F: Fn(&mut fmt::Write) -> fmt::Result {
     fn to_string(&self) -> String {
         let mut buf = String::new();
         self.render_fmt(&mut buf).unwrap();
@@ -216,7 +224,7 @@ pub mod rt {
 
     #[inline]
     pub fn make_markup<F>(f: F) -> Markup<F>
-        where F: Fn(&mut fmt::Writer) -> fmt::Result
+        where F: Fn(&mut fmt::Write) -> fmt::Result
     {
         Markup { callback: f }
     }
@@ -227,15 +235,15 @@ pub mod rt {
     ///
     /// See <https://github.com/rust-lang/rust/issues/16617>
     #[inline]
-    pub fn write_fmt<T: fmt::Display>(w: &mut fmt::Writer, value: T) -> fmt::Result {
+    pub fn write_fmt<T: fmt::Display>(w: &mut fmt::Write, value: T) -> fmt::Result {
         write!(w, "{}", value)
     }
 
     pub struct Escaper<'a, 'b: 'a> {
-        pub inner: &'a mut (fmt::Writer + 'b),
+        pub inner: &'a mut (fmt::Write + 'b),
     }
 
-    impl<'a, 'b> fmt::Writer for Escaper<'a, 'b> {
+    impl<'a, 'b> fmt::Write for Escaper<'a, 'b> {
         fn write_str(&mut self, s: &str) -> fmt::Result {
             for c in s.chars() {
                 try!(match c {
