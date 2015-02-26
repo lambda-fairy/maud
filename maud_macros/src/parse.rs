@@ -4,7 +4,7 @@ use syntax::codemap::Span;
 use syntax::ext::base::ExtCtxt;
 use syntax::parse;
 use syntax::parse::parser::Parser as RustParser;
-use syntax::parse::token;
+use syntax::parse::token::{self, DelimToken};
 use syntax::ptr::P;
 
 use super::render::{Escape, Renderer};
@@ -97,6 +97,11 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
                 self.shift(1);
                 self.literal(tt, false)
             },
+            // If
+            [dollar!(), ident!(sp, name), ..] if name.as_str() == "if" => {
+                self.shift(2);
+                self.if_expr(sp);
+            },
             // Splice
             [ref tt @ dollar!(), dollar!(), ..] => {
                 self.shift(2);
@@ -138,6 +143,41 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
             Some(s) => self.render.string(&s, Escape::Escape),
             None => {},
         }
+    }
+
+    fn if_expr(&mut self, sp: Span) {
+        let mut cond = vec![];
+        let if_body;
+        loop { match self.input {
+            [TtDelimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
+                self.shift(1);
+                if_body = self.block(sp, &d.tts);
+                break;
+            },
+            [ref tt, ..] => {
+                self.shift(1);
+                cond.push(tt.clone());
+            },
+            [] => self.render.cx.span_fatal(sp, "expected body for this $if"),
+        }}
+        let cond = self.new_rust_parser(cond).parse_expr();
+        let else_body = match self.input {
+            [dollar!(), ident!(name), ..] if name.as_str() == "else" => {
+                self.shift(2);
+                let else_body = {
+                    // Parse a single markup, but capture the result rather
+                    // than emitting it right away
+                    let mut render = self.render.fork();
+                    mem::swap(&mut self.render, &mut render);
+                    self.markup();
+                    mem::swap(&mut self.render, &mut render);
+                    render.into_stmts()
+                };
+                Some(else_body)
+            },
+            _ => None,
+        };
+        self.render.emit_if(cond, if_body, else_body);
     }
 
     fn splice(&mut self, sp: Span) -> P<Expr> {
@@ -194,7 +234,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
                 self.render.attribute_start(name.as_str());
                 {
                     // Parse a value under an attribute context
-                    let in_attr = true;
+                    let mut in_attr = true;
                     mem::swap(&mut self.in_attr, &mut in_attr);
                     self.markup();
                     mem::swap(&mut self.in_attr, &mut in_attr);

@@ -182,3 +182,23 @@ fn issue_1() {
     let markup = html! { "Test" };
     let _ = markup.to_string();
 }
+
+mod control {
+    #[test]
+    fn if_expr() {
+        for (number, &name) in (1..4).zip(["one", "two", "three"].iter()) {
+            let s = html! {
+                $if number == 1 {
+                    "one"
+                } $else $if number == 2 {
+                    "two"
+                } $else $if number == 3 {
+                    "three"
+                } $else {
+                    "oh noes"
+                }
+            }.to_string();
+            assert_eq!(s, name);
+        }
+    }
+}
