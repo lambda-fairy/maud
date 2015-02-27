@@ -1,3 +1,4 @@
+use std::mem;
 use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree, TtDelimited, TtToken};
 use syntax::codemap::Span;
 use syntax::ext::base::ExtCtxt;
@@ -193,10 +194,10 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
                 self.render.attribute_start(name.as_str());
                 {
                     // Parse a value under an attribute context
-                    let old_in_attr = self.in_attr;
-                    self.in_attr = true;
+                    let in_attr = true;
+                    mem::swap(&mut self.in_attr, &mut in_attr);
                     self.markup();
-                    self.in_attr = old_in_attr;
+                    mem::swap(&mut self.in_attr, &mut in_attr);
                 }
                 self.render.attribute_end();
             },
@@ -229,7 +230,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
             in_attr: self.in_attr,
             input: tts,
             span: sp,
-            render: Renderer::new(self.render.cx),
+            render: self.render.fork(),
         };
         parse.markups();
         parse.into_render().into_stmts()
