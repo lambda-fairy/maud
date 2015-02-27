@@ -1,4 +1,3 @@
-use std::borrow::IntoCow;
 use syntax::ast::{Expr, Ident, Stmt};
 use syntax::ext::base::ExtCtxt;
 use syntax::ext::build::AstBuilder;
@@ -74,11 +73,12 @@ impl<'cx, 's> Renderer<'cx, 's> {
 
     /// Append a literal string, with the specified escaping method.
     pub fn string(&mut self, s: &str, escape: Escape) {
+        let escaped;
         let s = match escape {
-            Escape::PassThru => s.into_cow(),
-            Escape::Escape => maud::escape(s).into_cow(),
+            Escape::PassThru => s,
+            Escape::Escape => { escaped = maud::escape(s); &*escaped },
         };
-        self.write(&s);
+        self.write(s);
     }
 
     /// Append the result of an expression, with the specified escaping method.
