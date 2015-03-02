@@ -144,11 +144,11 @@ mod splices {
         /// Rating out of 10, where:
         /// * 0 is a naked mole rat with dysentery
         /// * 10 is Sweetie Belle in a milkshake
-        adorableness: u8,
+        adorableness: u32,
     }
 
     impl Creature {
-        fn repugnance(&self) -> u8 {
+        fn repugnance(&self) -> u32 {
             10 - self.adorableness
         }
     }
