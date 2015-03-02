@@ -146,7 +146,8 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
     }
 
     fn if_expr(&mut self, sp: Span) {
-        let mut cond = vec![];
+        // Parse the initial if
+        let mut cond_tts = vec![];
         let if_body;
         loop { match self.input {
             [TtDelimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
@@ -156,28 +157,39 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
             },
             [ref tt, ..] => {
                 self.shift(1);
-                cond.push(tt.clone());
+                cond_tts.push(tt.clone());
             },
-            [] => self.render.cx.span_fatal(sp, "expected body for this $if"),
+            [] => self.render.cx.span_fatal(sp, "expected body for this `if`"),
         }}
-        let cond = self.new_rust_parser(cond).parse_expr();
+        let if_cond = self.new_rust_parser(cond_tts).parse_expr();
+        // Parse the (optional) else
         let else_body = match self.input {
-            [dollar!(), ident!(name), ..] if name.as_str() == "else" => {
+            [dollar!(), ident!(else_), ..] if else_.as_str() == "else" => {
                 self.shift(2);
-                let else_body = {
-                    // Parse a single markup, but capture the result rather
-                    // than emitting it right away
-                    let mut render = self.render.fork();
-                    mem::swap(&mut self.render, &mut render);
-                    self.markup();
-                    mem::swap(&mut self.render, &mut render);
-                    render.into_stmts()
-                };
-                Some(else_body)
+                match self.input {
+                    [ident!(sp, if_), ..] if if_.as_str() == "if" => {
+                        self.shift(1);
+                        let else_body = {
+                            // Parse an if expression, but capture the result
+                            // rather than emitting it right away
+                            let mut render = self.render.fork();
+                            mem::swap(&mut self.render, &mut render);
+                            self.if_expr(sp);
+                            mem::swap(&mut self.render, &mut render);
+                            render.into_stmts()
+                        };
+                        Some(else_body)
+                    },
+                    [TtDelimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
+                        self.shift(1);
+                        Some(self.block(sp, &d.tts))
+                    },
+                    _ => self.render.cx.span_fatal(sp, "invalid syntax"),
+                }
             },
             _ => None,
         };
-        self.render.emit_if(cond, if_body, else_body);
+        self.render.emit_if(if_cond, if_body, else_body);
     }
 
     fn splice(&mut self, sp: Span) -> P<Expr> {

@@ -126,12 +126,12 @@ impl<'cx, 's> Renderer<'cx, 's> {
         self.write(">");
     }
 
-    pub fn emit_if(&mut self, cond: P<Expr>, if_body: Vec<P<Stmt>>,
+    pub fn emit_if(&mut self, if_cond: P<Expr>, if_body: Vec<P<Stmt>>,
                    else_body: Option<Vec<P<Stmt>>>) {
         let stmt = match else_body {
-            None => quote_stmt!(self.cx, if $cond { $if_body }),
+            None => quote_stmt!(self.cx, if $if_cond { $if_body }),
             Some(else_body) =>
-                quote_stmt!(self.cx, if $cond { $if_body } else { $else_body }),
+                quote_stmt!(self.cx, if $if_cond { $if_body } else { $else_body }),
         };
         self.stmts.push(stmt);
     }

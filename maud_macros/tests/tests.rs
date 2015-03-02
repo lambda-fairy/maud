@@ -190,9 +190,9 @@ mod control {
             let s = html! {
                 $if number == 1 {
                     "one"
-                } $else $if number == 2 {
+                } $else if number == 2 {
                     "two"
-                } $else $if number == 3 {
+                } $else if number == 3 {
                     "three"
                 } $else {
                     "oh noes"
