@@ -158,7 +158,7 @@
 use std::fmt;
 use std::io;
 
-/// Escape an HTML value.
+/// Escapes an HTML value.
 pub fn escape(s: &str) -> String {
     use std::fmt::Write;
     let mut buf = String::new();
@@ -175,7 +175,7 @@ pub struct Markup<F> {
 }
 
 impl<F> Markup<F> where F: Fn(&mut fmt::Write) -> fmt::Result {
-    /// Render the markup to a `std::io::Write`.
+    /// Renders the markup to a `std::io::Write`.
     pub fn render<W: io::Write>(&self, w: &mut W) -> io::Result<()> {
         struct Adaptor<'a, W: ?Sized + 'a> {
             inner: &'a mut W,
@@ -201,7 +201,7 @@ impl<F> Markup<F> where F: Fn(&mut fmt::Write) -> fmt::Result {
         }
     }
 
-    /// Render the markup to a `std::fmt::Write`.
+    /// Renders the markup to a `std::fmt::Write`.
     pub fn render_fmt(&self, w: &mut fmt::Write) -> fmt::Result {
         (self.callback)(w)
     }
