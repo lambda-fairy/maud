@@ -201,4 +201,20 @@ mod control {
             assert_eq!(s, name);
         }
     }
+
+    #[test]
+    fn for_expr() {
+        let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
+        let s = html! {
+            ul $for pony in &ponies {
+                li $pony
+            }
+        }.to_string();
+        assert_eq!(s, concat!(
+                "<ul>",
+                "<li>Apple Bloom</li>",
+                "<li>Scootaloo</li>",
+                "<li>Sweetie Belle</li>",
+                "</ul>"));
+    }
 }

@@ -102,6 +102,11 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
                 self.shift(2);
                 self.if_expr(sp);
             },
+            // For
+            [dollar!(), ident!(sp, name), ..] if name.as_str() == "for" => {
+                self.shift(2);
+                self.for_expr(sp);
+            },
             // Splice
             [ref tt @ dollar!(), dollar!(), ..] => {
                 self.shift(2);
@@ -190,6 +195,38 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
             _ => None,
         };
         self.render.emit_if(if_cond, if_body, else_body);
+    }
+
+    fn for_expr(&mut self, sp: Span) {
+        let mut pattern = vec![];
+        loop { match self.input {
+            [ident!(in_), ..] if in_.as_str() == "in" => {
+                self.shift(1);
+                break;
+            },
+            [ref tt, ..] => {
+                self.shift(1);
+                pattern.push(tt.clone());
+            },
+            _ => self.render.cx.span_fatal(sp, "invalid $for"),
+        }}
+        let pattern = self.new_rust_parser(pattern).parse_pat();
+        let mut iterable = vec![];
+        let body;
+        loop { match self.input {
+            [TtDelimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
+                self.shift(1);
+                body = self.block(sp, &d.tts);
+                break;
+            },
+            [ref tt, ..] => {
+                self.shift(1);
+                iterable.push(tt.clone());
+            },
+            _ => self.render.cx.span_fatal(sp, "invalid $for"),
+        }}
+        let iterable = self.new_rust_parser(iterable).parse_expr();
+        self.render.emit_for(pattern, iterable, body);
     }
 
     fn splice(&mut self, sp: Span) -> P<Expr> {

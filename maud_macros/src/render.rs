@@ -1,4 +1,4 @@
-use syntax::ast::{Expr, Ident, Stmt};
+use syntax::ast::{Expr, Ident, Pat, Stmt};
 use syntax::ext::base::ExtCtxt;
 use syntax::ext::build::AstBuilder;
 use syntax::parse::token;
@@ -133,6 +133,11 @@ impl<'cx, 's> Renderer<'cx, 's> {
             Some(else_body) =>
                 quote_stmt!(self.cx, if $if_cond { $if_body } else { $else_body }),
         };
+        self.stmts.push(stmt);
+    }
+
+    pub fn emit_for(&mut self, pattern: P<Pat>, iterable: P<Expr>, body: Vec<P<Stmt>>) {
+        let stmt = quote_stmt!(self.cx, for $pattern in $iterable { $body });
         self.stmts.push(stmt);
     }
 }
