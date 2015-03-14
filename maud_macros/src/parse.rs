@@ -159,7 +159,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
                 self.shift(1);
                 cond_tts.push(tt.clone());
             },
-            [] => self.render.cx.span_fatal(sp, "expected body for this `if`"),
+            [] => self.render.cx.span_fatal(sp, "expected body for this $if"),
         }}
         let if_cond = self.new_rust_parser(cond_tts).parse_expr();
         // Parse the (optional) else
@@ -184,7 +184,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
                         self.shift(1);
                         Some(self.block(sp, &d.tts))
                     },
-                    _ => self.render.cx.span_fatal(sp, "invalid syntax"),
+                    _ => self.render.cx.span_fatal(sp, "expected body for this $else"),
                 }
             },
             _ => None,
