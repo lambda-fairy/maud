@@ -2,4 +2,9 @@
 
 Maud is a macro for generating HTML.
 
-See <https://lambda.xyz/maud/doc/maud/> for documentation, including a quick tutorial.
+[Documentation]
+
+[API reference]
+
+[Documentation]: http://lfairy.gitbooks.io/maud/content/index.html
+[API reference]: https://lambda.xyz/maud/doc/maud/
