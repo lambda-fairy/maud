@@ -5,8 +5,6 @@
 //!
 //! [book]: http://lfairy.gitbooks.io/maud/content/
 
-#![feature(io)]
-
 use std::fmt;
 use std::io;
 
