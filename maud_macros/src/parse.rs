@@ -236,22 +236,20 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
             self.shift(1);
             tts.push(tt.clone());
         }
-        loop {
-            match self.input {
-                // Munch attribute lookups e.g. `$person.address.street`
-                [ref dot @ dot!(), ref ident @ ident!(_), ..] => {
-                    self.shift(2);
-                    tts.push(dot.clone());
-                    tts.push(ident.clone());
-                },
-                // Munch function calls `()` and indexing operations `[]`
-                [TtDelimited(sp, ref d), ..] if d.delim != token::DelimToken::Brace => {
-                    self.shift(1);
-                    tts.push(TtDelimited(sp, d.clone()));
-                },
-                _ => break,
-            }
-        }
+        loop { match self.input {
+            // Munch attribute lookups e.g. `$person.address.street`
+            [ref dot @ dot!(), ref ident @ ident!(_), ..] => {
+                self.shift(2);
+                tts.push(dot.clone());
+                tts.push(ident.clone());
+            },
+            // Munch function calls `()` and indexing operations `[]`
+            [TtDelimited(sp, ref d), ..] if d.delim != token::DelimToken::Brace => {
+                self.shift(1);
+                tts.push(TtDelimited(sp, d.clone()));
+            },
+            _ => break,
+        }}
         if tts.is_empty() {
             self.render.cx.span_fatal(sp, "expected expression for this splice");
         } else {
