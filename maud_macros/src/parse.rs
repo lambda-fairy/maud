@@ -1,5 +1,6 @@
 use std::mem;
 use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree, TtDelimited, TtToken};
+use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
 use syntax::ext::base::ExtCtxt;
 use syntax::parse;
@@ -152,7 +153,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
 
     fn if_expr(&mut self, sp: Span) {
         // Parse the initial if
-        let mut cond_tts = vec![];
+        let mut if_cond = vec![];
         let if_body;
         loop { match self.input {
             [TtDelimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
@@ -162,11 +163,10 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
             },
             [ref tt, ..] => {
                 self.shift(1);
-                cond_tts.push(tt.clone());
+                if_cond.push(tt.clone());
             },
             [] => self.render.cx.span_fatal(sp, "expected body for this $if"),
         }}
-        let if_cond = self.new_rust_parser(cond_tts).parse_expr();
         // Parse the (optional) else
         let else_body = match self.input {
             [dollar!(), ident!(else_), ..] if else_.as_str() == "else" => {
@@ -298,7 +298,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
                     self.shift(1);
                     let cond = self.splice(tt.get_span());
                     // Silence "unnecessary parentheses" warnings
-                    let cond = strip_outer_parens(cond);
+                    let cond = strip_outer_parens(cond).to_tokens(self.render.cx);
                     let body = {
                         let mut r = self.render.fork();
                         r.attribute_empty(name.as_str());

@@ -203,6 +203,20 @@ mod control {
     }
 
     #[test]
+    fn if_let() {
+        for &(input, output) in [(Some("yay"), "yay"), (None, "oh noes")].iter() {
+            let s = html! {
+                $if let Some(value) = input {
+                    $value
+                } $else {
+                    "oh noes"
+                }
+            }.to_string();
+            assert_eq!(s, output);
+        }
+    }
+
+    #[test]
     fn for_expr() {
         let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
         let s = html! {

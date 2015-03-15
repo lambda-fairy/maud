@@ -1,4 +1,4 @@
-use syntax::ast::{Expr, Ident, Pat, Stmt};
+use syntax::ast::{Expr, Ident, Pat, Stmt, TokenTree};
 use syntax::ext::base::ExtCtxt;
 use syntax::ext::build::AstBuilder;
 use syntax::parse::token;
@@ -126,7 +126,11 @@ impl<'cx, 's> Renderer<'cx, 's> {
         self.write(">");
     }
 
-    pub fn emit_if(&mut self, if_cond: P<Expr>, if_body: Vec<P<Stmt>>,
+    /// Emit an `if` expression.
+    ///
+    /// The condition is a token tree (not an expression) so we don't
+    /// need to special-case `if let`.
+    pub fn emit_if(&mut self, if_cond: Vec<TokenTree>, if_body: Vec<P<Stmt>>,
                    else_body: Option<Vec<P<Stmt>>>) {
         let stmt = match else_body {
             None => quote_stmt!(self.cx, if $if_cond { $if_body }),
