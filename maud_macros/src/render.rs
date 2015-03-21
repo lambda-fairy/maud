@@ -136,12 +136,12 @@ impl<'cx, 's> Renderer<'cx, 's> {
             None => quote_stmt!(self.cx, if $if_cond { $if_body }),
             Some(else_body) =>
                 quote_stmt!(self.cx, if $if_cond { $if_body } else { $else_body }),
-        };
+        }.unwrap();
         self.stmts.push(stmt);
     }
 
     pub fn emit_for(&mut self, pattern: P<Pat>, iterable: P<Expr>, body: Vec<P<Stmt>>) {
-        let stmt = quote_stmt!(self.cx, for $pattern in $iterable { $body });
+        let stmt = quote_stmt!(self.cx, for $pattern in $iterable { $body }).unwrap();
         self.stmts.push(stmt);
     }
 }
