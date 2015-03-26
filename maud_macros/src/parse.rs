@@ -73,8 +73,19 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
     }
 
     /// Construct a Rust AST parser from the given token tree.
-    fn new_rust_parser(&self, tts: Vec<TokenTree>) -> RustParser<'s> {
-        parse::tts_to_parser(self.render.cx.parse_sess, tts, self.render.cx.cfg.clone())
+    fn with_rust_parser<F, T>(&self, tts: Vec<TokenTree>, callback: F) -> T where
+        F: FnOnce(&mut RustParser<'s>) -> T
+    {
+        let mut parser = parse::tts_to_parser(self.render.cx.parse_sess, tts,
+                                              self.render.cx.cfg.clone());
+        let result = callback(&mut parser);
+        // Make sure all tokens were consumed
+        if parser.token != token::Eof {
+            let token = parser.this_token_to_string();
+            self.render.cx.span_err(parser.span,
+                                    &format!("unexpected token: `{}`", token));
+        }
+        result
     }
 
     fn markups(&mut self) {
@@ -144,7 +155,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
     }
 
     fn literal(&mut self, tt: &TokenTree, minus: bool) {
-        let lit = self.new_rust_parser(vec![tt.clone()]).parse_lit();
+        let lit = self.with_rust_parser(vec![tt.clone()], RustParser::parse_lit);
         match lit_to_string(self.render.cx, lit, minus) {
             Some(s) => self.render.string(&s, Escape::Escape),
             None => {},
@@ -210,7 +221,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
             },
             _ => self.render.cx.span_fatal(sp, "invalid $for"),
         }}
-        let pattern = self.new_rust_parser(pattern).parse_pat();
+        let pattern = self.with_rust_parser(pattern, RustParser::parse_pat);
         let mut iterable = vec![];
         let body;
         loop { match self.input {
@@ -225,7 +236,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
             },
             _ => self.render.cx.span_fatal(sp, "invalid $for"),
         }}
-        let iterable = self.new_rust_parser(iterable).parse_expr();
+        let iterable = self.with_rust_parser(iterable, RustParser::parse_expr);
         self.render.emit_for(pattern, iterable, body);
     }
 
@@ -253,7 +264,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
         if tts.is_empty() {
             self.render.cx.span_fatal(sp, "expected expression for this splice");
         } else {
-            self.new_rust_parser(tts).parse_expr()
+            self.with_rust_parser(tts, RustParser::parse_expr)
         }
     }
 
