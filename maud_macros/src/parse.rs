@@ -92,11 +92,11 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
             // Literal
             [minus!(), ref tt @ literal!(), ..] => {
                 self.shift(2);
-                self.literal(tt, true)
+                self.literal(tt, true);
             },
             [ref tt @ literal!(), ..] => {
                 self.shift(1);
-                self.literal(tt, false)
+                self.literal(tt, false);
             },
             // If
             [dollar!(), ident!(sp, name), ..] if name.as_str() == "if" => {
@@ -122,7 +122,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
             // Element
             [ident!(sp, name), ..] => {
                 self.shift(1);
-                self.element(sp, name.as_str())
+                self.element(sp, name.as_str());
             },
             // Block
             [TtDelimited(sp, ref d), ..] if d.delim == token::DelimToken::Brace => {
