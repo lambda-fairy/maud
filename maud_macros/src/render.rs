@@ -12,15 +12,15 @@ pub enum Escape {
     Escape,
 }
 
-pub struct Renderer<'cx, 's: 'cx> {
-    pub cx: &'cx ExtCtxt<'s>,
+pub struct Renderer<'cx> {
+    pub cx: &'cx ExtCtxt<'cx>,
     stmts: Vec<P<Stmt>>,
     w: Ident,
 }
 
-impl<'cx, 's> Renderer<'cx, 's> {
-    /// Create a new `Renderer` using the given extension context.
-    pub fn new(cx: &'cx ExtCtxt<'s>) -> Renderer<'cx, 's> {
+impl<'cx> Renderer<'cx> {
+    /// Creates a new `Renderer` using the given extension context.
+    pub fn new(cx: &'cx ExtCtxt<'cx>) -> Renderer<'cx> {
         Renderer {
             cx: cx,
             stmts: vec![],
@@ -28,8 +28,8 @@ impl<'cx, 's> Renderer<'cx, 's> {
         }
     }
 
-    /// Create a new `Renderer` under the same context as `self`.
-    pub fn fork(&self) -> Renderer<'cx, 's> {
+    /// Creates a new `Renderer` under the same context as `self`.
+    pub fn fork(&self) -> Renderer<'cx> {
         Renderer {
             cx: self.cx,
             stmts: vec![],

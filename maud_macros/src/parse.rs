@@ -53,16 +53,16 @@ pub fn parse(cx: &ExtCtxt, input: &[TokenTree], sp: Span) -> P<Expr> {
     parser.into_render().into_expr()
 }
 
-struct Parser<'cx, 's: 'cx, 'i> {
+struct Parser<'cx, 'i> {
     in_attr: bool,
     input: &'i [TokenTree],
     span: Span,
-    render: Renderer<'cx, 's>,
+    render: Renderer<'cx>,
 }
 
-impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
+impl<'cx, 'i> Parser<'cx, 'i> {
     /// Finalize the `Parser`, returning the `Renderer` underneath.
-    fn into_render(self) -> Renderer<'cx, 's> {
+    fn into_render(self) -> Renderer<'cx> {
         let Parser { render, .. } = self;
         render
     }
@@ -74,7 +74,7 @@ impl<'cx, 's, 'i> Parser<'cx, 's, 'i> {
 
     /// Construct a Rust AST parser from the given token tree.
     fn with_rust_parser<F, T>(&self, tts: Vec<TokenTree>, callback: F) -> T where
-        F: FnOnce(&mut RustParser<'s>) -> T
+        F: FnOnce(&mut RustParser<'cx>) -> T
     {
         let mut parser = parse::tts_to_parser(self.render.cx.parse_sess, tts,
                                               self.render.cx.cfg.clone());
