@@ -6,7 +6,7 @@ use syntax::ptr::P;
 
 use maud;
 
-#[derive(Copy)]
+#[derive(Copy,Clone)]
 pub enum Escape {
     PassThru,
     Escape,
