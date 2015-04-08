@@ -37,7 +37,7 @@ impl<'cx> Renderer<'cx> {
         }
     }
 
-    /// Reify the `Renderer` into a block of markup.
+    /// Reifies the `Renderer` into a block of markup.
     pub fn into_expr(self) -> P<Expr> {
         let Renderer { cx, stmts, w } = self;
         quote_expr!(cx,
@@ -47,31 +47,31 @@ impl<'cx> Renderer<'cx> {
             }))
     }
 
-    /// Reify the `Renderer` into a raw list of statements.
+    /// Reifies the `Renderer` into a raw list of statements.
     pub fn into_stmts(self) -> Vec<P<Stmt>> {
         let Renderer { stmts, .. } = self;
         stmts
     }
 
-    /// Append the list of statements to the output.
+    /// Appends the list of statements to the output.
     pub fn push_stmts(&mut self, mut stmts: Vec<P<Stmt>>) {
         self.stmts.append(&mut stmts);
     }
 
-    /// Push an expression statement, also wrapping it with `try!`.
+    /// Pushes an expression statement, also wrapping it with `try!`.
     fn push_try(&mut self, expr: P<Expr>) {
         let stmt = self.cx.stmt_expr(self.cx.expr_try(expr.span, expr));
         self.stmts.push(stmt);
     }
 
-    /// Append a literal pre-escaped string.
+    /// Appends a literal pre-escaped string.
     fn write(&mut self, s: &str) {
         let w = self.w;
         let expr = quote_expr!(self.cx, $w.write_str($s));
         self.push_try(expr);
     }
 
-    /// Append a literal string, with the specified escaping method.
+    /// Appends a literal string, with the specified escaping method.
     pub fn string(&mut self, s: &str, escape: Escape) {
         let escaped;
         let s = match escape {
@@ -81,7 +81,7 @@ impl<'cx> Renderer<'cx> {
         self.write(s);
     }
 
-    /// Append the result of an expression, with the specified escaping method.
+    /// Appends the result of an expression, with the specified escaping method.
     pub fn splice(&mut self, expr: P<Expr>, escape: Escape) {
         let w = self.w;
         let expr = match escape {
@@ -126,7 +126,7 @@ impl<'cx> Renderer<'cx> {
         self.write(">");
     }
 
-    /// Emit an `if` expression.
+    /// Emits an `if` expression.
     ///
     /// The condition is a token tree (not an expression) so we don't
     /// need to special-case `if let`.
