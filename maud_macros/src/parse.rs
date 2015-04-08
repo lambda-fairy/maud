@@ -156,6 +156,10 @@ impl<'cx, 'i> Parser<'cx, 'i> {
 
     fn literal(&mut self, tt: &TokenTree, minus: bool) {
         let lit = self.with_rust_parser(vec![tt.clone()], RustParser::parse_lit);
+        let lit = match lit {
+            Ok(lit) => lit,
+            Err(err) => panic!(err),
+        };
         match lit_to_string(self.render.cx, lit, minus) {
             Some(s) => self.render.string(&s, Escape::Escape),
             None => {},
