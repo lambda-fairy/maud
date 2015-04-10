@@ -70,7 +70,7 @@ impl<'cx> Renderer<'cx> {
         stmts
     }
 
-    /// Pushes an statement, flushing the tail buffer in the process.
+    /// Pushes a statement, flushing the tail buffer in the process.
     fn push(&mut self, stmt: P<Stmt>) {
         self.flush();
         self.stmts.push(stmt);
