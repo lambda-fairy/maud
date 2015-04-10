@@ -14,8 +14,9 @@ pub enum Escape {
 
 pub struct Renderer<'cx> {
     pub cx: &'cx ExtCtxt<'cx>,
-    stmts: Vec<P<Stmt>>,
     w: Ident,
+    stmts: Vec<P<Stmt>>,
+    tail: String,
 }
 
 impl<'cx> Renderer<'cx> {
@@ -23,8 +24,9 @@ impl<'cx> Renderer<'cx> {
     pub fn new(cx: &'cx ExtCtxt<'cx>) -> Renderer<'cx> {
         Renderer {
             cx: cx,
-            stmts: vec![],
             w: Ident::new(token::intern("w")),
+            stmts: Vec::new(),
+            tail: String::new(),
         }
     }
 
@@ -32,14 +34,29 @@ impl<'cx> Renderer<'cx> {
     pub fn fork(&self) -> Renderer<'cx> {
         Renderer {
             cx: self.cx,
-            stmts: vec![],
             w: self.w,
+            stmts: Vec::new(),
+            tail: String::new(),
+        }
+    }
+
+    /// Flushes the tail buffer, emitting a single `.write_str()` call.
+    fn flush(&mut self) {
+        if !self.tail.is_empty() {
+            let expr = {
+                let w = self.w;
+                let s = &*self.tail;
+                quote_expr!(self.cx, $w.write_str($s))
+            };
+            let stmt = self.cx.stmt_expr(self.cx.expr_try(expr.span, expr));
+            self.stmts.push(stmt);
+            self.tail.clear();
         }
     }
 
     /// Reifies the `Renderer` into a block of markup.
-    pub fn into_expr(self) -> P<Expr> {
-        let Renderer { cx, stmts, w } = self;
+    pub fn into_expr(mut self) -> P<Expr> {
+        let Renderer { cx, w, stmts, .. } = { self.flush(); self };
         quote_expr!(cx,
             ::maud::rt::make_markup(|$w: &mut ::std::fmt::Write| -> Result<(), ::std::fmt::Error> {
                 $stmts
@@ -48,27 +65,26 @@ impl<'cx> Renderer<'cx> {
     }
 
     /// Reifies the `Renderer` into a raw list of statements.
-    pub fn into_stmts(self) -> Vec<P<Stmt>> {
-        let Renderer { stmts, .. } = self;
+    pub fn into_stmts(mut self) -> Vec<P<Stmt>> {
+        let Renderer { stmts, .. } = { self.flush(); self };
         stmts
     }
 
     /// Appends the list of statements to the output.
     pub fn push_stmts(&mut self, mut stmts: Vec<P<Stmt>>) {
+        self.flush();
         self.stmts.append(&mut stmts);
     }
 
-    /// Pushes an expression statement, also wrapping it with `try!`.
-    fn push_try(&mut self, expr: P<Expr>) {
-        let stmt = self.cx.stmt_expr(self.cx.expr_try(expr.span, expr));
+    /// Pushes an statement, flushing the tail buffer in the process.
+    fn push(&mut self, stmt: P<Stmt>) {
+        self.flush();
         self.stmts.push(stmt);
     }
 
-    /// Appends a literal pre-escaped string.
-    fn write(&mut self, s: &str) {
-        let w = self.w;
-        let expr = quote_expr!(self.cx, $w.write_str($s));
-        self.push_try(expr);
+    /// Pushes a literal string to the tail buffer.
+    fn push_str(&mut self, s: &str) {
+        self.tail.push_str(s);
     }
 
     /// Appends a literal string, with the specified escaping method.
@@ -78,7 +94,7 @@ impl<'cx> Renderer<'cx> {
             Escape::PassThru => s,
             Escape::Escape => { escaped = maud::escape(s); &*escaped },
         };
-        self.write(s);
+        self.push_str(s);
     }
 
     /// Appends the result of an expression, with the specified escaping method.
@@ -93,37 +109,38 @@ impl<'cx> Renderer<'cx> {
                         &mut ::maud::rt::Escaper { inner: $w },
                         $expr)),
         };
-        self.push_try(expr);
+        let stmt = self.cx.stmt_expr(self.cx.expr_try(expr.span, expr));
+        self.push(stmt);
     }
 
     pub fn element_open_start(&mut self, name: &str) {
-        self.write("<");
-        self.write(name);
+        self.push_str("<");
+        self.push_str(name);
     }
 
     pub fn attribute_start(&mut self, name: &str) {
-        self.write(" ");
-        self.write(name);
-        self.write("=\"");
+        self.push_str(" ");
+        self.push_str(name);
+        self.push_str("=\"");
     }
 
     pub fn attribute_empty(&mut self, name: &str) {
-        self.write(" ");
-        self.write(name);
+        self.push_str(" ");
+        self.push_str(name);
     }
 
     pub fn attribute_end(&mut self) {
-        self.write("\"");
+        self.push_str("\"");
     }
 
     pub fn element_open_end(&mut self) {
-        self.write(">");
+        self.push_str(">");
     }
 
     pub fn element_close(&mut self, name: &str) {
-        self.write("</");
-        self.write(name);
-        self.write(">");
+        self.push_str("</");
+        self.push_str(name);
+        self.push_str(">");
     }
 
     /// Emits an `if` expression.
@@ -137,11 +154,11 @@ impl<'cx> Renderer<'cx> {
             Some(else_body) =>
                 quote_stmt!(self.cx, if $if_cond { $if_body } else { $else_body }),
         }.unwrap();
-        self.stmts.push(stmt);
+        self.push(stmt);
     }
 
     pub fn emit_for(&mut self, pattern: P<Pat>, iterable: P<Expr>, body: Vec<P<Stmt>>) {
         let stmt = quote_stmt!(self.cx, for $pattern in $iterable { $body }).unwrap();
-        self.stmts.push(stmt);
+        self.push(stmt);
     }
 }
