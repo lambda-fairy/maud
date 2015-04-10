@@ -192,11 +192,11 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                         let else_body = {
                             // Parse an if expression, but capture the result
                             // rather than emitting it right away
-                            let mut render = self.render.fork();
-                            mem::swap(&mut self.render, &mut render);
+                            let mut r = self.render.fork();
+                            mem::swap(&mut self.render, &mut r);
                             self.if_expr(sp);
-                            mem::swap(&mut self.render, &mut render);
-                            render.into_stmts()
+                            mem::swap(&mut self.render, &mut r);
+                            r.into_stmts()
                         };
                         Some(else_body)
                     },
