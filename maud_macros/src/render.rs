@@ -70,12 +70,6 @@ impl<'cx> Renderer<'cx> {
         stmts
     }
 
-    /// Appends the list of statements to the output.
-    pub fn push_stmts(&mut self, mut stmts: Vec<P<Stmt>>) {
-        self.flush();
-        self.stmts.append(&mut stmts);
-    }
-
     /// Pushes an statement, flushing the tail buffer in the process.
     fn push(&mut self, stmt: P<Stmt>) {
         self.flush();

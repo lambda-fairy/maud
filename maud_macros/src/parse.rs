@@ -136,10 +136,16 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.element(sp, name.as_str());
             },
             // Block
-            [TtDelimited(sp, ref d), ..] if d.delim == token::DelimToken::Brace => {
+            [TtDelimited(_, ref d), ..] if d.delim == token::DelimToken::Brace => {
                 self.shift(1);
-                let stmts = self.block(sp, &d.tts);
-                self.render.push_stmts(stmts);
+                {
+                    // Parse the contents of the block, emitting the
+                    // result inline
+                    let mut i = &*d.tts;
+                    mem::swap(&mut self.input, &mut i);
+                    self.markups();
+                    mem::swap(&mut self.input, &mut i);
+                }
             },
             // ???
             _ => {
