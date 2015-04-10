@@ -12,6 +12,9 @@ description = """
 Compile-time HTML templates.
 """
 
+[features]
+print-expansion = []
+
 [dependencies.maud]
 path = "../maud"
 version = "=0.3.4"
