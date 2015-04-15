@@ -1,3 +1,4 @@
 language: rust
+sudo: false
 script:
   - ( cd maud_macros && cargo test --verbose )
