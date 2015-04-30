@@ -96,12 +96,12 @@ impl<'cx> Renderer<'cx> {
         let w = self.w;
         let expr = match escape {
             Escape::PassThru =>
-                quote_expr!(self.cx, ::maud::rt::write_fmt($w, $expr)),
+                quote_expr!(self.cx, ::maud::rt::write_fmt($w, &$expr)),
             Escape::Escape =>
                 quote_expr!(self.cx,
                     ::maud::rt::write_fmt(
                         &mut ::maud::rt::Escaper { inner: $w },
-                        $expr)),
+                        &$expr)),
         };
         let stmt = self.cx.stmt_expr(self.cx.expr_try(expr.span, expr));
         self.push(stmt);

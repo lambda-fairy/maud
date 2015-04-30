@@ -85,8 +85,8 @@ pub mod rt {
     ///
     /// See <https://github.com/rust-lang/rust/issues/16617>
     #[inline]
-    pub fn write_fmt<T: fmt::Display>(w: &mut fmt::Write, value: T) -> fmt::Result {
-        write!(w, "{}", value)
+    pub fn write_fmt<T: fmt::Display>(w: &mut fmt::Write, value: &T) -> fmt::Result {
+        write!(w, "{}", *value)
     }
 
     pub struct Escaper<'a, 'b: 'a> {
