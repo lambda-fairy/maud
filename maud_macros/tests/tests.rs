@@ -183,6 +183,12 @@ fn issue_1() {
     let _ = markup.to_string();
 }
 
+#[test]
+fn issue_13() {
+    let owned = String::from("yay");
+    let _ = html! { $owned }.to_string();
+}
+
 mod control {
     #[test]
     fn if_expr() {
