@@ -73,8 +73,8 @@ pub mod rt {
     use super::Markup;
 
     #[inline]
-    pub fn make_markup<F>(f: F) -> Markup<F>
-        where F: Fn(&mut fmt::Write) -> fmt::Result
+    pub fn make_markup<F>(f: F) -> Markup<F> where
+        F: Fn(&mut fmt::Write) -> fmt::Result
     {
         Markup { callback: f }
     }
