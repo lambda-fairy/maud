@@ -59,6 +59,7 @@ impl<'cx> Renderer<'cx> {
         let Renderer { cx, w, stmts, .. } = { self.flush(); self };
         quote_expr!(cx,
             ::maud::rt::make_markup(|$w: &mut ::std::fmt::Write| -> Result<(), ::std::fmt::Error> {
+                use ::std::fmt::Write;
                 $stmts
                 Ok(())
             }))
@@ -96,12 +97,13 @@ impl<'cx> Renderer<'cx> {
         let w = self.w;
         let expr = match escape {
             Escape::PassThru =>
-                quote_expr!(self.cx, ::maud::rt::write_fmt($w, &$expr)),
+                quote_expr!(self.cx, write!($w, "{}", $expr)),
             Escape::Escape =>
                 quote_expr!(self.cx,
-                    ::maud::rt::write_fmt(
-                        &mut ::maud::rt::Escaper { inner: $w },
-                        &$expr)),
+                    write!(
+                        ::maud::rt::Escaper { inner: $w },
+                        "{}",
+                        $expr)),
         };
         let stmt = self.cx.stmt_expr(self.cx.expr_try(expr.span, expr));
         self.push(stmt);

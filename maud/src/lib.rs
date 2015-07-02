@@ -79,16 +79,6 @@ pub mod rt {
         Markup { callback: f }
     }
 
-    /// rustc is a butt and doesn't let us quote macro invocations
-    /// directly. So we factor the `write!` call into a separate
-    /// function and use that instead.
-    ///
-    /// See <https://github.com/rust-lang/rust/issues/16617>
-    #[inline]
-    pub fn write_fmt<T: fmt::Display>(w: &mut fmt::Write, value: &T) -> fmt::Result {
-        write!(w, "{}", *value)
-    }
-
     pub struct Escaper<'a, 'b: 'a> {
         pub inner: &'a mut (fmt::Write + 'b),
     }

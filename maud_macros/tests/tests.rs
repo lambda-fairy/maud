@@ -165,16 +165,12 @@ mod splices {
         assert_eq!(s, "Name: Pinkie Pie. Rating: 1");
     }
 
-    // FIXME: See <https://github.com/rust-lang/rust/issues/16617>
-    // for why this is commented out
-    /*
     #[test]
     fn nested_macro_invocation() {
         let best_pony = "Pinkie Pie";
         let s = html! { $(format!("{}", best_pony)) }.to_string();
         assert_eq!(s, "Pinkie Pie");
     }
-    */
 }
 
 #[test]
