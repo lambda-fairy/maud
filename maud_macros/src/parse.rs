@@ -110,12 +110,12 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.literal(tt, false);
             },
             // If
-            [dollar!(), ident!(sp, name), ..] if name.as_str() == "if" => {
+            [dollar!(), ident!(sp, name), ..] if name.name == "if" => {
                 self.shift(2);
                 self.if_expr(sp);
             },
             // For
-            [dollar!(), ident!(sp, name), ..] if name.as_str() == "for" => {
+            [dollar!(), ident!(sp, name), ..] if name.name == "for" => {
                 self.shift(2);
                 self.for_expr(sp);
             },
@@ -133,7 +133,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             // Element
             [ident!(sp, name), ..] => {
                 self.shift(1);
-                self.element(sp, name.as_str());
+                self.element(sp, &name.name.as_str());
             },
             // Block
             [TtDelimited(_, ref d), ..] if d.delim == token::DelimToken::Brace => {
@@ -190,10 +190,10 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         }}
         // Parse the (optional) else
         let else_body = match self.input {
-            [dollar!(), ident!(else_), ..] if else_.as_str() == "else" => {
+            [dollar!(), ident!(else_), ..] if else_.name == "else" => {
                 self.shift(2);
                 match self.input {
-                    [ident!(sp, if_), ..] if if_.as_str() == "if" => {
+                    [ident!(sp, if_), ..] if if_.name == "if" => {
                         self.shift(1);
                         let else_body = {
                             // Parse an if expression, but capture the result
@@ -221,7 +221,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     fn for_expr(&mut self, sp: Span) {
         let mut pattern = vec![];
         loop { match self.input {
-            [ident!(in_), ..] if in_.as_str() == "in" => {
+            [ident!(in_), ..] if in_.name == "in" => {
                 self.shift(1);
                 break;
             },
@@ -299,7 +299,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             [ident!(name), eq!(), ..] => {
                 // Non-empty attribute
                 self.shift(2);
-                self.render.attribute_start(name.as_str());
+                self.render.attribute_start(&name.name.as_str());
                 {
                     // Parse a value under an attribute context
                     let mut in_attr = true;
@@ -320,13 +320,13 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                     let cond = strip_outer_parens(cond).to_tokens(self.render.cx);
                     let body = {
                         let mut r = self.render.fork();
-                        r.attribute_empty(name.as_str());
+                        r.attribute_empty(&name.name.as_str());
                         r.into_stmts()
                     };
                     self.render.emit_if(cond, body, None);
                 } else {
                     // Write the attribute unconditionally
-                    self.render.attribute_empty(name.as_str());
+                    self.render.attribute_empty(&name.name.as_str());
                 }
             },
             _ => return,
