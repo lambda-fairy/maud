@@ -14,8 +14,8 @@ pub enum Escape {
 
 pub struct Renderer<'cx> {
     pub cx: &'cx ExtCtxt<'cx>,
-    w: Ident,
-    r: Ident,
+    writer: Ident,
+    result: Ident,
     loop_label: Vec<TokenTree>,
     stmts: Vec<P<Stmt>>,
     tail: String,
@@ -24,14 +24,14 @@ pub struct Renderer<'cx> {
 impl<'cx> Renderer<'cx> {
     /// Creates a new `Renderer` using the given extension context.
     pub fn new(cx: &'cx ExtCtxt<'cx>, writer_expr: Vec<TokenTree>) -> Renderer<'cx> {
-        let w = token::gensym_ident("__maud_writer");
-        let r = token::gensym_ident("__maud_result");
+        let writer = token::gensym_ident("__maud_writer");
+        let result = token::gensym_ident("__maud_result");
         let loop_label = token::gensym_ident("__maud_loop_label");
-        let writer_stmt = quote_stmt!(cx, let $w = &mut $writer_expr).unwrap();
+        let writer_stmt = quote_stmt!(cx, let $writer = &mut $writer_expr).unwrap();
         Renderer {
             cx: cx,
-            w: w,
-            r: r,
+            writer: writer,
+            result: result,
             loop_label: vec![TtToken(DUMMY_SP, token::Lifetime(loop_label))],
             stmts: vec![writer_stmt],
             tail: String::new(),
@@ -42,8 +42,8 @@ impl<'cx> Renderer<'cx> {
     pub fn fork(&self) -> Renderer<'cx> {
         Renderer {
             cx: self.cx,
-            w: self.w,
-            r: self.r,
+            writer: self.writer,
+            result: self.result,
             loop_label: self.loop_label.clone(),
             stmts: Vec::new(),
             tail: String::new(),
@@ -54,7 +54,7 @@ impl<'cx> Renderer<'cx> {
     fn flush(&mut self) {
         if !self.tail.is_empty() {
             let expr = {
-                let w = self.w;
+                let w = self.writer;
                 let s = &*self.tail;
                 quote_expr!(self.cx, $w.write_str($s))
             };
@@ -66,15 +66,15 @@ impl<'cx> Renderer<'cx> {
 
     /// Reifies the `Renderer` into a block of markup.
     pub fn into_expr(mut self) -> P<Expr> {
-        let Renderer { cx, r, loop_label, stmts, .. } = { self.flush(); self };
+        let Renderer { cx, result, loop_label, stmts, .. } = { self.flush(); self };
         quote_expr!(cx, {
-            let mut $r = Ok(());
+            let mut $result = Ok(());
             $loop_label: loop {
                 use ::std::fmt::Write;
                 $stmts
                 break $loop_label;
             }
-            $r
+            $result
         })
     }
 
@@ -97,14 +97,14 @@ impl<'cx> Renderer<'cx> {
 
     /// Wraps an expression in a `try!` call.
     fn wrap_try(&self, expr: P<Expr>) -> P<Stmt> {
-        let r = self.r;
+        let result = self.result;
         let loop_label = &self.loop_label;
         quote_stmt!(
             self.cx,
             match $expr {
                 Ok(()) => {},
                 Err(e) => {
-                    $r = Err(e);
+                    $result = Err(e);
                     break $loop_label;
                 }
             }).unwrap()
@@ -122,7 +122,7 @@ impl<'cx> Renderer<'cx> {
 
     /// Appends the result of an expression, with the specified escaping method.
     pub fn splice(&mut self, expr: P<Expr>, escape: Escape) {
-        let w = self.w;
+        let w = self.writer;
         let expr = match escape {
             Escape::PassThru =>
                 quote_expr!(self.cx, write!($w, "{}", $expr)),
