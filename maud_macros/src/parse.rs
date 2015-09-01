@@ -43,14 +43,28 @@ macro_rules! ident {
 }
 
 pub fn parse(cx: &ExtCtxt, input: &[TokenTree], sp: Span) -> P<Expr> {
+    let (write, input) = split_comma(cx, input, sp);
     let mut parser = Parser {
         in_attr: false,
         input: input,
         span: sp,
-        render: Renderer::new(cx),
+        render: Renderer::new(cx, write.to_vec()),
     };
     parser.markups();
     parser.into_render().into_expr()
+}
+
+fn split_comma<'a>(cx: &ExtCtxt, input: &'a [TokenTree], sp: Span) -> (&'a [TokenTree], &'a [TokenTree]) {
+    fn is_comma(t: &TokenTree) -> bool {
+        match *t {
+            TtToken(_, token::Comma) => true,
+            _ => false,
+        }
+    }
+    match input.iter().position(is_comma) {
+        Some(i) => (&input[..i], &input[1+i..]),
+        None => cx.span_fatal(sp, "expected two arguments to write_html!()"),
+    }
 }
 
 struct Parser<'cx, 'i> {

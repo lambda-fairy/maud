@@ -1,6 +1,6 @@
-use syntax::ast::{Expr, Ident, Pat, Stmt, TokenTree};
+use syntax::ast::{Expr, Ident, Pat, Stmt, TokenTree, TtToken};
+use syntax::codemap::DUMMY_SP;
 use syntax::ext::base::ExtCtxt;
-use syntax::ext::build::AstBuilder;
 use syntax::parse::token;
 use syntax::ptr::P;
 
@@ -15,17 +15,25 @@ pub enum Escape {
 pub struct Renderer<'cx> {
     pub cx: &'cx ExtCtxt<'cx>,
     w: Ident,
+    r: Ident,
+    loop_label: Vec<TokenTree>,
     stmts: Vec<P<Stmt>>,
     tail: String,
 }
 
 impl<'cx> Renderer<'cx> {
     /// Creates a new `Renderer` using the given extension context.
-    pub fn new(cx: &'cx ExtCtxt<'cx>) -> Renderer<'cx> {
+    pub fn new(cx: &'cx ExtCtxt<'cx>, writer_expr: Vec<TokenTree>) -> Renderer<'cx> {
+        let w = token::gensym_ident("__maud_writer");
+        let r = token::gensym_ident("__maud_result");
+        let loop_label = token::gensym_ident("__maud_loop_label");
+        let writer_stmt = quote_stmt!(cx, let $w = &mut $writer_expr).unwrap();
         Renderer {
             cx: cx,
-            w: Ident::new(token::intern("w")),
-            stmts: Vec::new(),
+            w: w,
+            r: r,
+            loop_label: vec![TtToken(DUMMY_SP, token::Lifetime(loop_label))],
+            stmts: vec![writer_stmt],
             tail: String::new(),
         }
     }
@@ -35,6 +43,8 @@ impl<'cx> Renderer<'cx> {
         Renderer {
             cx: self.cx,
             w: self.w,
+            r: self.r,
+            loop_label: self.loop_label.clone(),
             stmts: Vec::new(),
             tail: String::new(),
         }
@@ -48,7 +58,7 @@ impl<'cx> Renderer<'cx> {
                 let s = &*self.tail;
                 quote_expr!(self.cx, $w.write_str($s))
             };
-            let stmt = self.cx.stmt_expr(self.cx.expr_try(expr.span, expr));
+            let stmt = self.wrap_try(expr);
             self.stmts.push(stmt);
             self.tail.clear();
         }
@@ -56,13 +66,16 @@ impl<'cx> Renderer<'cx> {
 
     /// Reifies the `Renderer` into a block of markup.
     pub fn into_expr(mut self) -> P<Expr> {
-        let Renderer { cx, w, stmts, .. } = { self.flush(); self };
-        quote_expr!(cx,
-            ::maud::rt::make_markup(|$w: &mut ::std::fmt::Write| -> Result<(), ::std::fmt::Error> {
+        let Renderer { cx, r, loop_label, stmts, .. } = { self.flush(); self };
+        quote_expr!(cx, {
+            let mut $r = Ok(());
+            $loop_label: loop {
                 use ::std::fmt::Write;
                 $stmts
-                Ok(())
-            }))
+                break $loop_label;
+            }
+            $r
+        })
     }
 
     /// Reifies the `Renderer` into a raw list of statements.
@@ -80,6 +93,21 @@ impl<'cx> Renderer<'cx> {
     /// Pushes a literal string to the tail buffer.
     fn push_str(&mut self, s: &str) {
         self.tail.push_str(s);
+    }
+
+    /// Wraps an expression in a `try!` call.
+    fn wrap_try(&self, expr: P<Expr>) -> P<Stmt> {
+        let r = self.r;
+        let loop_label = &self.loop_label;
+        quote_stmt!(
+            self.cx,
+            match $expr {
+                Ok(()) => {},
+                Err(e) => {
+                    $r = Err(e);
+                    break $loop_label;
+                }
+            }).unwrap()
     }
 
     /// Appends a literal string, with the specified escaping method.
@@ -105,7 +133,7 @@ impl<'cx> Renderer<'cx> {
                         "{}",
                         $expr)),
         };
-        let stmt = self.cx.stmt_expr(self.cx.expr_try(expr.span, expr));
+        let stmt = self.wrap_try(expr);
         self.push(stmt);
     }
 
