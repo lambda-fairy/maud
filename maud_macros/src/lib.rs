@@ -36,6 +36,6 @@ fn expand_html_debug<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree]) ->
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
-    reg.register_macro("write_html", expand_html);
-    reg.register_macro("write_html_debug", expand_html_debug);
+    reg.register_macro("html", expand_html);
+    reg.register_macro("html_debug", expand_html_debug);
 }

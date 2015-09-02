@@ -6,21 +6,21 @@ extern crate maud;
 #[test]
 fn literals() {
     let mut s = String::new();
-    write_html!(s, "du\tcks" -23 3.14 '\n' "geese").unwrap();
+    html!(s, "du\tcks" -23 3.14 '\n' "geese").unwrap();
     assert_eq!(s, "du\tcks-233.14\ngeese");
 }
 
 #[test]
 fn escaping() {
     let mut s = String::new();
-    write_html!(s, "<flim&flam>").unwrap();
+    html!(s, "<flim&flam>").unwrap();
     assert_eq!(s, "&lt;flim&amp;flam&gt;");
 }
 
 #[test]
 fn semicolons() {
     let mut s = String::new();
-    write_html!(s, {
+    html!(s, {
         "one";
         "two";
         "three";
@@ -33,7 +33,7 @@ fn semicolons() {
 #[test]
 fn blocks() {
     let mut s = String::new();
-    write_html!(s, {
+    html!(s, {
         "hello"
         {
             " ducks" " geese"
@@ -47,28 +47,28 @@ mod elements {
     #[test]
     fn simple() {
         let mut s = String::new();
-        write_html!(s, p { b { "pickle" } "barrel" i { "kumquat" } }).unwrap();
+        html!(s, p { b { "pickle" } "barrel" i { "kumquat" } }).unwrap();
         assert_eq!(s, "<p><b>pickle</b>barrel<i>kumquat</i></p>");
     }
 
     #[test]
     fn nesting() {
         let mut s = String::new();
-        write_html!(s, html body div p sup "butts").unwrap();
+        html!(s, html body div p sup "butts").unwrap();
         assert_eq!(s, "<html><body><div><p><sup>butts</sup></p></div></body></html>");
     }
 
     #[test]
     fn empty() {
         let mut s = String::new();
-        write_html!(s, "pinkie" br/ "pie").unwrap();
+        html!(s, "pinkie" br/ "pie").unwrap();
         assert_eq!(s, "pinkie<br>pie");
     }
 
     #[test]
     fn attributes() {
         let mut s = String::new();
-        write_html!(s, {
+        html!(s, {
             link rel="stylesheet" href="styles.css"/
             section id="midriff" {
                 p class="hotpink" "Hello!"
@@ -82,7 +82,7 @@ mod elements {
     #[test]
     fn empty_attributes() {
         let mut s = String::new();
-        write_html!(s, div readonly? input type="checkbox" checked? /).unwrap();
+        html!(s, div readonly? input type="checkbox" checked? /).unwrap();
         assert_eq!(s, r#"<div readonly><input type="checkbox" checked></div>"#);
     }
 }
@@ -91,21 +91,21 @@ mod splices {
     #[test]
     fn literals() {
         let mut s = String::new();
-        write_html!(s, $"<pinkie>").unwrap();
+        html!(s, $"<pinkie>").unwrap();
         assert_eq!(s, "&lt;pinkie&gt;");
     }
 
     #[test]
     fn raw_literals() {
         let mut s = String::new();
-        write_html!(s, $$"<pinkie>").unwrap();
+        html!(s, $$"<pinkie>").unwrap();
         assert_eq!(s, "<pinkie>");
     }
 
     #[test]
     fn blocks() {
         let mut s = String::new();
-        write_html!(s, {
+        html!(s, {
             ${
                 let mut result = 1i32;
                 for i in 2..11 {
@@ -121,7 +121,7 @@ mod splices {
     fn attributes() {
         let rocks = true;
         let mut s = String::new();
-        write_html!(s, {
+        html!(s, {
             input checked?=true /
             input checked?=false /
             input checked?=rocks /
@@ -139,7 +139,7 @@ mod splices {
     #[test]
     fn statics() {
         let mut s = String::new();
-        write_html!(s, $BEST_PONY).unwrap();
+        html!(s, $BEST_PONY).unwrap();
         assert_eq!(s, "Pinkie Pie");
     }
 
@@ -147,7 +147,7 @@ mod splices {
     fn closures() {
         let best_pony = "Pinkie Pie";
         let mut s = String::new();
-        write_html!(s, $best_pony).unwrap();
+        html!(s, $best_pony).unwrap();
         assert_eq!(s, "Pinkie Pie");
     }
 
@@ -173,7 +173,7 @@ mod splices {
             adorableness: 9,
         };
         let mut s = String::new();
-        write_html!(s, {
+        html!(s, {
             "Name: " $pinkie.name ". Rating: " $pinkie.repugnance()
         }).unwrap();
         assert_eq!(s, "Name: Pinkie Pie. Rating: 1");
@@ -183,7 +183,7 @@ mod splices {
     fn nested_macro_invocation() {
         let best_pony = "Pinkie Pie";
         let mut s = String::new();
-        write_html!(s, $(format!("{}", best_pony))).unwrap();
+        html!(s, $(format!("{}", best_pony))).unwrap();
         assert_eq!(s, "Pinkie Pie");
     }
 }
@@ -192,7 +192,7 @@ mod splices {
 fn issue_13() {
     let owned = String::from("yay");
     let mut s = String::new();
-    write_html!(s, $owned).unwrap();
+    html!(s, $owned).unwrap();
     let _ = owned;
 }
 
@@ -201,7 +201,7 @@ mod control {
     fn if_expr() {
         for (number, &name) in (1..4).zip(["one", "two", "three"].iter()) {
             let mut s = String::new();
-            write_html!(s, {
+            html!(s, {
                 $if number == 1 {
                     "one"
                 } $else if number == 2 {
@@ -220,7 +220,7 @@ mod control {
     fn if_let() {
         for &(input, output) in [(Some("yay"), "yay"), (None, "oh noes")].iter() {
             let mut s = String::new();
-            write_html!(s, {
+            html!(s, {
                 $if let Some(value) = input {
                     $value
                 } $else {
@@ -235,7 +235,7 @@ mod control {
     fn for_expr() {
         let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
         let mut s = String::new();
-        write_html!(s, {
+        html!(s, {
             ul $for pony in &ponies {
                 li $pony
             }

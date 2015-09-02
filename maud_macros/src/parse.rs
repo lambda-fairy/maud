@@ -63,7 +63,7 @@ fn split_comma<'a>(cx: &ExtCtxt, input: &'a [TokenTree], sp: Span) -> (&'a [Toke
     }
     match input.iter().position(is_comma) {
         Some(i) => (&input[..i], &input[1+i..]),
-        None => cx.span_fatal(sp, "expected two arguments to write_html!()"),
+        None => cx.span_fatal(sp, "expected two arguments to `html!`"),
     }
 }
 
