@@ -368,7 +368,7 @@ fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> Option<String> {
     }
     match lit.node {
         LitStr(s, _) => result.push_str(&s),
-        LitBinary(..) | LitByte(..) => {
+        LitByteStr(..) | LitByte(..) => {
             cx.span_err(lit.span, "cannot splice binary data");
             return None;
         },
