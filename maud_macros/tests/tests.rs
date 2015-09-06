@@ -248,3 +248,13 @@ mod control {
                 "</ul>"));
     }
 }
+
+#[test]
+fn utf8_writer() {
+    use maud::Utf8Writer;
+    let mut w = Utf8Writer::new(vec![]);
+    let _ = html!(w, p "hello");
+    let (buf, r) = w.into_inner();
+    r.unwrap();
+    assert_eq!(buf, b"<p>hello</p>");
+}
