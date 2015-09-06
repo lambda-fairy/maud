@@ -48,10 +48,10 @@ pub fn parse(cx: &ExtCtxt, input: &[TokenTree], sp: Span) -> P<Expr> {
         in_attr: false,
         input: input,
         span: sp,
-        render: Renderer::new(cx, write.to_vec()),
+        render: Renderer::new(cx),
     };
     parser.markups();
-    parser.into_render().into_expr()
+    parser.into_render().into_expr(write.to_vec())
 }
 
 fn split_comma<'a>(cx: &ExtCtxt, input: &'a [TokenTree], sp: Span) -> (&'a [TokenTree], &'a [TokenTree]) {

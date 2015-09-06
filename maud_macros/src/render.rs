@@ -23,17 +23,16 @@ pub struct Renderer<'cx> {
 
 impl<'cx> Renderer<'cx> {
     /// Creates a new `Renderer` using the given extension context.
-    pub fn new(cx: &'cx ExtCtxt<'cx>, writer_expr: Vec<TokenTree>) -> Renderer<'cx> {
+    pub fn new(cx: &'cx ExtCtxt<'cx>) -> Renderer<'cx> {
         let writer = token::gensym_ident("__maud_writer");
         let result = token::gensym_ident("__maud_result");
         let loop_label = token::gensym_ident("__maud_loop_label");
-        let writer_stmt = quote_stmt!(cx, let $writer = &mut $writer_expr).unwrap();
         Renderer {
             cx: cx,
             writer: writer,
             result: result,
             loop_label: vec![TtToken(DUMMY_SP, token::Lifetime(loop_label))],
-            stmts: vec![writer_stmt],
+            stmts: vec![],
             tail: String::new(),
         }
     }
@@ -65,13 +64,15 @@ impl<'cx> Renderer<'cx> {
     }
 
     /// Reifies the `Renderer` into a block of markup.
-    pub fn into_expr(mut self) -> P<Expr> {
-        let Renderer { cx, result, loop_label, stmts, .. } = { self.flush(); self };
+    pub fn into_expr(mut self, writer_expr: Vec<TokenTree>) -> P<Expr> {
+        let Renderer { cx, writer, result, loop_label, stmts, .. } = { self.flush(); self };
         quote_expr!(cx, {
             let mut $result = Ok(());
             $loop_label: loop {
                 use ::std::fmt::Write;
-                $stmts
+                match &mut $writer_expr {
+                    $writer => { $stmts }
+                }
                 break $loop_label;
             }
             $result
