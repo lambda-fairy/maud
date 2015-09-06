@@ -18,7 +18,7 @@ use std::io;
 ///
 /// ```rust,ignore
 /// use std::io;
-/// let writer = Utf8Writer::new(io::stdout());
+/// let mut writer = Utf8Writer::new(io::stdout());
 /// let _ = html!(writer, p { "Hello, " $name "!" });
 /// let result = writer.into_result();
 /// result.unwrap();
