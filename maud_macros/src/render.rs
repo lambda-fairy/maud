@@ -71,7 +71,10 @@ impl<'cx> Renderer<'cx> {
             $loop_label: loop {
                 use ::std::fmt::Write;
                 match &mut $writer_expr {
-                    $writer => { $stmts }
+                    $writer => {
+                        $writer as &mut ::std::fmt::Write;
+                        $stmts
+                    }
                 }
                 break $loop_label;
             }
