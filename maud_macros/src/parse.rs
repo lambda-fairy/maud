@@ -42,8 +42,9 @@ macro_rules! ident {
     ($sp:pat, $x:pat) => (TtToken($sp, token::Ident($x, token::IdentStyle::Plain)))
 }
 
-pub fn parse(cx: &ExtCtxt, input: &[TokenTree], sp: Span) -> P<Expr> {
-    let (write, input) = split_comma(cx, input, sp);
+pub fn parse(cx: &ExtCtxt, sp: Span, write: &[TokenTree], input: &[TokenTree])
+    -> P<Expr>
+{
     let mut parser = Parser {
         in_attr: false,
         input: input,
@@ -54,15 +55,15 @@ pub fn parse(cx: &ExtCtxt, input: &[TokenTree], sp: Span) -> P<Expr> {
     parser.into_render().into_expr(write.to_vec())
 }
 
-fn split_comma<'a>(cx: &ExtCtxt, input: &'a [TokenTree], sp: Span) -> (&'a [TokenTree], &'a [TokenTree]) {
+pub fn split_comma<'a>(cx: &ExtCtxt, sp: Span, args: &'a [TokenTree]) -> (&'a [TokenTree], &'a [TokenTree]) {
     fn is_comma(t: &TokenTree) -> bool {
         match *t {
             TtToken(_, token::Comma) => true,
             _ => false,
         }
     }
-    match input.iter().position(is_comma) {
-        Some(i) => (&input[..i], &input[1+i..]),
+    match args.iter().position(is_comma) {
+        Some(i) => (&args[..i], &args[1+i..]),
         None => cx.span_fatal(sp, "expected two arguments to `html!`"),
     }
 }

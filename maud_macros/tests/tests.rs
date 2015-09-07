@@ -250,11 +250,8 @@ mod control {
 }
 
 #[test]
-fn utf8_writer() {
-    use maud::Utf8Writer;
-    let mut w = Utf8Writer::new(vec![]);
-    let _ = html!(w, p "hello");
-    let (buf, r) = w.into_inner();
-    r.unwrap();
+fn write_html() {
+    let mut buf = vec![];
+    write_html!(buf, p "hello").unwrap();
     assert_eq!(buf, b"<p>hello</p>");
 }
