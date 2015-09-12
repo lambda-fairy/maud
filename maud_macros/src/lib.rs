@@ -23,7 +23,7 @@ fn _expand_html(cx: &mut ExtCtxt, sp: Span, args: &[TokenTree]) -> P<Expr> {
     parse::parse(cx, sp, write, input)
 }
 
-fn _expand_write_html(cx: &mut ExtCtxt, sp: Span, args: &[TokenTree]) -> P<Expr> {
+fn _expand_html_utf8(cx: &mut ExtCtxt, sp: Span, args: &[TokenTree]) -> P<Expr> {
     let (io_write, input) = parse::split_comma(cx, sp, args);
     let io_write = io_write.to_vec();
     let fmt_write = token::gensym_ident("__maud_utf8_writer");
@@ -39,7 +39,7 @@ fn _expand_write_html(cx: &mut ExtCtxt, sp: Span, args: &[TokenTree]) -> P<Expr>
         })
 }
 
-macro_rules! expand {
+macro_rules! generate_debug_wrappers {
     ($name:ident $debug_name:ident $inner_fn:ident) => {
         fn $name<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree])
             -> Box<MacResult + 'cx>
@@ -59,13 +59,13 @@ macro_rules! expand {
     }
 }
 
-expand!(expand_html expand_html_debug _expand_html);
-expand!(expand_write_html expand_write_html_debug _expand_write_html);
+generate_debug_wrappers!(expand_html expand_html_debug _expand_html);
+generate_debug_wrappers!(expand_html_utf8 expand_html_utf8_debug _expand_html_utf8);
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_macro("html", expand_html);
     reg.register_macro("html_debug", expand_html_debug);
-    reg.register_macro("write_html", expand_write_html);
-    reg.register_macro("write_html_debug", expand_write_html_debug);
+    reg.register_macro("html_utf8", expand_html_utf8);
+    reg.register_macro("html_utf8_debug", expand_html_utf8_debug);
 }

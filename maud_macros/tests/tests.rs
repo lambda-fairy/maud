@@ -250,8 +250,8 @@ mod control {
 }
 
 #[test]
-fn write_html() {
+fn html_utf8() {
     let mut buf = vec![];
-    write_html!(buf, p "hello").unwrap();
+    html_utf8!(buf, p "hello").unwrap();
     assert_eq!(buf, b"<p>hello</p>");
 }
