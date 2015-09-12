@@ -13,6 +13,9 @@ use super::render::{Escape, Renderer};
 macro_rules! dollar {
     () => (TtToken(_, token::Dollar))
 }
+macro_rules! pound {
+    () => (TtToken(_, token::Pound))
+}
 macro_rules! dot {
     () => (TtToken(_, token::Dot))
 }
@@ -125,12 +128,12 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.literal(tt, false);
             },
             // If
-            [dollar!(), ident!(sp, name), ..] if name.name == "if" => {
+            [pound!(), ident!(sp, name), ..] if name.name == "if" => {
                 self.shift(2);
                 self.if_expr(sp);
             },
             // For
-            [dollar!(), ident!(sp, name), ..] if name.name == "for" => {
+            [pound!(), ident!(sp, name), ..] if name.name == "for" => {
                 self.shift(2);
                 self.for_expr(sp);
             },
@@ -201,11 +204,11 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 if_cond.push(tt.clone());
             },
-            [] => self.render.cx.span_fatal(sp, "expected body for this $if"),
+            [] => self.render.cx.span_fatal(sp, "expected body for this #if"),
         }}
         // Parse the (optional) else
         let else_body = match self.input {
-            [dollar!(), ident!(else_), ..] if else_.name == "else" => {
+            [pound!(), ident!(else_), ..] if else_.name == "else" => {
                 self.shift(2);
                 match self.input {
                     [ident!(sp, if_), ..] if if_.name == "if" => {
@@ -225,7 +228,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                         self.shift(1);
                         Some(self.block(sp, &d.tts))
                     },
-                    _ => self.render.cx.span_fatal(sp, "expected body for this $else"),
+                    _ => self.render.cx.span_fatal(sp, "expected body for this #else"),
                 }
             },
             _ => None,
@@ -244,7 +247,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 pattern.push(tt.clone());
             },
-            _ => self.render.cx.span_fatal(sp, "invalid $for"),
+            _ => self.render.cx.span_fatal(sp, "invalid #for"),
         }}
         let pattern = self.with_rust_parser(pattern, RustParser::parse_pat);
         let mut iterable = vec![];
@@ -259,7 +262,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 iterable.push(tt.clone());
             },
-            _ => self.render.cx.span_fatal(sp, "invalid $for"),
+            _ => self.render.cx.span_fatal(sp, "invalid #for"),
         }}
         let iterable = self.with_rust_parser(iterable, RustParser::parse_expr);
         self.render.emit_for(pattern, iterable, body);

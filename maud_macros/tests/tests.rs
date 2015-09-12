@@ -202,13 +202,13 @@ mod control {
         for (number, &name) in (1..4).zip(["one", "two", "three"].iter()) {
             let mut s = String::new();
             html!(s, {
-                $if number == 1 {
+                #if number == 1 {
                     "one"
-                } $else if number == 2 {
+                } #else if number == 2 {
                     "two"
-                } $else if number == 3 {
+                } #else if number == 3 {
                     "three"
-                } $else {
+                } #else {
                     "oh noes"
                 }
             }).unwrap();
@@ -221,9 +221,9 @@ mod control {
         for &(input, output) in [(Some("yay"), "yay"), (None, "oh noes")].iter() {
             let mut s = String::new();
             html!(s, {
-                $if let Some(value) = input {
+                #if let Some(value) = input {
                     $value
-                } $else {
+                } #else {
                     "oh noes"
                 }
             }).unwrap();
@@ -236,7 +236,7 @@ mod control {
         let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
         let mut s = String::new();
         html!(s, {
-            ul $for pony in &ponies {
+            ul #for pony in &ponies {
                 li $pony
             }
         }).unwrap();
