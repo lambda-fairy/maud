@@ -8,6 +8,51 @@
 use std::fmt;
 use std::io;
 
+/// An adapter that escapes HTML special characters.
+///
+/// # Example
+///
+/// ```
+/// # use maud::Escaper;
+/// use std::fmt::Write;
+/// let mut result = String::new();
+/// write!(Escaper::new(&mut result), "<script>launchMissiles()</script>").unwrap();
+/// assert_eq!(result, "&lt;script&gt;launchMissiles()&lt;/script&gt;");
+/// ```
+pub struct Escaper<'a> {
+    // FIXME: store the writer directly instead of borrowing it
+    // see <https://github.com/rust-lang/rust/pull/28368>
+    inner: &'a mut fmt::Write,
+}
+
+impl<'a> Escaper<'a> {
+    /// Creates an `Escaper` from a `std::fmt::Write`.
+    pub fn new(inner: &'a mut fmt::Write) -> Escaper<'a> {
+        Escaper { inner: inner }
+    }
+
+    /// Extracts the inner writer.
+    pub fn into_inner(self) -> &'a mut fmt::Write {
+        self.inner
+    }
+}
+
+impl<'a> fmt::Write for Escaper<'a> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        for c in s.chars() {
+            try!(match c {
+                '&' => self.inner.write_str("&amp;"),
+                '<' => self.inner.write_str("&lt;"),
+                '>' => self.inner.write_str("&gt;"),
+                '"' => self.inner.write_str("&quot;"),
+                '\'' => self.inner.write_str("&#39;"),
+                _ => self.inner.write_char(c),
+            });
+        }
+        Ok(())
+    }
+}
+
 /// Wraps a `std::io::Write` in a `std::fmt::Write`.
 ///
 /// Most I/O libraries work with binary data (`[u8]`), but Maud outputs
@@ -37,11 +82,15 @@ impl<W: io::Write> Utf8Writer<W> {
         }
     }
 
+    /// Extracts the inner writer, along with any errors encountered
+    /// along the way.
     pub fn into_inner(self) -> (W, io::Result<()>) {
         let Utf8Writer { inner, result } = self;
         (inner, result)
     }
 
+    /// Drops the inner writer, returning any errors encountered
+    /// along the way.
     pub fn into_result(self) -> io::Result<()> {
         self.result
     }
@@ -65,41 +114,6 @@ impl<W: io::Write> fmt::Write for Utf8Writer<W> {
                 self.result = Err(e);
                 Err(fmt::Error)
             }
-        }
-    }
-}
-
-/// Escapes an HTML value.
-pub fn escape(s: &str) -> String {
-    use std::fmt::Write;
-    let mut buf = String::new();
-    rt::Escaper { inner: &mut buf }.write_str(s).unwrap();
-    buf
-}
-
-/// Internal functions used by the `maud_macros` package. You should
-/// never need to call these directly.
-#[doc(hidden)]
-pub mod rt {
-    use std::fmt;
-
-    pub struct Escaper<'a, 'b: 'a> {
-        pub inner: &'a mut (fmt::Write + 'b),
-    }
-
-    impl<'a, 'b> fmt::Write for Escaper<'a, 'b> {
-        fn write_str(&mut self, s: &str) -> fmt::Result {
-            for c in s.chars() {
-                try!(match c {
-                    '&' => self.inner.write_str("&amp;"),
-                    '<' => self.inner.write_str("&lt;"),
-                    '>' => self.inner.write_str("&gt;"),
-                    '"' => self.inner.write_str("&quot;"),
-                    '\'' => self.inner.write_str("&#39;"),
-                    _ => write!(self.inner, "{}", c),
-                });
-            }
-            Ok(())
         }
     }
 }

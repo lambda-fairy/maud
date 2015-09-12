@@ -1,10 +1,11 @@
+use std::fmt::Write;
 use syntax::ast::{Expr, Ident, Pat, Stmt, TokenTree, TtToken};
 use syntax::codemap::DUMMY_SP;
 use syntax::ext::base::ExtCtxt;
 use syntax::parse::token;
 use syntax::ptr::P;
 
-use maud;
+use maud::Escaper;
 
 #[derive(Copy, Clone)]
 pub enum Escape {
@@ -119,7 +120,7 @@ impl<'cx> Renderer<'cx> {
         let escaped;
         let s = match escape {
             Escape::PassThru => s,
-            Escape::Escape => { escaped = maud::escape(s); &*escaped },
+            Escape::Escape => { escaped = html_escape(s); &*escaped },
         };
         self.push_str(s);
     }
@@ -133,7 +134,7 @@ impl<'cx> Renderer<'cx> {
             Escape::Escape =>
                 quote_expr!(self.cx,
                     write!(
-                        ::maud::rt::Escaper { inner: $w },
+                        ::maud::Escaper::new($w),
                         "{}",
                         $expr)),
         };
@@ -189,4 +190,11 @@ impl<'cx> Renderer<'cx> {
         let stmt = quote_stmt!(self.cx, for $pattern in $iterable { $body }).unwrap();
         self.push(stmt);
     }
+}
+
+fn html_escape(s: &str) -> String {
+    use std::fmt::Write;
+    let mut out = String::new();
+    Escaper::new(&mut out).write_str(s).unwrap();
+    out
 }

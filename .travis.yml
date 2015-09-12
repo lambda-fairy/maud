@@ -2,4 +2,5 @@ language: rust
 rust: nightly
 sudo: false
 script:
+  - ( cd maud && cargo test --verbose )
   - ( cd maud_macros && cargo test --verbose )
