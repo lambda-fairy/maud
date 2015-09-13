@@ -79,18 +79,18 @@ struct Parser<'cx, 'i> {
 }
 
 impl<'cx, 'i> Parser<'cx, 'i> {
-    /// Finalize the `Parser`, returning the `Renderer` underneath.
+    /// Finalizes the `Parser`, returning the `Renderer` underneath.
     fn into_render(self) -> Renderer<'cx> {
         let Parser { render, .. } = self;
         render
     }
 
-    /// Consume `n` items from the input.
+    /// Consumes `n` items from the input.
     fn shift(&mut self, n: usize) {
         self.input = &self.input[n..];
     }
 
-    /// Construct a Rust AST parser from the given token tree.
+    /// Constructs a Rust AST parser from the given token tree.
     fn with_rust_parser<F, T>(&self, tts: Vec<TokenTree>, callback: F) -> T where
         F: FnOnce(&mut RustParser<'cx>) -> T
     {
@@ -106,6 +106,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         result
     }
 
+    /// Parses and renders multiple blocks of markup.
     fn markups(&mut self) {
         loop {
             match self.input {
@@ -116,6 +117,9 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         }
     }
 
+    /// Parses and renders a single block of markup.
+    ///
+    /// Returns `false` on error.
     fn markup(&mut self) -> bool {
         match self.input {
             // Literal
@@ -154,7 +158,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.element(sp, &name.name.as_str());
             },
             // Block
-            [TtDelimited(_, ref d), ..] if d.delim == token::DelimToken::Brace => {
+            [TtDelimited(_, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
                 {
                     // Parse the contents of the block, emitting the
@@ -178,6 +182,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         true
     }
 
+    /// Parses and renders a literal string or number.
     fn literal(&mut self, tt: &TokenTree, minus: bool) {
         let lit = self.with_rust_parser(vec![tt.clone()], RustParser::parse_lit);
         let lit = match lit {
@@ -190,6 +195,9 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         }
     }
 
+    /// Parses and renders an `#if` expression.
+    ///
+    /// The leading `#if` should already be consumed.
     fn if_expr(&mut self, sp: Span) {
         // Parse the initial if
         let mut if_cond = vec![];
@@ -236,6 +244,9 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         self.render.emit_if(if_cond, if_body, else_body);
     }
 
+    /// Parses and renders a `#for` expression.
+    ///
+    /// The leading `#for` should already be consumed.
     fn for_expr(&mut self, sp: Span) {
         let mut pattern = vec![];
         loop { match self.input {
@@ -268,13 +279,18 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         self.render.emit_for(pattern, iterable, body);
     }
 
+    /// Parses and renders a `$splice`.
+    ///
+    /// The leading `$` should already be consumed.
     fn splice(&mut self, sp: Span) -> P<Expr> {
-        let mut tts = vec![];
         // First, munch a single token tree
-        if let [ref tt, ..] = self.input {
-            self.shift(1);
-            tts.push(tt.clone());
-        }
+        let mut tts = match self.input {
+            [ref tt, ..] => {
+                self.shift(1);
+                vec![tt.clone()]
+            },
+            [] => self.render.cx.span_fatal(sp, "expected expression for this splice"),
+        };
         loop { match self.input {
             // Munch attribute lookups e.g. `$person.address.street`
             [ref dot @ dot!(), ref ident @ ident!(_), ..] => {
@@ -283,19 +299,18 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 tts.push(ident.clone());
             },
             // Munch function calls `()` and indexing operations `[]`
-            [TtDelimited(sp, ref d), ..] if d.delim != token::DelimToken::Brace => {
+            [TtDelimited(sp, ref d), ..] if d.delim != DelimToken::Brace => {
                 self.shift(1);
                 tts.push(TtDelimited(sp, d.clone()));
             },
             _ => break,
         }}
-        if tts.is_empty() {
-            self.render.cx.span_fatal(sp, "expected expression for this splice");
-        } else {
-            self.with_rust_parser(tts, RustParser::parse_expr)
-        }
+        self.with_rust_parser(tts, RustParser::parse_expr)
     }
 
+    /// Parses and renders an element node.
+    ///
+    /// The element name should already be consumed.
     fn element(&mut self, sp: Span, name: &str) {
         if self.in_attr {
             self.render.cx.span_err(sp, "unexpected element, you silly bumpkin");
@@ -312,6 +327,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         }
     }
 
+    /// Parses and renders the attributes of an element.
     fn attrs(&mut self) {
         loop { match self.input {
             [ident!(name), eq!(), ..] => {
@@ -351,6 +367,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         }}
     }
 
+    /// Parses the given token tree, returning a vector of statements.
     fn block(&mut self, sp: Span, tts: &[TokenTree]) -> Vec<P<Stmt>> {
         let mut parse = Parser {
             in_attr: self.in_attr,
@@ -363,7 +380,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     }
 }
 
-/// Convert a literal to a string.
+/// Converts a literal to a string.
 fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> Option<String> {
     use syntax::ast::Lit_::*;
     let mut result = String::new();
