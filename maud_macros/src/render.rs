@@ -134,7 +134,7 @@ impl<'cx> Renderer<'cx> {
             Escape::Escape =>
                 quote_expr!(self.cx,
                     write!(
-                        ::maud::Escaper::new($w),
+                        ::maud::Escaper::new(&mut *$w),
                         "{}",
                         $expr)),
         };
@@ -194,7 +194,7 @@ impl<'cx> Renderer<'cx> {
 
 fn html_escape(s: &str) -> String {
     use std::fmt::Write;
-    let mut out = String::new();
-    Escaper::new(&mut out).write_str(s).unwrap();
-    out
+    let mut escaper = Escaper::new(String::new());
+    escaper.write_str(s).unwrap();
+    escaper.into_inner()
 }

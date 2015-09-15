@@ -15,29 +15,26 @@ use std::io;
 /// ```
 /// # use maud::Escaper;
 /// use std::fmt::Write;
-/// let mut result = String::new();
-/// write!(Escaper::new(&mut result), "<script>launchMissiles()</script>").unwrap();
-/// assert_eq!(result, "&lt;script&gt;launchMissiles()&lt;/script&gt;");
+/// write!(Escaper::new(String::new()), "<script>launchMissiles()</script>").unwrap();
+/// assert_eq!(result.into_inner(), "&lt;script&gt;launchMissiles()&lt;/script&gt;");
 /// ```
-pub struct Escaper<'a> {
-    // FIXME: store the writer directly instead of borrowing it
-    // see <https://github.com/rust-lang/rust/pull/28368>
-    inner: &'a mut fmt::Write,
+pub struct Escaper<W: fmt::Write> {
+    inner: W,
 }
 
-impl<'a> Escaper<'a> {
+impl<W: fmt::Write> Escaper<W> {
     /// Creates an `Escaper` from a `std::fmt::Write`.
-    pub fn new(inner: &'a mut fmt::Write) -> Escaper<'a> {
+    pub fn new(inner: W) -> Escaper<W> {
         Escaper { inner: inner }
     }
 
     /// Extracts the inner writer.
-    pub fn into_inner(self) -> &'a mut fmt::Write {
+    pub fn into_inner(self) -> W {
         self.inner
     }
 }
 
-impl<'a> fmt::Write for Escaper<'a> {
+impl<W: fmt::Write> fmt::Write for Escaper<W> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         for c in s.chars() {
             try!(match c {
