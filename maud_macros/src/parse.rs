@@ -2,6 +2,7 @@ use std::mem;
 use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree, TtDelimited, TtToken};
 use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
+use syntax::diagnostic::FatalError;
 use syntax::ext::base::ExtCtxt;
 use syntax::parse::{self, PResult};
 use syntax::parse::parser::Parser as RustParser;
@@ -163,9 +164,9 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.render.splice(expr, Escape::Escape);
             },
             // Element
-            [ident!(sp, name), ..] => {
-                self.shift(1);
-                try!(self.element(sp, &name.name.as_str()));
+            [ident!(sp, _), ..] => {
+                let name = try!(self.name());
+                try!(self.element(sp, &name));
             },
             // Block
             [TtDelimited(_, ref d), ..] if d.delim == DelimToken::Brace => {
@@ -335,42 +336,66 @@ impl<'cx, 'i> Parser<'cx, 'i> {
 
     /// Parses and renders the attributes of an element.
     fn attrs(&mut self) -> PResult<()> {
-        loop { match self.input {
-            [ident!(name), eq!(), ..] => {
-                // Non-empty attribute
-                self.shift(2);
-                self.render.attribute_start(&name.name.as_str());
-                {
-                    // Parse a value under an attribute context
-                    let mut in_attr = true;
-                    mem::swap(&mut self.in_attr, &mut in_attr);
-                    try!(self.markup());
-                    mem::swap(&mut self.in_attr, &mut in_attr);
-                }
-                self.render.attribute_end();
-            },
-            [ident!(name), question!(), ..] => {
-                // Empty attribute
-                self.shift(2);
-                if let [ref tt @ eq!(), ..] = self.input {
-                    // Toggle the attribute based on a boolean expression
+        loop {
+            let old_input = self.input;
+            let maybe_name = self.name();
+            match (maybe_name, self.input) {
+                (Ok(name), [eq!(), ..]) => {
+                    // Non-empty attribute
                     self.shift(1);
-                    let cond = try!(self.splice(tt.get_span()));
-                    // Silence "unnecessary parentheses" warnings
-                    let cond = strip_outer_parens(cond).to_tokens(self.render.cx);
-                    let body = {
-                        let mut r = self.render.fork();
-                        r.attribute_empty(&name.name.as_str());
-                        r.into_stmts()
-                    };
-                    self.render.emit_if(cond, body, None);
-                } else {
-                    // Write the attribute unconditionally
-                    self.render.attribute_empty(&name.name.as_str());
-                }
-            },
-            _ => return Ok(()),
+                    self.render.attribute_start(&name);
+                    {
+                        // Parse a value under an attribute context
+                        let mut in_attr = true;
+                        mem::swap(&mut self.in_attr, &mut in_attr);
+                        try!(self.markup());
+                        mem::swap(&mut self.in_attr, &mut in_attr);
+                    }
+                    self.render.attribute_end();
+                },
+                (Ok(name), [question!(), ..]) => {
+                    // Empty attribute
+                    self.shift(1);
+                    if let [ref tt @ eq!(), ..] = self.input {
+                        // Toggle the attribute based on a boolean expression
+                        self.shift(1);
+                        let cond = try!(self.splice(tt.get_span()));
+                        // Silence "unnecessary parentheses" warnings
+                        let cond = strip_outer_parens(cond).to_tokens(self.render.cx);
+                        let body = {
+                            let mut r = self.render.fork();
+                            r.attribute_empty(&name);
+                            r.into_stmts()
+                        };
+                        self.render.emit_if(cond, body, None);
+                    } else {
+                        // Write the attribute unconditionally
+                        self.render.attribute_empty(&name);
+                    }
+                },
+                _ => {
+                    self.input = old_input;
+                    break;
+                },
         }}
+        Ok(())
+    }
+
+    /// Parses a HTML element or attribute name.
+    fn name(&mut self) -> PResult<String> {
+        let mut s = match self.input {
+            [ident!(name), ..] => {
+                self.shift(1);
+                String::from(&name.name.as_str() as &str)
+            },
+            _ => return Err(FatalError),
+        };
+        while let [minus!(), ident!(name), ..] = self.input {
+            self.shift(2);
+            s.push('-');
+            s.push_str(&name.name.as_str());
+        }
+        Ok(s)
     }
 
     /// Parses the given token tree, returning a vector of statements.

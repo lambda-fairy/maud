@@ -255,3 +255,19 @@ fn html_utf8() {
     html_utf8!(buf, p "hello").unwrap();
     assert_eq!(buf, b"<p>hello</p>");
 }
+
+mod issue_10 {
+    #[test]
+    fn hyphens_in_element_names() {
+        let mut s = String::new();
+        html!(s, custom-element {}).unwrap();
+        assert_eq!(s, "<custom-element></custom-element>");
+    }
+
+    #[test]
+    fn hyphens_in_attribute_names() {
+        let mut s = String::new();
+        html!(s, this sentence-is="false" of-course? {}).unwrap();
+        assert_eq!(s, r#"<this sentence-is="false" of-course></this>"#);
+    }
+}
