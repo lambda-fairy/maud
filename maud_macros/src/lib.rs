@@ -9,8 +9,8 @@ extern crate maud;
 
 use syntax::ast::{Expr, TokenTree, TtToken};
 use syntax::codemap::{DUMMY_SP, Span};
-use syntax::ext::base::{ExtCtxt, MacEager, MacResult};
-use syntax::parse::token;
+use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
+use syntax::parse::{token, PResult};
 use syntax::print::pprust;
 use syntax::ptr::P;
 use rustc::plugin::Registry;
@@ -18,49 +18,55 @@ use rustc::plugin::Registry;
 mod parse;
 mod render;
 
-fn _expand_html(cx: &mut ExtCtxt, sp: Span, args: &[TokenTree]) -> P<Expr> {
-    let (write, input) = parse::split_comma(cx, sp, args);
+fn html(cx: &mut ExtCtxt, sp: Span, mac_name: &str, args: &[TokenTree]) -> PResult<P<Expr>> {
+    let (write, input) = try!(parse::split_comma(cx, sp, mac_name, args));
     parse::parse(cx, sp, write, input)
 }
 
-fn _expand_html_utf8(cx: &mut ExtCtxt, sp: Span, args: &[TokenTree]) -> P<Expr> {
-    let (io_write, input) = parse::split_comma(cx, sp, args);
+fn html_utf8(cx: &mut ExtCtxt, sp: Span, mac_name: &str, args: &[TokenTree]) -> PResult<P<Expr>> {
+    let (io_write, input) = try!(parse::split_comma(cx, sp, mac_name, args));
     let io_write = io_write.to_vec();
     let fmt_write = token::gensym_ident("__maud_utf8_writer");
     let fmt_write = vec![
         TtToken(DUMMY_SP, token::Ident(fmt_write, token::IdentStyle::Plain))];
-    let expr = parse::parse(cx, sp, &fmt_write, input);
-    quote_expr!(cx,
+    let expr = try!(parse::parse(cx, sp, &fmt_write, input));
+    Ok(quote_expr!(cx,
         match ::maud::Utf8Writer::new(&mut $io_write) {
             mut $fmt_write => {
                 let _ = $expr;
                 $fmt_write.into_result()
             }
-        })
+        }))
 }
 
 macro_rules! generate_debug_wrappers {
-    ($name:ident $debug_name:ident $inner_fn:ident) => {
-        fn $name<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree])
+    ($fn_name:ident $fn_debug_name:ident $mac_name:ident) => {
+        fn $fn_name<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree])
             -> Box<MacResult + 'cx>
         {
-            let expr = $inner_fn(cx, sp, args);
-            MacEager::expr(expr)
+            match $mac_name(cx, sp, stringify!($mac_name), args) {
+                Ok(expr) => MacEager::expr(expr),
+                Err(..) => DummyResult::expr(sp),
+            }
         }
 
-        fn $debug_name<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree])
+        fn $fn_debug_name<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree])
             -> Box<MacResult + 'cx>
         {
-            let expr = $inner_fn(cx, sp, args);
-            cx.span_note(sp, &format!("expansion:\n{}",
-                                      pprust::expr_to_string(&expr)));
-            MacEager::expr(expr)
+            match $mac_name(cx, sp, concat!(stringify!($mac_name), "_debug"), args) {
+                Ok(expr) => {
+                    cx.span_note(sp, &format!("expansion:\n{}",
+                                              pprust::expr_to_string(&expr)));
+                    MacEager::expr(expr)
+                },
+                Err(..) => DummyResult::expr(sp),
+            }
         }
     }
 }
 
-generate_debug_wrappers!(expand_html expand_html_debug _expand_html);
-generate_debug_wrappers!(expand_html_utf8 expand_html_utf8_debug _expand_html_utf8);
+generate_debug_wrappers!(expand_html expand_html_debug html);
+generate_debug_wrappers!(expand_html_utf8 expand_html_utf8_debug html_utf8);
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {

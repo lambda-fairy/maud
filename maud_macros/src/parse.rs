@@ -3,12 +3,22 @@ use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree, TtDelimited, TtToken};
 use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
 use syntax::ext::base::ExtCtxt;
-use syntax::parse;
+use syntax::parse::{self, PResult};
 use syntax::parse::parser::Parser as RustParser;
 use syntax::parse::token::{self, DelimToken};
 use syntax::ptr::P;
 
 use super::render::{Escape, Renderer};
+
+macro_rules! error {
+    ($cx:expr, $sp:expr, $msg:expr) => ({
+        $cx.span_err($sp, $msg);
+        return Err(::syntax::diagnostic::FatalError);
+    })
+}
+macro_rules! parse_error {
+    ($self_:expr, $sp:expr, $msg:expr) => (error!($self_.render.cx, $sp, $msg))
+}
 
 macro_rules! dollar {
     () => (TtToken(_, token::Dollar))
@@ -46,7 +56,7 @@ macro_rules! ident {
 }
 
 pub fn parse(cx: &ExtCtxt, sp: Span, write: &[TokenTree], input: &[TokenTree])
-    -> P<Expr>
+    -> PResult<P<Expr>>
 {
     let mut parser = Parser {
         in_attr: false,
@@ -54,11 +64,13 @@ pub fn parse(cx: &ExtCtxt, sp: Span, write: &[TokenTree], input: &[TokenTree])
         span: sp,
         render: Renderer::new(cx),
     };
-    parser.markups();
-    parser.into_render().into_expr(write.to_vec())
+    try!(parser.markups());
+    Ok(parser.into_render().into_expr(write.to_vec()))
 }
 
-pub fn split_comma<'a>(cx: &ExtCtxt, sp: Span, args: &'a [TokenTree]) -> (&'a [TokenTree], &'a [TokenTree]) {
+pub fn split_comma<'a>(cx: &ExtCtxt, sp: Span, mac_name: &str, args: &'a [TokenTree])
+    -> PResult<(&'a [TokenTree], &'a [TokenTree])>
+{
     fn is_comma(t: &TokenTree) -> bool {
         match *t {
             TtToken(_, token::Comma) => true,
@@ -66,8 +78,8 @@ pub fn split_comma<'a>(cx: &ExtCtxt, sp: Span, args: &'a [TokenTree]) -> (&'a [T
         }
     }
     match args.iter().position(is_comma) {
-        Some(i) => (&args[..i], &args[1+i..]),
-        None => cx.span_fatal(sp, "expected two arguments to `html!`"),
+        Some(i) => Ok((&args[..i], &args[1+i..])),
+        None => error!(cx, sp, &format!("expected two arguments to `{}!`", mac_name)),
     }
 }
 
@@ -107,55 +119,53 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     }
 
     /// Parses and renders multiple blocks of markup.
-    fn markups(&mut self) {
+    fn markups(&mut self) -> PResult<()> {
         loop {
             match self.input {
-                [] => return,
+                [] => return Ok(()),
                 [semi!(), ..] => self.shift(1),
-                [_, ..] => if !self.markup() { return },
+                [_, ..] => try!(self.markup()),
             }
         }
     }
 
     /// Parses and renders a single block of markup.
-    ///
-    /// Returns `false` on error.
-    fn markup(&mut self) -> bool {
+    fn markup(&mut self) -> PResult<()> {
         match self.input {
             // Literal
             [minus!(), ref tt @ literal!(), ..] => {
                 self.shift(2);
-                self.literal(tt, true);
+                try!(self.literal(tt, true));
             },
             [ref tt @ literal!(), ..] => {
                 self.shift(1);
-                self.literal(tt, false);
+                try!(self.literal(tt, false))
             },
             // If
             [pound!(), ident!(sp, name), ..] if name.name == "if" => {
                 self.shift(2);
-                self.if_expr(sp);
+                try!(self.if_expr(sp));
             },
             // For
             [pound!(), ident!(sp, name), ..] if name.name == "for" => {
                 self.shift(2);
-                self.for_expr(sp);
+                try!(self.for_expr(sp));
             },
             // Splice
             [ref tt @ dollar!(), dollar!(), ..] => {
                 self.shift(2);
-                let expr = self.splice(tt.get_span());
+                let expr = try!(self.splice(tt.get_span()));
                 self.render.splice(expr, Escape::PassThru);
             },
             [ref tt @ dollar!(), ..] => {
                 self.shift(1);
-                let expr = self.splice(tt.get_span());
+                let expr = try!(self.splice(tt.get_span()));
                 self.render.splice(expr, Escape::Escape);
             },
             // Element
             [ident!(sp, name), ..] => {
                 self.shift(1);
-                self.element(sp, &name.name.as_str());
+                try!(self.element(sp, &name.name.as_str()));
             },
             // Block
             [TtDelimited(_, ref d), ..] if d.delim == DelimToken::Brace => {
@@ -165,54 +175,48 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                     // result inline
                     let mut i = &*d.tts;
                     mem::swap(&mut self.input, &mut i);
-                    self.markups();
+                    try!(self.markups());
                     mem::swap(&mut self.input, &mut i);
                 }
             },
             // ???
             _ => {
                 if let [ref tt, ..] = self.input {
-                    self.render.cx.span_err(tt.get_span(), "invalid syntax");
+                    parse_error!(self, tt.get_span(), "invalid syntax");
                 } else {
-                    self.render.cx.span_err(self.span, "unexpected end of block");
+                    parse_error!(self, self.span, "unexpected end of block");
                 }
-                return false;
             },
         }
-        true
+        Ok(())
     }
 
     /// Parses and renders a literal string or number.
-    fn literal(&mut self, tt: &TokenTree, minus: bool) {
-        let lit = self.with_rust_parser(vec![tt.clone()], RustParser::parse_lit);
-        let lit = match lit {
-            Ok(lit) => lit,
-            Err(err) => panic!(err),
-        };
-        match lit_to_string(self.render.cx, lit, minus) {
-            Some(s) => self.render.string(&s, Escape::Escape),
-            None => {},
-        }
+    fn literal(&mut self, tt: &TokenTree, minus: bool) -> PResult<()> {
+        let lit = try!(self.with_rust_parser(vec![tt.clone()], RustParser::parse_lit));
+        let s = try!(lit_to_string(self.render.cx, lit, minus));
+        self.render.string(&s, Escape::Escape);
+        Ok(())
     }
 
     /// Parses and renders an `#if` expression.
     ///
     /// The leading `#if` should already be consumed.
-    fn if_expr(&mut self, sp: Span) {
+    fn if_expr(&mut self, sp: Span) -> PResult<()> {
         // Parse the initial if
         let mut if_cond = vec![];
         let if_body;
         loop { match self.input {
             [TtDelimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
-                if_body = self.block(sp, &d.tts);
+                if_body = try!(self.block(sp, &d.tts));
                 break;
             },
             [ref tt, ..] => {
                 self.shift(1);
                 if_cond.push(tt.clone());
             },
-            [] => self.render.cx.span_fatal(sp, "expected body for this #if"),
+            [] => parse_error!(self, sp, "expected body for this #if"),
         }}
         // Parse the (optional) else
         let else_body = match self.input {
@@ -226,7 +230,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                             // rather than emitting it right away
                             let mut r = self.render.fork();
                             mem::swap(&mut self.render, &mut r);
-                            self.if_expr(sp);
+                            try!(self.if_expr(sp));
                             mem::swap(&mut self.render, &mut r);
                             r.into_stmts()
                         };
@@ -234,20 +238,21 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                     },
                     [TtDelimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                         self.shift(1);
-                        Some(self.block(sp, &d.tts))
+                        Some(try!(self.block(sp, &d.tts)))
                     },
-                    _ => self.render.cx.span_fatal(sp, "expected body for this #else"),
+                    _ => parse_error!(self, sp, "expected body for this #else"),
                 }
             },
             _ => None,
         };
         self.render.emit_if(if_cond, if_body, else_body);
+        Ok(())
     }
 
     /// Parses and renders a `#for` expression.
     ///
     /// The leading `#for` should already be consumed.
-    fn for_expr(&mut self, sp: Span) {
+    fn for_expr(&mut self, sp: Span) -> PResult<()> {
         let mut pattern = vec![];
         loop { match self.input {
             [ident!(in_), ..] if in_.name == "in" => {
@@ -258,7 +263,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 pattern.push(tt.clone());
             },
-            _ => self.render.cx.span_fatal(sp, "invalid #for"),
+            _ => parse_error!(self, sp, "invalid #for"),
         }}
         let pattern = self.with_rust_parser(pattern, RustParser::parse_pat);
         let mut iterable = vec![];
@@ -266,30 +271,31 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         loop { match self.input {
             [TtDelimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
-                body = self.block(sp, &d.tts);
+                body = try!(self.block(sp, &d.tts));
                 break;
             },
             [ref tt, ..] => {
                 self.shift(1);
                 iterable.push(tt.clone());
             },
-            _ => self.render.cx.span_fatal(sp, "invalid #for"),
+            _ => parse_error!(self, sp, "invalid #for"),
         }}
         let iterable = self.with_rust_parser(iterable, RustParser::parse_expr);
         self.render.emit_for(pattern, iterable, body);
+        Ok(())
     }
 
     /// Parses and renders a `$splice`.
     ///
     /// The leading `$` should already be consumed.
-    fn splice(&mut self, sp: Span) -> P<Expr> {
+    fn splice(&mut self, sp: Span) -> PResult<P<Expr>> {
         // First, munch a single token tree
         let mut tts = match self.input {
             [ref tt, ..] => {
                 self.shift(1);
                 vec![tt.clone()]
             },
-            [] => self.render.cx.span_fatal(sp, "expected expression for this splice"),
+            [] => parse_error!(self, sp, "expected expression for this splice"),
         };
         loop { match self.input {
             // Munch attribute lookups e.g. `$person.address.street`
@@ -305,30 +311,30 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             _ => break,
         }}
-        self.with_rust_parser(tts, RustParser::parse_expr)
+        Ok(self.with_rust_parser(tts, RustParser::parse_expr))
     }
 
     /// Parses and renders an element node.
     ///
     /// The element name should already be consumed.
-    fn element(&mut self, sp: Span, name: &str) {
+    fn element(&mut self, sp: Span, name: &str) -> PResult<()> {
         if self.in_attr {
-            self.render.cx.span_err(sp, "unexpected element, you silly bumpkin");
-            return;
+            parse_error!(self, sp, "unexpected element, you silly bumpkin");
         }
         self.render.element_open_start(name);
-        self.attrs();
+        try!(self.attrs());
         self.render.element_open_end();
         if let [slash!(), ..] = self.input {
             self.shift(1);
         } else {
-            self.markup();
+            try!(self.markup());
             self.render.element_close(name);
         }
+        Ok(())
     }
 
     /// Parses and renders the attributes of an element.
-    fn attrs(&mut self) {
+    fn attrs(&mut self) -> PResult<()> {
         loop { match self.input {
             [ident!(name), eq!(), ..] => {
                 // Non-empty attribute
@@ -338,7 +344,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                     // Parse a value under an attribute context
                     let mut in_attr = true;
                     mem::swap(&mut self.in_attr, &mut in_attr);
-                    self.markup();
+                    try!(self.markup());
                     mem::swap(&mut self.in_attr, &mut in_attr);
                 }
                 self.render.attribute_end();
@@ -349,7 +355,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 if let [ref tt @ eq!(), ..] = self.input {
                     // Toggle the attribute based on a boolean expression
                     self.shift(1);
-                    let cond = self.splice(tt.get_span());
+                    let cond = try!(self.splice(tt.get_span()));
                     // Silence "unnecessary parentheses" warnings
                     let cond = strip_outer_parens(cond).to_tokens(self.render.cx);
                     let body = {
@@ -363,25 +369,25 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                     self.render.attribute_empty(&name.name.as_str());
                 }
             },
-            _ => return,
+            _ => return Ok(()),
         }}
     }
 
     /// Parses the given token tree, returning a vector of statements.
-    fn block(&mut self, sp: Span, tts: &[TokenTree]) -> Vec<P<Stmt>> {
+    fn block(&mut self, sp: Span, tts: &[TokenTree]) -> PResult<Vec<P<Stmt>>> {
         let mut parse = Parser {
             in_attr: self.in_attr,
             input: tts,
             span: sp,
             render: self.render.fork(),
         };
-        parse.markups();
-        parse.into_render().into_stmts()
+        try!(parse.markups());
+        Ok(parse.into_render().into_stmts())
     }
 }
 
 /// Converts a literal to a string.
-fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> Option<String> {
+fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> PResult<String> {
     use syntax::ast::Lit_::*;
     let mut result = String::new();
     if minus {
@@ -390,15 +396,14 @@ fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> Option<String> {
     match lit.node {
         LitStr(s, _) => result.push_str(&s),
         LitByteStr(..) | LitByte(..) => {
-            cx.span_err(lit.span, "cannot splice binary data");
-            return None;
+            error!(cx, lit.span, "cannot splice binary data");
         },
         LitChar(c) => result.push(c),
         LitInt(x, _) => result.push_str(&x.to_string()),
         LitFloat(s, _) | LitFloatUnsuffixed(s) => result.push_str(&s),
         LitBool(b) => result.push_str(if b { "true" } else { "false" }),
     };
-    Some(result)
+    Ok(result)
 }
 
 /// If the expression is wrapped in parentheses, strip them off.
