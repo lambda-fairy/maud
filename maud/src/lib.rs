@@ -15,8 +15,9 @@ use std::io;
 /// ```
 /// # use maud::Escaper;
 /// use std::fmt::Write;
-/// write!(Escaper::new(String::new()), "<script>launchMissiles()</script>").unwrap();
-/// assert_eq!(result.into_inner(), "&lt;script&gt;launchMissiles()&lt;/script&gt;");
+/// let mut escaper = Escaper::new(String::new());
+/// write!(escaper, "<script>launchMissiles()</script>").unwrap();
+/// assert_eq!(escaper.into_inner(), "&lt;script&gt;launchMissiles()&lt;/script&gt;");
 /// ```
 pub struct Escaper<W: fmt::Write> {
     inner: W,
