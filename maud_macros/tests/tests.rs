@@ -1,9 +1,7 @@
-#![feature(plugin)]
+#![feature(fnbox, plugin)]
 #![plugin(maud_macros)]
 
 extern crate maud;
-
-use std::fmt;
 
 #[test]
 fn literals() {
@@ -274,22 +272,35 @@ mod issue_10 {
     }
 }
 
-#[test]
-fn call() {
+mod subtemplates {
+    use std::fmt;
+
     fn ducks(w: &mut fmt::Write) -> fmt::Result {
         write!(w, "Ducks")
     }
-    let mut s = String::new();
-    let swans = |yes|
-        if yes {
-            |w: &mut fmt::Write| write!(w, "Swans")
-        } else {
-            panic!("oh noes")
-        };
-    html!(s, {
-        #call ducks
-        #call (|w: &mut fmt::Write| write!(w, "Geese"))
-        #call swans(true)
-    }).unwrap();
-    assert_eq!(s, "DucksGeeseSwans");
+
+    #[test]
+    fn call() {
+        let mut s = String::new();
+        let swans = |yes|
+            if yes {
+                |w: &mut fmt::Write| write!(w, "Swans")
+            } else {
+                panic!("oh noes")
+            };
+        html!(s, {
+            #call ducks
+            #call (|w: &mut fmt::Write| write!(w, "Geese"))
+            #call swans(true)
+        }).unwrap();
+        assert_eq!(s, "DucksGeeseSwans");
+    }
+
+    #[test]
+    fn call_box() {
+        let mut s = String::new();
+        let ducks = Box::new(ducks);
+        html!(s, #call_box ducks).unwrap();
+        assert_eq!(s, "Ducks");
+    }
 }

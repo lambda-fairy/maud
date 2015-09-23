@@ -158,6 +158,11 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 let func = try!(self.splice(sp));
                 self.render.emit_call(func);
             },
+            [pound!(), ident!(sp, name), ..] if name.name == "call_box" => {
+                self.shift(2);
+                let func = try!(self.splice(sp));
+                self.render.emit_call_box(func);
+            },
             // Splice
             [ref tt @ dollar!(), dollar!(), ..] => {
                 self.shift(2);
