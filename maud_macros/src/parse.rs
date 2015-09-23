@@ -152,6 +152,12 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(2);
                 try!(self.for_expr(sp));
             },
+            // Call
+            [pound!(), ident!(sp, name), ..] if name.name == "call" => {
+                self.shift(2);
+                let func = try!(self.splice(sp));
+                self.render.emit_call(func);
+            },
             // Splice
             [ref tt @ dollar!(), dollar!(), ..] => {
                 self.shift(2);

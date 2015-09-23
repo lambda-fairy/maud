@@ -190,6 +190,13 @@ impl<'cx> Renderer<'cx> {
         let stmt = quote_stmt!(self.cx, for $pattern in $iterable { $body }).unwrap();
         self.push(stmt);
     }
+
+    pub fn emit_call(&mut self, func: P<Expr>) {
+        let w = self.writer;
+        let expr = quote_expr!(self.cx, ($func)(&mut *$w));
+        let stmt = self.wrap_try(expr);
+        self.push(stmt);
+    }
 }
 
 fn html_escape(s: &str) -> String {
