@@ -70,6 +70,7 @@ impl<'cx> Renderer<'cx> {
         quote_expr!(cx, {
             let mut $result = Ok(());
             $loop_label: loop {
+                #[allow(unused_imports)]
                 use ::std::fmt::Write;
                 match &mut $writer_expr {
                     $writer => {
