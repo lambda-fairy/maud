@@ -6,7 +6,7 @@ use syntax::diagnostic::FatalError;
 use syntax::ext::base::ExtCtxt;
 use syntax::parse::{self, PResult};
 use syntax::parse::parser::Parser as RustParser;
-use syntax::parse::token::{self, DelimToken};
+use syntax::parse::token::{BinOpToken, DelimToken, IdentStyle, Token};
 use syntax::parse::token::keywords::Keyword;
 use syntax::ptr::P;
 
@@ -23,40 +23,40 @@ macro_rules! parse_error {
 }
 
 macro_rules! dollar {
-    () => (TtToken(_, token::Dollar))
+    () => (TtToken(_, Token::Dollar))
 }
 macro_rules! pound {
-    () => (TtToken(_, token::Pound))
+    () => (TtToken(_, Token::Pound))
 }
 macro_rules! dot {
-    () => (TtToken(_, token::Dot))
+    () => (TtToken(_, Token::Dot))
 }
 macro_rules! eq {
-    () => (TtToken(_, token::Eq))
+    () => (TtToken(_, Token::Eq))
 }
 macro_rules! not {
-    () => (TtToken(_, token::Not))
+    () => (TtToken(_, Token::Not))
 }
 macro_rules! question {
-    () => (TtToken(_, token::Question))
+    () => (TtToken(_, Token::Question))
 }
 macro_rules! semi {
-    () => (TtToken(_, token::Semi))
+    () => (TtToken(_, Token::Semi))
 }
 macro_rules! minus {
-    () => (TtToken(_, token::BinOp(token::Minus)))
+    () => (TtToken(_, Token::BinOp(BinOpToken::Minus)))
 }
 macro_rules! slash {
-    () => (TtToken(_, token::BinOp(token::Slash)))
+    () => (TtToken(_, Token::BinOp(BinOpToken::Slash)))
 }
 macro_rules! literal {
-    () => (TtToken(_, token::Literal(..)))
+    () => (TtToken(_, Token::Literal(..)))
 }
 macro_rules! ident {
-    ($sp:pat, $x:pat) => (TtToken($sp, token::Ident($x, token::IdentStyle::Plain)))
+    ($sp:pat, $x:pat) => (TtToken($sp, Token::Ident($x, IdentStyle::Plain)))
 }
 macro_rules! keyword {
-    ($sp:pat, $x:ident) => (TtToken($sp, ref $x @ token::Ident(..)))
+    ($sp:pat, $x:ident) => (TtToken($sp, ref $x @ Token::Ident(..)))
 }
 
 pub fn parse(cx: &ExtCtxt, sp: Span, write: &[TokenTree], input: &[TokenTree])
@@ -77,7 +77,7 @@ pub fn split_comma<'a>(cx: &ExtCtxt, sp: Span, mac_name: &str, args: &'a [TokenT
 {
     fn is_comma(t: &TokenTree) -> bool {
         match *t {
-            TtToken(_, token::Comma) => true,
+            TtToken(_, Token::Comma) => true,
             _ => false,
         }
     }
@@ -114,7 +114,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                                               self.render.cx.cfg.clone());
         let result = callback(&mut parser);
         // Make sure all tokens were consumed
-        if parser.token != token::Eof {
+        if parser.token != Token::Eof {
             let token = parser.this_token_to_string();
             self.render.cx.span_err(parser.span,
                                     &format!("unexpected token: `{}`", token));
