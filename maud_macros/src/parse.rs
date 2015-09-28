@@ -7,6 +7,7 @@ use syntax::ext::base::ExtCtxt;
 use syntax::parse::{self, PResult};
 use syntax::parse::parser::Parser as RustParser;
 use syntax::parse::token::{self, DelimToken};
+use syntax::parse::token::keywords::Keyword;
 use syntax::ptr::P;
 
 use super::render::{Escape, Renderer};
@@ -52,8 +53,10 @@ macro_rules! literal {
     () => (TtToken(_, token::Literal(..)))
 }
 macro_rules! ident {
-    ($x:pat) => (ident!(_, $x));
     ($sp:pat, $x:pat) => (TtToken($sp, token::Ident($x, token::IdentStyle::Plain)))
+}
+macro_rules! keyword {
+    ($sp:pat, $x:ident) => (TtToken($sp, ref $x @ token::Ident(..)))
 }
 
 pub fn parse(cx: &ExtCtxt, sp: Span, write: &[TokenTree], input: &[TokenTree])
@@ -143,17 +146,17 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 try!(self.literal(tt, false))
             },
             // If
-            [pound!(), ident!(sp, name), ..] if name.name == "if" => {
+            [pound!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
                 self.shift(2);
                 try!(self.if_expr(sp));
             },
             // For
-            [pound!(), ident!(sp, name), ..] if name.name == "for" => {
+            [pound!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::For) => {
                 self.shift(2);
                 try!(self.for_expr(sp));
             },
             // Call
-            [pound!(), ident!(sp, name), ..] if name.name == "call" => {
+            [pound!(), ident!(sp, name), ..] if name.name.as_str() == "call" => {
                 self.shift(2);
                 let func = try!(self.splice(sp));
                 self.render.emit_call(func);
@@ -227,10 +230,10 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         }}
         // Parse the (optional) else
         let else_body = match self.input {
-            [pound!(), ident!(else_), ..] if else_.name == "else" => {
+            [pound!(), keyword!(_, k), ..] if k.is_keyword(Keyword::Else) => {
                 self.shift(2);
                 match self.input {
-                    [ident!(sp, if_), ..] if if_.name == "if" => {
+                    [keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
                         self.shift(1);
                         let else_body = {
                             // Parse an if expression, but capture the result
@@ -262,7 +265,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     fn for_expr(&mut self, sp: Span) -> PResult<()> {
         let mut pattern = vec![];
         loop { match self.input {
-            [ident!(in_), ..] if in_.name == "in" => {
+            [keyword!(_, k), ..] if k.is_keyword(Keyword::In) => {
                 self.shift(1);
                 break;
             },
@@ -306,7 +309,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         };
         loop { match self.input {
             // Munch attribute lookups e.g. `$person.address.street`
-            [ref dot @ dot!(), ref ident @ ident!(_), ..] => {
+            [ref dot @ dot!(), ref ident @ ident!(_, _), ..] => {
                 self.shift(2);
                 tts.push(dot.clone());
                 tts.push(ident.clone());
@@ -390,13 +393,13 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     /// Parses a HTML element or attribute name.
     fn name(&mut self) -> PResult<String> {
         let mut s = match self.input {
-            [ident!(name), ..] => {
+            [ident!(_, name), ..] => {
                 self.shift(1);
                 String::from(&name.name.as_str() as &str)
             },
             _ => return Err(FatalError),
         };
-        while let [minus!(), ident!(name), ..] = self.input {
+        while let [minus!(), ident!(_, name), ..] = self.input {
             self.shift(2);
             s.push('-');
             s.push_str(&name.name.as_str());
