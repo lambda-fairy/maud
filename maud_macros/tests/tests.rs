@@ -99,8 +99,9 @@ mod splices {
 
     #[test]
     fn raw_literals() {
+        use maud::PreEscaped;
         let mut s = String::new();
-        html!(s, $$"<pinkie>").unwrap();
+        html!(s, $PreEscaped("<pinkie>")).unwrap();
         assert_eq!(s, "<pinkie>");
     }
 

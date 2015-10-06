@@ -8,6 +8,32 @@
 use std::fmt;
 use std::io;
 
+/// Represents a type that can be rendered as HTML.
+///
+/// Most of the time you should implement `std::fmt::Display` instead,
+/// which will be picked up by the blanket impl.
+pub trait Render {
+    fn render(&self, &mut fmt::Write) -> fmt::Result;
+}
+
+impl<T: fmt::Display + ?Sized> Render for T {
+    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
+        use std::fmt::Write;
+        write!(Escaper::new(w), "{}", self)
+    }
+}
+
+/// A wrapper that renders the inner value without escaping.
+#[derive(Debug)]
+pub struct PreEscaped<T>(pub T);
+
+impl<T: fmt::Display> Render for PreEscaped<T> {
+    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
+        use std::fmt::Write;
+        write!(w, "{}", self.0)
+    }
+}
+
 /// An adapter that escapes HTML special characters.
 ///
 /// # Example

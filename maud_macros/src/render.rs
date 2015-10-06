@@ -7,12 +7,6 @@ use syntax::ptr::P;
 
 use maud::Escaper;
 
-#[derive(Copy, Clone)]
-pub enum Escape {
-    PassThru,
-    Escape,
-}
-
 pub struct Renderer<'cx> {
     pub cx: &'cx ExtCtxt<'cx>,
     writer: Ident,
@@ -116,29 +110,15 @@ impl<'cx> Renderer<'cx> {
             }).unwrap()
     }
 
-    /// Appends a literal string, with the specified escaping method.
-    pub fn string(&mut self, s: &str, escape: Escape) {
-        let escaped;
-        let s = match escape {
-            Escape::PassThru => s,
-            Escape::Escape => { escaped = html_escape(s); &*escaped },
-        };
-        self.push_str(s);
+    /// Appends a literal string.
+    pub fn string(&mut self, s: &str) {
+        self.push_str(&html_escape(s));
     }
 
     /// Appends the result of an expression, with the specified escaping method.
-    pub fn splice(&mut self, expr: P<Expr>, escape: Escape) {
+    pub fn splice(&mut self, expr: P<Expr>) {
         let w = self.writer;
-        let expr = match escape {
-            Escape::PassThru =>
-                quote_expr!(self.cx, write!($w, "{}", $expr)),
-            Escape::Escape =>
-                quote_expr!(self.cx,
-                    write!(
-                        ::maud::Escaper::new(&mut *$w),
-                        "{}",
-                        $expr)),
-        };
+        let expr = quote_expr!(self.cx, ::maud::Render::render(&$expr, &mut *$w));
         let stmt = self.wrap_try(expr);
         self.push(stmt);
     }

@@ -10,7 +10,7 @@ use syntax::parse::token::{BinOpToken, DelimToken, IdentStyle, Token};
 use syntax::parse::token::keywords::Keyword;
 use syntax::ptr::P;
 
-use super::render::{Escape, Renderer};
+use super::render::Renderer;
 
 macro_rules! error {
     ($cx:expr, $sp:expr, $msg:expr) => ({
@@ -162,15 +162,10 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.render.emit_call(func);
             },
             // Splice
-            [ref tt @ dollar!(), dollar!(), ..] => {
-                self.shift(2);
-                let expr = try!(self.splice(tt.get_span()));
-                self.render.splice(expr, Escape::PassThru);
-            },
             [ref tt @ dollar!(), ..] => {
                 self.shift(1);
                 let expr = try!(self.splice(tt.get_span()));
-                self.render.splice(expr, Escape::Escape);
+                self.render.splice(expr);
             },
             // Element
             [ident!(sp, _), ..] => {
@@ -205,7 +200,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     fn literal(&mut self, tt: &TokenTree, minus: bool) -> PResult<()> {
         let lit = try!(self.with_rust_parser(vec![tt.clone()], RustParser::parse_lit));
         let s = try!(lit_to_string(self.render.cx, lit, minus));
-        self.render.string(&s, Escape::Escape);
+        self.render.string(&s);
         Ok(())
     }
 
