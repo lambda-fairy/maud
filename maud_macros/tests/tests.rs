@@ -294,3 +294,18 @@ fn call() {
     }).unwrap();
     assert_eq!(s, "DucksGeeseSwans");
 }
+
+#[test]
+fn issue_23() {
+    macro_rules! to_string {
+        ($($x:tt)*) => {{
+            let mut s = String::new();
+            html!(s, $($x)*).unwrap();
+            s
+        }}
+    }
+
+    let name = "Lyra";
+    let s = to_string!(p { "Hi, " $name "!" });
+    assert_eq!(s, "<p>Hi, Lyra!</p>");
+}

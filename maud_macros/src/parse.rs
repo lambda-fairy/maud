@@ -55,6 +55,9 @@ macro_rules! literal {
 macro_rules! ident {
     ($sp:pat, $x:pat) => (TtToken($sp, Token::Ident($x, IdentStyle::Plain)))
 }
+macro_rules! substnt {
+    ($sp:pat, $x:pat) => (TtToken($sp, Token::SubstNt($x, IdentStyle::Plain)))
+}
 macro_rules! keyword {
     ($sp:pat, $x:ident) => (TtToken($sp, ref $x @ Token::Ident(..)))
 }
@@ -165,6 +168,14 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             [ref tt @ dollar!(), ..] => {
                 self.shift(1);
                 let expr = try!(self.splice(tt.get_span()));
+                self.render.splice(expr);
+            },
+            [substnt!(sp, ident), ..] => {
+                self.shift(1);
+                // Parse `SubstNt` as `[Dollar, Ident]`
+                // See <https://github.com/lfairy/maud/issues/23>
+                let prefix = TtToken(sp, Token::Ident(ident, IdentStyle::Plain));
+                let expr = try!(self.splice_with_prefix(prefix));
                 self.render.splice(expr);
             },
             // Element
@@ -295,13 +306,20 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     /// The leading `$` should already be consumed.
     fn splice(&mut self, sp: Span) -> PResult<P<Expr>> {
         // First, munch a single token tree
-        let mut tts = match self.input {
+        let prefix = match self.input {
             [ref tt, ..] => {
                 self.shift(1);
-                vec![tt.clone()]
+                tt.clone()
             },
             [] => parse_error!(self, sp, "expected expression for this splice"),
         };
+        self.splice_with_prefix(prefix)
+    }
+
+    /// Parses and renders a `$splice`, given a prefix that we've already
+    /// consumed.
+    fn splice_with_prefix(&mut self, prefix: TokenTree) -> PResult<P<Expr>> {
+        let mut tts = vec![prefix];
         loop { match self.input {
             // Munch attribute lookups e.g. `$person.address.street`
             [ref dot @ dot!(), ref ident @ ident!(_, _), ..] => {
