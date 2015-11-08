@@ -7,7 +7,7 @@ extern crate syntax;
 extern crate rustc;
 extern crate maud;
 
-use syntax::ast::{Expr, TokenTree, TtToken};
+use syntax::ast::{Expr, TokenTree};
 use syntax::codemap::{DUMMY_SP, Span};
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
 use syntax::parse::{token, PResult};
@@ -28,7 +28,7 @@ fn html_utf8(cx: &mut ExtCtxt, sp: Span, mac_name: &str, args: &[TokenTree]) -> 
     let io_write = io_write.to_vec();
     let fmt_write = token::gensym_ident("__maud_utf8_writer");
     let fmt_write = vec![
-        TtToken(DUMMY_SP, token::Ident(fmt_write, token::IdentStyle::Plain))];
+        TokenTree::Token(DUMMY_SP, token::Ident(fmt_write, token::IdentStyle::Plain))];
     let expr = try!(parse::parse(cx, sp, &fmt_write, input));
     Ok(quote_expr!(cx,
         match ::maud::Utf8Writer::new(&mut $io_write) {

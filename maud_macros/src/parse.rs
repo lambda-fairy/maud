@@ -1,5 +1,5 @@
 use std::mem;
-use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree, TtDelimited, TtToken};
+use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree};
 use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
 use syntax::diagnostic::FatalError;
@@ -23,43 +23,43 @@ macro_rules! parse_error {
 }
 
 macro_rules! dollar {
-    () => (TtToken(_, Token::Dollar))
+    () => (TokenTree::Token(_, Token::Dollar))
 }
 macro_rules! pound {
-    () => (TtToken(_, Token::Pound))
+    () => (TokenTree::Token(_, Token::Pound))
 }
 macro_rules! dot {
-    () => (TtToken(_, Token::Dot))
+    () => (TokenTree::Token(_, Token::Dot))
 }
 macro_rules! eq {
-    () => (TtToken(_, Token::Eq))
+    () => (TokenTree::Token(_, Token::Eq))
 }
 macro_rules! not {
-    () => (TtToken(_, Token::Not))
+    () => (TokenTree::Token(_, Token::Not))
 }
 macro_rules! question {
-    () => (TtToken(_, Token::Question))
+    () => (TokenTree::Token(_, Token::Question))
 }
 macro_rules! semi {
-    () => (TtToken(_, Token::Semi))
+    () => (TokenTree::Token(_, Token::Semi))
 }
 macro_rules! minus {
-    () => (TtToken(_, Token::BinOp(BinOpToken::Minus)))
+    () => (TokenTree::Token(_, Token::BinOp(BinOpToken::Minus)))
 }
 macro_rules! slash {
-    () => (TtToken(_, Token::BinOp(BinOpToken::Slash)))
+    () => (TokenTree::Token(_, Token::BinOp(BinOpToken::Slash)))
 }
 macro_rules! literal {
-    () => (TtToken(_, Token::Literal(..)))
+    () => (TokenTree::Token(_, Token::Literal(..)))
 }
 macro_rules! ident {
-    ($sp:pat, $x:pat) => (TtToken($sp, Token::Ident($x, IdentStyle::Plain)))
+    ($sp:pat, $x:pat) => (TokenTree::Token($sp, Token::Ident($x, IdentStyle::Plain)))
 }
 macro_rules! substnt {
-    ($sp:pat, $x:pat) => (TtToken($sp, Token::SubstNt($x, IdentStyle::Plain)))
+    ($sp:pat, $x:pat) => (TokenTree::Token($sp, Token::SubstNt($x, IdentStyle::Plain)))
 }
 macro_rules! keyword {
-    ($sp:pat, $x:ident) => (TtToken($sp, ref $x @ Token::Ident(..)))
+    ($sp:pat, $x:ident) => (TokenTree::Token($sp, ref $x @ Token::Ident(..)))
 }
 
 pub fn parse(cx: &ExtCtxt, sp: Span, write: &[TokenTree], input: &[TokenTree])
@@ -80,7 +80,7 @@ pub fn split_comma<'a>(cx: &ExtCtxt, sp: Span, mac_name: &str, args: &'a [TokenT
 {
     fn is_comma(t: &TokenTree) -> bool {
         match *t {
-            TtToken(_, Token::Comma) => true,
+            TokenTree::Token(_, Token::Comma) => true,
             _ => false,
         }
     }
@@ -174,7 +174,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 // Parse `SubstNt` as `[Dollar, Ident]`
                 // See <https://github.com/lfairy/maud/issues/23>
-                let prefix = TtToken(sp, Token::Ident(ident, IdentStyle::Plain));
+                let prefix = TokenTree::Token(sp, Token::Ident(ident, IdentStyle::Plain));
                 let expr = try!(self.splice_with_prefix(prefix));
                 self.render.splice(expr);
             },
@@ -184,7 +184,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 try!(self.element(sp, &name));
             },
             // Block
-            [TtDelimited(_, ref d), ..] if d.delim == DelimToken::Brace => {
+            [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
                 {
                     // Parse the contents of the block, emitting the
@@ -223,7 +223,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         let mut if_cond = vec![];
         let if_body;
         loop { match self.input {
-            [TtDelimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
+            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
                 if_body = try!(self.block(sp, &d.tts));
                 break;
@@ -252,7 +252,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                         };
                         Some(else_body)
                     },
-                    [TtDelimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
+                    [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                         self.shift(1);
                         Some(try!(self.block(sp, &d.tts)))
                     },
@@ -281,11 +281,11 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             _ => parse_error!(self, sp, "invalid #for"),
         }}
-        let pattern = self.with_rust_parser(pattern, RustParser::parse_pat);
+        let pattern = try!(self.with_rust_parser(pattern, RustParser::parse_pat_nopanic));
         let mut iterable = vec![];
         let body;
         loop { match self.input {
-            [TtDelimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
+            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
                 body = try!(self.block(sp, &d.tts));
                 break;
@@ -296,7 +296,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             _ => parse_error!(self, sp, "invalid #for"),
         }}
-        let iterable = self.with_rust_parser(iterable, RustParser::parse_expr);
+        let iterable = try!(self.with_rust_parser(iterable, RustParser::parse_expr_nopanic));
         self.render.emit_for(pattern, iterable, body);
         Ok(())
     }
@@ -328,13 +328,13 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 tts.push(ident.clone());
             },
             // Munch function calls `()` and indexing operations `[]`
-            [TtDelimited(sp, ref d), ..] if d.delim != DelimToken::Brace => {
+            [TokenTree::Delimited(sp, ref d), ..] if d.delim != DelimToken::Brace => {
                 self.shift(1);
-                tts.push(TtDelimited(sp, d.clone()));
+                tts.push(TokenTree::Delimited(sp, d.clone()));
             },
             _ => break,
         }}
-        Ok(self.with_rust_parser(tts, RustParser::parse_expr))
+        self.with_rust_parser(tts, RustParser::parse_expr_nopanic)
     }
 
     /// Parses and renders an element node.

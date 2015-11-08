@@ -1,5 +1,5 @@
 use std::fmt::Write;
-use syntax::ast::{Expr, Ident, Pat, Stmt, TokenTree, TtToken};
+use syntax::ast::{Expr, Ident, Pat, Stmt, TokenTree};
 use syntax::codemap::DUMMY_SP;
 use syntax::ext::base::ExtCtxt;
 use syntax::parse::token;
@@ -26,7 +26,7 @@ impl<'cx> Renderer<'cx> {
             cx: cx,
             writer: writer,
             result: result,
-            loop_label: vec![TtToken(DUMMY_SP, token::Lifetime(loop_label))],
+            loop_label: vec![TokenTree::Token(DUMMY_SP, token::Lifetime(loop_label))],
             stmts: vec![],
             tail: String::new(),
         }
