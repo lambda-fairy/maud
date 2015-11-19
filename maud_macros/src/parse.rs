@@ -281,7 +281,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             _ => parse_error!(self, sp, "invalid #for"),
         }}
-        let pattern = try!(self.with_rust_parser(pattern, RustParser::parse_pat_nopanic));
+        let pattern = try!(self.with_rust_parser(pattern, RustParser::parse_pat));
         let mut iterable = vec![];
         let body;
         loop { match self.input {
@@ -296,7 +296,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             _ => parse_error!(self, sp, "invalid #for"),
         }}
-        let iterable = try!(self.with_rust_parser(iterable, RustParser::parse_expr_nopanic));
+        let iterable = try!(self.with_rust_parser(iterable, RustParser::parse_expr));
         self.render.emit_for(pattern, iterable, body);
         Ok(())
     }
@@ -334,7 +334,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             _ => break,
         }}
-        self.with_rust_parser(tts, RustParser::parse_expr_nopanic)
+        self.with_rust_parser(tts, RustParser::parse_expr)
     }
 
     /// Parses and renders an element node.
