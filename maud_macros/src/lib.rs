@@ -3,17 +3,17 @@
 #![feature(slice_patterns)]
 #![feature(rustc_private)]
 
+extern crate rustc_plugin;
 extern crate syntax;
-extern crate rustc;
 extern crate maud;
 
+use rustc_plugin::Registry;
 use syntax::ast::{Expr, TokenTree};
 use syntax::codemap::{DUMMY_SP, Span};
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
 use syntax::parse::{token, PResult};
 use syntax::print::pprust;
 use syntax::ptr::P;
-use rustc::plugin::Registry;
 
 mod parse;
 mod render;
