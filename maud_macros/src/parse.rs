@@ -2,7 +2,7 @@ use std::mem;
 use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree};
 use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
-use syntax::diagnostic::FatalError;
+use syntax::errors::FatalError;
 use syntax::ext::base::ExtCtxt;
 use syntax::parse::{self, PResult};
 use syntax::parse::parser::Parser as RustParser;
@@ -15,7 +15,7 @@ use super::render::Renderer;
 macro_rules! error {
     ($cx:expr, $sp:expr, $msg:expr) => ({
         $cx.span_err($sp, $msg);
-        return Err(::syntax::diagnostic::FatalError);
+        return Err(::syntax::errors::FatalError);
     })
 }
 macro_rules! parse_error {
