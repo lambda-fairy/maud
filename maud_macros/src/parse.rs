@@ -2,15 +2,16 @@ use std::mem;
 use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree};
 use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
-use syntax::errors::FatalError;
+use syntax::errors::{DiagnosticBuilder, FatalError};
 use syntax::ext::base::ExtCtxt;
-use syntax::parse::{self, PResult};
+use syntax::parse;
 use syntax::parse::parser::Parser as RustParser;
 use syntax::parse::token::{BinOpToken, DelimToken, IdentStyle, Token};
 use syntax::parse::token::keywords::Keyword;
 use syntax::ptr::P;
 
 use super::render::Renderer;
+use super::PResult;
 
 macro_rules! error {
     ($cx:expr, $sp:expr, $msg:expr) => ({
@@ -110,12 +111,12 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     }
 
     /// Constructs a Rust AST parser from the given token tree.
-    fn with_rust_parser<F, T>(&self, tts: Vec<TokenTree>, callback: F) -> T where
-        F: FnOnce(&mut RustParser<'cx>) -> T
+    fn with_rust_parser<F, T>(&self, tts: Vec<TokenTree>, callback: F) -> PResult<T> where
+        F: FnOnce(&mut RustParser<'cx>) -> Result<T, DiagnosticBuilder<'cx>>
     {
         let mut parser = parse::tts_to_parser(self.render.cx.parse_sess, tts,
                                               self.render.cx.cfg.clone());
-        let result = callback(&mut parser);
+        let result = callback(&mut parser).map_err(|mut e| { e.emit(); FatalError });
         // Make sure all tokens were consumed
         if parser.token != Token::Eof {
             let token = parser.this_token_to_string();

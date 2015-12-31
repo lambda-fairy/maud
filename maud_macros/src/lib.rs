@@ -10,13 +10,16 @@ extern crate maud;
 use rustc_plugin::Registry;
 use syntax::ast::{Expr, TokenTree};
 use syntax::codemap::{DUMMY_SP, Span};
+use syntax::errors::FatalError;
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
-use syntax::parse::{token, PResult};
+use syntax::parse::token;
 use syntax::print::pprust;
 use syntax::ptr::P;
 
 mod parse;
 mod render;
+
+pub type PResult<T> = Result<T, FatalError>;
 
 fn html(cx: &mut ExtCtxt, sp: Span, mac_name: &str, args: &[TokenTree]) -> PResult<P<Expr>> {
     let (write, input) = try!(parse::split_comma(cx, sp, mac_name, args));
@@ -55,7 +58,7 @@ macro_rules! generate_debug_wrappers {
         {
             match $mac_name(cx, sp, concat!(stringify!($mac_name), "_debug"), args) {
                 Ok(expr) => {
-                    cx.span_note(sp, &format!("expansion:\n{}",
+                    cx.span_warn(sp, &format!("expansion:\n{}",
                                               pprust::expr_to_string(&expr)));
                     MacEager::expr(expr)
                 },
