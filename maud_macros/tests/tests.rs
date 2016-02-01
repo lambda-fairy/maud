@@ -309,3 +309,12 @@ fn issue_23() {
     let s = to_string!(p { "Hi, " $name "!" });
     assert_eq!(s, "<p>Hi, Lyra!</p>");
 }
+
+#[test]
+fn tuple_accessors() {
+    let mut s = String::new();
+    let a = ("ducks", "geese");
+    html!(s, { $a.0 }).unwrap();
+    assert_eq!(s, "ducks");
+}
+
