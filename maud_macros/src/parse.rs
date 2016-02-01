@@ -190,6 +190,10 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 let name = try!(self.name());
                 try!(self.element(sp, &name));
             },
+            // Shorthand div element
+            [dot!(), ident!(sp, _), ..] => {
+                try!(self.element(sp, "div"));
+            },
             // Block
             [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
@@ -364,6 +368,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             parse_error!(self, sp, "unexpected element, you silly bumpkin");
         }
         self.render.element_open_start(name);
+        try!(self.class_shorthand());
         try!(self.attrs());
         self.render.element_open_end();
         if let [slash!(), ..] = self.input {
@@ -371,6 +376,30 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         } else {
             try!(self.markup());
             self.render.element_close(name);
+        }
+        Ok(())
+    }
+
+    /// Parses and renders the attributes of an element.
+    fn class_shorthand(&mut self) -> PResult<()> {
+        let mut classes = Vec::new();
+        loop {
+            match self.input {
+                [dot!(), ident!(_, _), ..] => {
+                    self.shift(1);
+                    classes.push(try!(self.name()));
+                },
+                _ => break,
+            }
+        }
+        if !classes.is_empty() {
+            self.render.attribute_start("class");
+            let mut s = String::new();
+            for class in classes {
+              s = s + &*class + " ";
+            }
+            self.render.string(s.trim());
+            self.render.attribute_end();
         }
         Ok(())
     }

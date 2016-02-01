@@ -330,3 +330,38 @@ fn splice_with_path() {
     html!(s, $inner::name()).unwrap();
     assert_eq!(s, "Maud");
 }
+
+#[test]
+fn class_shorthand() {
+    let mut s = String::new();
+    html!(s, p { "Hi, " span.name { "Lyra" } "!" }).unwrap();
+    assert_eq!(s, "<p>Hi, <span class=\"name\">Lyra</span>!</p>");
+}
+
+#[test]
+fn div_class_shorthand() {
+    let mut s = String::new();
+    html!(s, p { "Hi, " .name { "Lyra" } "!" }).unwrap();
+    assert_eq!(s, "<p>Hi, <div class=\"name\">Lyra</div>!</p>");
+}
+
+#[test]
+fn classes_shorthand() {
+    let mut s = String::new();
+    html!(s, p { "Hi, " span.name.here { "Lyra" } "!" }).unwrap();
+    assert_eq!(s, "<p>Hi, <span class=\"name here\">Lyra</span>!</p>");
+}
+
+#[test]
+fn div_classes_shorthand() {
+    let mut s = String::new();
+    html!(s, p { "Hi, " .name.here { "Lyra" } "!" }).unwrap();
+    assert_eq!(s, "<p>Hi, <div class=\"name here\">Lyra</div>!</p>");
+}
+
+#[test]
+fn div_classes_shorthand_with_attrs() {
+    let mut s = String::new();
+    html!(s, p { "Hi, " .name.here id="thing" { "Lyra" } "!" }).unwrap();
+    assert_eq!(s, "<p>Hi, <div class=\"name here\" id=\"thing\">Lyra</div>!</p>");
+}
