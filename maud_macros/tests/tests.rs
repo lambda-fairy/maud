@@ -283,7 +283,6 @@ mod control {
         }
     }
 
-
     #[test]
     fn match_expr_with_guards() {
         for &(input, output) in [(Some(1), "one"), (None, "none"), (Some(2), "2")].iter() {
@@ -294,6 +293,21 @@ mod control {
                   Some(value) => ^value,
                   None => "none",
                 }
+            }).unwrap();
+            assert_eq!(s, output);
+        }
+    }
+
+    #[test]
+    fn match_in_attribute() {
+        for &(input, output) in [(1, "<span class=\"one\">1</span>"), (2, "<span class=\"two\">2</span>"), (3, "<span class=\"many\">3</span>")].iter() {
+            let mut s = String::new();
+            html!(s, {
+                span class=@match input {
+                    1 => "one",
+                    2 => "two",
+                    _ => "many",
+                } { ^input }
             }).unwrap();
             assert_eq!(s, output);
         }
