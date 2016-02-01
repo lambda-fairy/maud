@@ -394,11 +394,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         }
         if !classes.is_empty() {
             self.render.attribute_start("class");
-            let mut s = String::new();
-            for class in classes {
-              s = s + &*class + " ";
-            }
-            self.render.string(s.trim());
+            self.render.string(&classes.join(" "));
             self.render.attribute_end();
         }
         Ok(())
