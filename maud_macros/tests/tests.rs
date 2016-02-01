@@ -309,3 +309,17 @@ fn issue_23() {
     let s = to_string!(p { "Hi, " $name "!" });
     assert_eq!(s, "<p>Hi, Lyra!</p>");
 }
+
+#[test]
+fn splice_with_path() {
+    mod inner {
+        pub fn name() -> &'static str {
+            "Rusticle"
+        }
+    }
+
+    let mut s = String::new();
+    html!(s, $inner::name()).unwrap();
+    assert_eq!(s, "Rusticle");
+}
+
