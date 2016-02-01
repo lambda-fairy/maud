@@ -1,5 +1,6 @@
 use std::mem;
-use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree};
+use std::rc::Rc;
+use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree, Delimited};
 use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
 use syntax::errors::{DiagnosticBuilder, FatalError};
@@ -43,6 +44,12 @@ macro_rules! question {
 }
 macro_rules! semi {
     () => (TokenTree::Token(_, Token::Semi))
+}
+macro_rules! comma {
+    () => (TokenTree::Token(_, Token::Comma))
+}
+macro_rules! fat_arrow {
+    () => (TokenTree::Token(_, Token::FatArrow))
 }
 macro_rules! minus {
     () => (TokenTree::Token(_, Token::BinOp(BinOpToken::Minus)))
@@ -164,6 +171,11 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::For) => {
                 self.shift(2);
                 try!(self.for_expr(sp));
+            },
+            // Match
+            [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::Match) => {
+                self.shift(2);
+                try!(self.match_expr(sp));
             },
             // Call
             [at!(), ident!(sp, name), ..] if name.name.as_str() == "call" => {
@@ -298,6 +310,100 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         let iterable = try!(self.with_rust_parser(iterable, RustParser::parse_expr));
         self.render.emit_for(pattern, iterable, body);
         Ok(())
+    }
+
+    /// Parses and renders a `@match` expression.
+    ///
+    /// The leading `@match` should already be consumed.
+    fn match_expr(&mut self, sp: Span) -> PResult<()> {
+        // Parse the initial match
+        let mut match_var = vec![];
+        let match_bodies;
+        loop { match self.input {
+            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
+                self.shift(1);
+                match_bodies = try!(Parser {
+                    in_attr: self.in_attr,
+                    input: &d.tts,
+                    span: sp,
+                    render: self.render.fork(),
+                }.match_bodies());
+                break;
+            },
+            [ref tt, ..] => {
+                self.shift(1);
+                match_var.push(tt.clone());
+            },
+            [] => parse_error!(self, sp, "expected body for this #match"),
+        }}
+        let match_var = try!(self.with_rust_parser(match_var, RustParser::parse_expr));
+        self.render.emit_match(match_var, match_bodies);
+        Ok(())
+    }
+
+    fn match_bodies(&mut self) -> PResult<Vec<TokenTree>> {
+        let mut bodies = Vec::new();
+        loop {
+            match self.input {
+                [] => break,
+                [ref tt @ comma!(), ..] => {
+                    self.shift(1);
+                    bodies.push(tt.clone());
+                },
+                [TokenTree::Token(sp, _), ..] | [TokenTree::Delimited(sp, _), ..] | [TokenTree::Sequence(sp, _), ..] => {
+                    bodies.append(&mut try!(self.match_body(sp)));
+                },
+            }
+        }
+        Ok(bodies)
+    }
+
+    fn match_body(&mut self, sp: Span) -> PResult<Vec<TokenTree>> {
+        let mut body = vec![];
+        loop { match self.input {
+            [ref tt @ fat_arrow!(), ..] => {
+                self.shift(1);
+                body.push(tt.clone());
+                break;
+            },
+            [ref tt, ..] => {
+                self.shift(1);
+                body.push(tt.clone());
+            },
+            _ => parse_error!(self, sp, "invalid #match pattern"),
+        }}
+        let mut expr = Vec::new();
+        loop { match self.input {
+            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
+                if expr.is_empty() {
+                    self.shift(1);
+                    expr = try!(self.block(sp, &d.tts)).to_tokens(self.render.cx);
+                    break;
+                } else {
+                    self.shift(1);
+                    expr.push(TokenTree::Delimited(sp, d.clone()));
+                }
+            },
+            [comma!(), ..] | [] => {
+                if expr.is_empty() {
+                    parse_error!(self, sp, "expected body for this #match arm");
+                } else {
+                    expr = try!(self.block(sp, &expr)).to_tokens(self.render.cx);
+                    break;
+                }
+            },
+            [ref tt, ..] => {
+                self.shift(1);
+                expr.push(tt.clone());
+            },
+        }}
+        body.push(TokenTree::Delimited(sp, Rc::new(Delimited {
+          delim: DelimToken::Brace,
+          open_span: sp,
+          tts: expr,
+          close_span: sp,
+        })));
+        Ok(body)
     }
 
     /// Parses and renders a `^splice`.

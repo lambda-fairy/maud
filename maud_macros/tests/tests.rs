@@ -250,6 +250,54 @@ mod control {
                 "<li>Sweetie Belle</li>",
                 "</ul>"));
     }
+
+    #[test]
+    fn match_expr() {
+        for &(input, output) in [(Some("yay"), "<div>yay</div>"), (None, "oh noes")].iter() {
+            let mut s = String::new();
+            html!(s, {
+                @match input {
+                  Some(value) => {
+                    div { ^value }
+                  },
+                  None => {
+                    "oh noes"
+                  },
+                }
+            }).unwrap();
+            assert_eq!(s, output);
+        }
+    }
+
+    #[test]
+    fn match_expr_without_delims() {
+        for &(input, output) in [(Some("yay"), "yay"), (None, "<span>oh noes</span>")].iter() {
+            let mut s = String::new();
+            html!(s, {
+                @match input {
+                  Some(value) => ^value,
+                  None => span { "oh noes" },
+                }
+            }).unwrap();
+            assert_eq!(s, output);
+        }
+    }
+
+
+    #[test]
+    fn match_expr_with_guards() {
+        for &(input, output) in [(Some(1), "one"), (None, "none"), (Some(2), "2")].iter() {
+            let mut s = String::new();
+            html!(s, {
+                @match input {
+                  Some(value) if value == 1 => "one",
+                  Some(value) => ^value,
+                  None => "none",
+                }
+            }).unwrap();
+            assert_eq!(s, output);
+        }
+    }
 }
 
 #[test]

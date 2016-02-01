@@ -172,6 +172,11 @@ impl<'cx> Renderer<'cx> {
         self.push(stmt);
     }
 
+    pub fn emit_match(&mut self, match_var: P<Expr>, match_body: Vec<TokenTree>) {
+        let stmt = quote_stmt!(self.cx, match $match_var { $match_body }).unwrap();
+        self.push(stmt);
+    }
+
     pub fn emit_call(&mut self, func: P<Expr>) {
         let w = self.writer;
         let expr = quote_expr!(self.cx, ($func)(&mut *$w));
