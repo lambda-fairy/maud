@@ -6,7 +6,7 @@ use syntax::errors::{DiagnosticBuilder, FatalError};
 use syntax::ext::base::ExtCtxt;
 use syntax::parse;
 use syntax::parse::parser::Parser as RustParser;
-use syntax::parse::token::{BinOpToken, DelimToken, IdentStyle, Token};
+use syntax::parse::token::{BinOpToken, DelimToken, IdentStyle, Token, Lit as LitToken};
 use syntax::parse::token::keywords::Keyword;
 use syntax::ptr::P;
 
@@ -52,6 +52,9 @@ macro_rules! slash {
 }
 macro_rules! literal {
     () => (TokenTree::Token(_, Token::Literal(..)))
+}
+macro_rules! integer {
+    () => (TokenTree::Token(_, Token::Literal(LitToken::Integer(_), _)))
 }
 macro_rules! ident {
     ($sp:pat, $x:pat) => (TokenTree::Token($sp, Token::Ident($x, IdentStyle::Plain)))
@@ -327,6 +330,12 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(2);
                 tts.push(dot.clone());
                 tts.push(ident.clone());
+            },
+            // Munch tuple attribute lookups e.g. `$person.1.2`
+            [ref dot @ dot!(), ref num @ integer!(), ..] => {
+                self.shift(2);
+                tts.push(dot.clone());
+                tts.push(num.clone());
             },
             // Munch function calls `()` and indexing operations `[]`
             [TokenTree::Delimited(sp, ref d), ..] if d.delim != DelimToken::Brace => {
