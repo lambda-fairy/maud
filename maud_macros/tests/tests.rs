@@ -424,3 +424,30 @@ fn issue_26_3() {
     let s = to_string!(p { "Hi, " ^{"person called ".to_string() + name} "!" });
     assert_eq!(s, "<p>Hi, person called Lyra!</p>");
 }
+
+#[test]
+fn issue_21() {
+    macro_rules! greet {
+        () => ({
+            let mut result = String::new();
+            let name = "Pinkie Pie";
+            html!(result, p { "Hello, " ^name "!" }).map(|()| result)
+        })
+    }
+
+    let s = greet!().unwrap();
+    assert_eq!(s, "<p>Hello, Pinkie Pie!</p>");
+}
+
+#[test]
+fn issue_21_2() {
+    macro_rules! greet {
+        ($name:expr) => ({
+            let mut result = String::new();
+            html!(result, p { "Hello, " ^$name "!" }).map(|()| result)
+        })
+    }
+
+    let s = greet!("Pinkie Pie").unwrap();
+    assert_eq!(s, "<p>Hello, Pinkie Pie!</p>");
+}
