@@ -379,3 +379,48 @@ fn render_once_by_move_with_copy() {
     html!(s, ^once).unwrap();
     assert_eq!(s, "pinkie pinkie ");
 }
+
+#[test]
+fn issue_26() {
+    macro_rules! to_string {
+        ($($x:tt)*) => {{
+            let mut s = String::new();
+            html!(s, $($x)*).unwrap();
+            s
+        }}
+    }
+
+    let name = "Lyra";
+    let s = to_string!(p { "Hi, " ^(name) "!" });
+    assert_eq!(s, "<p>Hi, Lyra!</p>");
+}
+
+#[test]
+fn issue_26_2() {
+    macro_rules! to_string {
+        ($($x:tt)*) => {{
+            let mut s = String::new();
+            html!(s, $($x)*).unwrap();
+            s
+        }}
+    }
+
+    let name = "Lyra";
+    let s = to_string!(p { "Hi, " ^("person called ".to_string() + name) "!" });
+    assert_eq!(s, "<p>Hi, person called Lyra!</p>");
+}
+
+#[test]
+fn issue_26_3() {
+    macro_rules! to_string {
+        ($($x:tt)*) => {{
+            let mut s = String::new();
+            html!(s, $($x)*).unwrap();
+            s
+        }}
+    }
+
+    let name = "Lyra";
+    let s = to_string!(p { "Hi, " ^{"person called ".to_string() + name} "!" });
+    assert_eq!(s, "<p>Hi, person called Lyra!</p>");
+}
