@@ -32,6 +32,9 @@ macro_rules! pound {
 macro_rules! dot {
     () => (TokenTree::Token(_, Token::Dot))
 }
+macro_rules! modsep {
+    () => (TokenTree::Token(_, Token::ModSep))
+}
 macro_rules! eq {
     () => (TokenTree::Token(_, Token::Eq))
 }
@@ -336,6 +339,12 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(2);
                 tts.push(dot.clone());
                 tts.push(num.clone());
+            },
+            // Munch path lookups e.g. `$some_mod::Struct`
+            [ref sep @ modsep!(), ref ident @ ident!(_, _), ..] => {
+                self.shift(2);
+                tts.push(sep.clone());
+                tts.push(ident.clone());
             },
             // Munch function calls `()` and indexing operations `[]`
             [TokenTree::Delimited(sp, ref d), ..] if d.delim != DelimToken::Brace => {

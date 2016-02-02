@@ -318,3 +318,15 @@ fn tuple_accessors() {
     assert_eq!(s, "ducks");
 }
 
+#[test]
+fn splice_with_path() {
+    mod inner {
+        pub fn name() -> &'static str {
+            "Maud"
+        }
+    }
+
+    let mut s = String::new();
+    html!(s, $inner::name()).unwrap();
+    assert_eq!(s, "Maud");
+}
