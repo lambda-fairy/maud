@@ -23,8 +23,8 @@ macro_rules! parse_error {
     ($self_:expr, $sp:expr, $msg:expr) => (error!($self_.render.cx, $sp, $msg))
 }
 
-macro_rules! pound {
-    () => (TokenTree::Token(_, Token::Pound))
+macro_rules! at {
+    () => (TokenTree::Token(_, Token::At))
 }
 macro_rules! dot {
     () => (TokenTree::Token(_, Token::Dot))
@@ -156,17 +156,17 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 try!(self.literal(tt, false))
             },
             // If
-            [pound!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
+            [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
                 self.shift(2);
                 try!(self.if_expr(sp));
             },
             // For
-            [pound!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::For) => {
+            [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::For) => {
                 self.shift(2);
                 try!(self.for_expr(sp));
             },
             // Call
-            [pound!(), ident!(sp, name), ..] if name.name.as_str() == "call" => {
+            [at!(), ident!(sp, name), ..] if name.name.as_str() == "call" => {
                 self.shift(2);
                 let func = try!(self.splice(sp));
                 self.render.emit_call(func);
@@ -235,8 +235,8 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         }}
         // Parse the (optional) else
         let else_body = match self.input {
-            [pound!(), keyword!(_, k), ..] if k.is_keyword(Keyword::Else) => {
-                self.shift(2);
+            [keyword!(_, k), ..] if k.is_keyword(Keyword::Else) => {
+                self.shift(1);
                 match self.input {
                     [keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
                         self.shift(1);
