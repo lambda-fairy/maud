@@ -214,9 +214,9 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         Ok(())
     }
 
-    /// Parses and renders an `#if` expression.
+    /// Parses and renders an `@if` expression.
     ///
-    /// The leading `#if` should already be consumed.
+    /// The leading `@if` should already be consumed.
     fn if_expr(&mut self, sp: Span) -> PResult<()> {
         // Parse the initial if
         let mut if_cond = vec![];
@@ -231,7 +231,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 if_cond.push(tt.clone());
             },
-            [] => parse_error!(self, sp, "expected body for this #if"),
+            [] => parse_error!(self, sp, "expected body for this @if"),
         }}
         // Parse the (optional) else
         let else_body = match self.input {
@@ -255,7 +255,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                         self.shift(1);
                         Some(try!(self.block(sp, &d.tts)))
                     },
-                    _ => parse_error!(self, sp, "expected body for this #else"),
+                    _ => parse_error!(self, sp, "expected body for this @else"),
                 }
             },
             _ => None,
@@ -264,9 +264,9 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         Ok(())
     }
 
-    /// Parses and renders a `#for` expression.
+    /// Parses and renders a `@for` expression.
     ///
-    /// The leading `#for` should already be consumed.
+    /// The leading `@for` should already be consumed.
     fn for_expr(&mut self, sp: Span) -> PResult<()> {
         let mut pattern = vec![];
         loop { match self.input {
@@ -278,7 +278,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 pattern.push(tt.clone());
             },
-            _ => parse_error!(self, sp, "invalid #for"),
+            _ => parse_error!(self, sp, "invalid @for"),
         }}
         let pattern = try!(self.with_rust_parser(pattern, RustParser::parse_pat));
         let mut iterable = vec![];
@@ -293,7 +293,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 iterable.push(tt.clone());
             },
-            _ => parse_error!(self, sp, "invalid #for"),
+            _ => parse_error!(self, sp, "invalid @for"),
         }}
         let iterable = try!(self.with_rust_parser(iterable, RustParser::parse_expr));
         self.render.emit_for(pattern, iterable, body);
