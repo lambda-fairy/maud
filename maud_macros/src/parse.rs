@@ -233,10 +233,10 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             [] => parse_error!(self, sp, "expected body for this @if"),
         }}
-        // Parse the (optional) else
+        // Parse the (optional) @else
         let else_body = match self.input {
-            [keyword!(_, k), ..] if k.is_keyword(Keyword::Else) => {
-                self.shift(1);
+            [at!(), keyword!(_, k), ..] if k.is_keyword(Keyword::Else) => {
+                self.shift(2);
                 match self.input {
                     [keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
                         self.shift(1);

@@ -207,11 +207,11 @@ mod control {
             html!(s, {
                 @if number == 1 {
                     "one"
-                } else if number == 2 {
+                } @else if number == 2 {
                     "two"
-                } else if number == 3 {
+                } @else if number == 3 {
                     "three"
-                } else {
+                } @else {
                     "oh noes"
                 }
             }).unwrap();
@@ -226,7 +226,7 @@ mod control {
             html!(s, {
                 @if let Some(value) = input {
                     ^value
-                } else {
+                } @else {
                     "oh noes"
                 }
             }).unwrap();
