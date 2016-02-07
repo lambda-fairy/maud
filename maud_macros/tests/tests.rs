@@ -339,10 +339,10 @@ fn class_shorthand() {
 }
 
 #[test]
-fn div_class_shorthand() {
+fn class_shorthand_with_space() {
     let mut s = String::new();
-    html!(s, p { "Hi, " .name { "Lyra" } "!" }).unwrap();
-    assert_eq!(s, "<p>Hi, <div class=\"name\">Lyra</div>!</p>");
+    html!(s, p { "Hi, " span .name { "Lyra" } "!" }).unwrap();
+    assert_eq!(s, "<p>Hi, <span class=\"name\">Lyra</span>!</p>");
 }
 
 #[test]
@@ -353,15 +353,15 @@ fn classes_shorthand() {
 }
 
 #[test]
-fn div_classes_shorthand() {
+fn classes_shorthand_with_space() {
     let mut s = String::new();
-    html!(s, p { "Hi, " .name.here { "Lyra" } "!" }).unwrap();
-    assert_eq!(s, "<p>Hi, <div class=\"name here\">Lyra</div>!</p>");
+    html!(s, p { "Hi, " span .name .here { "Lyra" } "!" }).unwrap();
+    assert_eq!(s, "<p>Hi, <span class=\"name here\">Lyra</span>!</p>");
 }
 
 #[test]
-fn div_classes_shorthand_with_attrs() {
+fn classes_shorthand_with_attrs() {
     let mut s = String::new();
-    html!(s, p { "Hi, " .name.here id="thing" { "Lyra" } "!" }).unwrap();
-    assert_eq!(s, "<p>Hi, <div class=\"name here\" id=\"thing\">Lyra</div>!</p>");
+    html!(s, p { "Hi, " span.name.here id="thing" { "Lyra" } "!" }).unwrap();
+    assert_eq!(s, "<p>Hi, <span class=\"name here\" id=\"thing\">Lyra</span>!</p>");
 }

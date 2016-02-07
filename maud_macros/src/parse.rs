@@ -190,10 +190,6 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 let name = try!(self.name());
                 try!(self.element(sp, &name));
             },
-            // Shorthand div element
-            [dot!(), ident!(sp, _), ..] => {
-                try!(self.element(sp, "div"));
-            },
             // Block
             [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
