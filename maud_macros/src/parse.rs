@@ -364,6 +364,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             parse_error!(self, sp, "unexpected element, you silly bumpkin");
         }
         self.render.element_open_start(name);
+        try!(self.class_shorthand());
         try!(self.attrs());
         self.render.element_open_end();
         if let [slash!(), ..] = self.input {
@@ -371,6 +372,26 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         } else {
             try!(self.markup());
             self.render.element_close(name);
+        }
+        Ok(())
+    }
+
+    /// Parses and renders the attributes of an element.
+    fn class_shorthand(&mut self) -> PResult<()> {
+        let mut classes = Vec::new();
+        loop {
+            match self.input {
+                [dot!(), ident!(_, _), ..] => {
+                    self.shift(1);
+                    classes.push(try!(self.name()));
+                },
+                _ => break,
+            }
+        }
+        if !classes.is_empty() {
+            self.render.attribute_start("class");
+            self.render.string(&classes.join(" "));
+            self.render.attribute_end();
         }
         Ok(())
     }
