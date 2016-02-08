@@ -23,11 +23,8 @@ macro_rules! parse_error {
     ($self_:expr, $sp:expr, $msg:expr) => (error!($self_.render.cx, $sp, $msg))
 }
 
-macro_rules! dollar {
-    () => (TokenTree::Token(_, Token::Dollar))
-}
-macro_rules! pound {
-    () => (TokenTree::Token(_, Token::Pound))
+macro_rules! at {
+    () => (TokenTree::Token(_, Token::At))
 }
 macro_rules! dot {
     () => (TokenTree::Token(_, Token::Dot))
@@ -52,6 +49,9 @@ macro_rules! minus {
 }
 macro_rules! slash {
     () => (TokenTree::Token(_, Token::BinOp(BinOpToken::Slash)))
+}
+macro_rules! caret {
+    () => (TokenTree::Token(_, Token::BinOp(BinOpToken::Caret)))
 }
 macro_rules! literal {
     () => (TokenTree::Token(_, Token::Literal(..)))
@@ -156,33 +156,25 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 try!(self.literal(tt, false))
             },
             // If
-            [pound!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
+            [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
                 self.shift(2);
                 try!(self.if_expr(sp));
             },
             // For
-            [pound!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::For) => {
+            [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::For) => {
                 self.shift(2);
                 try!(self.for_expr(sp));
             },
             // Call
-            [pound!(), ident!(sp, name), ..] if name.name.as_str() == "call" => {
+            [at!(), ident!(sp, name), ..] if name.name.as_str() == "call" => {
                 self.shift(2);
                 let func = try!(self.splice(sp));
                 self.render.emit_call(func);
             },
             // Splice
-            [ref tt @ dollar!(), ..] => {
+            [ref tt @ caret!(), ..] => {
                 self.shift(1);
                 let expr = try!(self.splice(tt.get_span()));
-                self.render.splice(expr);
-            },
-            [substnt!(sp, ident), ..] => {
-                self.shift(1);
-                // Parse `SubstNt` as `[Dollar, Ident]`
-                // See <https://github.com/lfairy/maud/issues/23>
-                let prefix = TokenTree::Token(sp, Token::Ident(ident, IdentStyle::Plain));
-                let expr = try!(self.splice_with_prefix(prefix));
                 self.render.splice(expr);
             },
             // Element
@@ -222,9 +214,9 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         Ok(())
     }
 
-    /// Parses and renders an `#if` expression.
+    /// Parses and renders an `@if` expression.
     ///
-    /// The leading `#if` should already be consumed.
+    /// The leading `@if` should already be consumed.
     fn if_expr(&mut self, sp: Span) -> PResult<()> {
         // Parse the initial if
         let mut if_cond = vec![];
@@ -239,11 +231,11 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 if_cond.push(tt.clone());
             },
-            [] => parse_error!(self, sp, "expected body for this #if"),
+            [] => parse_error!(self, sp, "expected body for this @if"),
         }}
-        // Parse the (optional) else
+        // Parse the (optional) @else
         let else_body = match self.input {
-            [pound!(), keyword!(_, k), ..] if k.is_keyword(Keyword::Else) => {
+            [at!(), keyword!(_, k), ..] if k.is_keyword(Keyword::Else) => {
                 self.shift(2);
                 match self.input {
                     [keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
@@ -263,7 +255,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                         self.shift(1);
                         Some(try!(self.block(sp, &d.tts)))
                     },
-                    _ => parse_error!(self, sp, "expected body for this #else"),
+                    _ => parse_error!(self, sp, "expected body for this @else"),
                 }
             },
             _ => None,
@@ -272,9 +264,9 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         Ok(())
     }
 
-    /// Parses and renders a `#for` expression.
+    /// Parses and renders a `@for` expression.
     ///
-    /// The leading `#for` should already be consumed.
+    /// The leading `@for` should already be consumed.
     fn for_expr(&mut self, sp: Span) -> PResult<()> {
         let mut pattern = vec![];
         loop { match self.input {
@@ -286,7 +278,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 pattern.push(tt.clone());
             },
-            _ => parse_error!(self, sp, "invalid #for"),
+            _ => parse_error!(self, sp, "invalid @for"),
         }}
         let pattern = try!(self.with_rust_parser(pattern, RustParser::parse_pat));
         let mut iterable = vec![];
@@ -301,16 +293,16 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 iterable.push(tt.clone());
             },
-            _ => parse_error!(self, sp, "invalid #for"),
+            _ => parse_error!(self, sp, "invalid @for"),
         }}
         let iterable = try!(self.with_rust_parser(iterable, RustParser::parse_expr));
         self.render.emit_for(pattern, iterable, body);
         Ok(())
     }
 
-    /// Parses and renders a `$splice`.
+    /// Parses and renders a `^splice`.
     ///
-    /// The leading `$` should already be consumed.
+    /// The leading `^` should already be consumed.
     fn splice(&mut self, sp: Span) -> PResult<P<Expr>> {
         // First, munch a single token tree
         let prefix = match self.input {
@@ -323,24 +315,24 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         self.splice_with_prefix(prefix)
     }
 
-    /// Parses and renders a `$splice`, given a prefix that we've already
+    /// Parses and renders a `^splice`, given a prefix that we've already
     /// consumed.
     fn splice_with_prefix(&mut self, prefix: TokenTree) -> PResult<P<Expr>> {
         let mut tts = vec![prefix];
         loop { match self.input {
-            // Munch attribute lookups e.g. `$person.address.street`
+            // Munch attribute lookups e.g. `^person.address.street`
             [ref dot @ dot!(), ref ident @ ident!(_, _), ..] => {
                 self.shift(2);
                 tts.push(dot.clone());
                 tts.push(ident.clone());
             },
-            // Munch tuple attribute lookups e.g. `$person.1.2`
+            // Munch tuple attribute lookups e.g. `^person.1.2`
             [ref dot @ dot!(), ref num @ integer!(), ..] => {
                 self.shift(2);
                 tts.push(dot.clone());
                 tts.push(num.clone());
             },
-            // Munch path lookups e.g. `$some_mod::Struct`
+            // Munch path lookups e.g. `^some_mod::Struct`
             [ref sep @ modsep!(), ref ident @ ident!(_, _), ..] => {
                 self.shift(2);
                 tts.push(sep.clone());

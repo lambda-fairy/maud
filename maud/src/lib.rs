@@ -23,6 +23,17 @@ impl<T: fmt::Display + ?Sized> Render for T {
     }
 }
 
+/// Represents a type that can be rendered as HTML just once.
+pub trait RenderOnce {
+    fn render_once(self, &mut fmt::Write) -> fmt::Result;
+}
+
+impl<'a, T: Render + ?Sized> RenderOnce for &'a T {
+    fn render_once(self, w: &mut fmt::Write) -> fmt::Result {
+      Render::render(self, w)
+    }
+}
+
 /// A wrapper that renders the inner value without escaping.
 #[derive(Debug)]
 pub struct PreEscaped<T>(pub T);

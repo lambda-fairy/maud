@@ -93,7 +93,7 @@ mod splices {
     #[test]
     fn literals() {
         let mut s = String::new();
-        html!(s, $"<pinkie>").unwrap();
+        html!(s, ^"<pinkie>").unwrap();
         assert_eq!(s, "&lt;pinkie&gt;");
     }
 
@@ -101,7 +101,7 @@ mod splices {
     fn raw_literals() {
         use maud::PreEscaped;
         let mut s = String::new();
-        html!(s, $PreEscaped("<pinkie>")).unwrap();
+        html!(s, ^PreEscaped("<pinkie>")).unwrap();
         assert_eq!(s, "<pinkie>");
     }
 
@@ -109,7 +109,7 @@ mod splices {
     fn blocks() {
         let mut s = String::new();
         html!(s, {
-            ${
+            ^{
                 let mut result = 1i32;
                 for i in 2..11 {
                     result *= i;
@@ -142,7 +142,7 @@ mod splices {
     #[test]
     fn statics() {
         let mut s = String::new();
-        html!(s, $BEST_PONY).unwrap();
+        html!(s, ^BEST_PONY).unwrap();
         assert_eq!(s, "Pinkie Pie");
     }
 
@@ -150,7 +150,7 @@ mod splices {
     fn closures() {
         let best_pony = "Pinkie Pie";
         let mut s = String::new();
-        html!(s, $best_pony).unwrap();
+        html!(s, ^best_pony).unwrap();
         assert_eq!(s, "Pinkie Pie");
     }
 
@@ -177,7 +177,7 @@ mod splices {
         };
         let mut s = String::new();
         html!(s, {
-            "Name: " $pinkie.name ". Rating: " $pinkie.repugnance()
+            "Name: " ^pinkie.name ". Rating: " ^pinkie.repugnance()
         }).unwrap();
         assert_eq!(s, "Name: Pinkie Pie. Rating: 1");
     }
@@ -186,7 +186,7 @@ mod splices {
     fn nested_macro_invocation() {
         let best_pony = "Pinkie Pie";
         let mut s = String::new();
-        html!(s, $(format!("{}", best_pony))).unwrap();
+        html!(s, ^(format!("{}", best_pony))).unwrap();
         assert_eq!(s, "Pinkie Pie");
     }
 }
@@ -195,7 +195,7 @@ mod splices {
 fn issue_13() {
     let owned = String::from("yay");
     let mut s = String::new();
-    html!(s, $owned).unwrap();
+    html!(s, ^owned).unwrap();
     let _ = owned;
 }
 
@@ -205,13 +205,13 @@ mod control {
         for (number, &name) in (1..4).zip(["one", "two", "three"].iter()) {
             let mut s = String::new();
             html!(s, {
-                #if number == 1 {
+                @if number == 1 {
                     "one"
-                } #else if number == 2 {
+                } @else if number == 2 {
                     "two"
-                } #else if number == 3 {
+                } @else if number == 3 {
                     "three"
-                } #else {
+                } @else {
                     "oh noes"
                 }
             }).unwrap();
@@ -224,9 +224,9 @@ mod control {
         for &(input, output) in [(Some("yay"), "yay"), (None, "oh noes")].iter() {
             let mut s = String::new();
             html!(s, {
-                #if let Some(value) = input {
-                    $value
-                } #else {
+                @if let Some(value) = input {
+                    ^value
+                } @else {
                     "oh noes"
                 }
             }).unwrap();
@@ -239,8 +239,8 @@ mod control {
         let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
         let mut s = String::new();
         html!(s, {
-            ul #for pony in &ponies {
-                li $pony
+            ul @for pony in &ponies {
+                li ^pony
             }
         }).unwrap();
         assert_eq!(s, concat!(
@@ -288,9 +288,9 @@ fn call() {
             panic!("oh noes")
         };
     html!(s, {
-        #call ducks
-        #call (|w: &mut fmt::Write| write!(w, "Geese"))
-        #call swans(true)
+        @call ducks
+        @call (|w: &mut fmt::Write| write!(w, "Geese"))
+        @call swans(true)
     }).unwrap();
     assert_eq!(s, "DucksGeeseSwans");
 }
@@ -306,7 +306,7 @@ fn issue_23() {
     }
 
     let name = "Lyra";
-    let s = to_string!(p { "Hi, " $name "!" });
+    let s = to_string!(p { "Hi, " ^name "!" });
     assert_eq!(s, "<p>Hi, Lyra!</p>");
 }
 
@@ -314,7 +314,7 @@ fn issue_23() {
 fn tuple_accessors() {
     let mut s = String::new();
     let a = ("ducks", "geese");
-    html!(s, { $a.0 }).unwrap();
+    html!(s, { ^a.0 }).unwrap();
     assert_eq!(s, "ducks");
 }
 
@@ -327,7 +327,7 @@ fn splice_with_path() {
     }
 
     let mut s = String::new();
-    html!(s, $inner::name()).unwrap();
+    html!(s, ^inner::name()).unwrap();
     assert_eq!(s, "Maud");
 }
 
@@ -364,4 +364,125 @@ fn classes_shorthand_with_attrs() {
     let mut s = String::new();
     html!(s, p { "Hi, " span.name.here id="thing" { "Lyra" } "!" }).unwrap();
     assert_eq!(s, "<p>Hi, <span class=\"name here\" id=\"thing\">Lyra</span>!</p>");
+}
+
+#[test]
+fn multirender() {
+    struct R<'a>(&'a str);
+    impl<'a> maud::Render for R<'a> {
+        fn render(&self, w: &mut std::fmt::Write) -> std::fmt::Result {
+            w.write_str(self.0)
+        }
+    }
+
+    let mut s = String::new();
+    let r = R("pinkie ");
+    html!(s, ^r).unwrap();
+    html!(s, ^r).unwrap();
+    // R is not-Copyable so this shows that it will auto-ref splice arguments that implement Render.
+    assert_eq!(s, "pinkie pinkie ");
+}
+
+#[test]
+fn render_once_by_move() {
+    struct Once<'a>(&'a str);
+    impl<'a> maud::RenderOnce for Once<'a> {
+        fn render_once(self, w: &mut std::fmt::Write) -> std::fmt::Result {
+            w.write_str(self.0)
+        }
+    }
+
+    let mut s = String::new();
+    let once = Once("pinkie");
+    html!(s, ^once).unwrap();
+    assert_eq!(s, "pinkie");
+}
+
+#[test]
+fn render_once_by_move_with_copy() {
+    #[derive(Clone, Copy)]
+    struct Once<'a>(&'a str);
+    impl<'a> maud::RenderOnce for Once<'a> {
+        fn render_once(self, w: &mut std::fmt::Write) -> std::fmt::Result {
+            w.write_str(self.0)
+        }
+    }
+
+    let mut s = String::new();
+    let once = Once("pinkie ");
+    html!(s, ^once).unwrap();
+    html!(s, ^once).unwrap();
+    assert_eq!(s, "pinkie pinkie ");
+}
+
+#[test]
+fn issue_26() {
+    macro_rules! to_string {
+        ($($x:tt)*) => {{
+            let mut s = String::new();
+            html!(s, $($x)*).unwrap();
+            s
+        }}
+    }
+
+    let name = "Lyra";
+    let s = to_string!(p { "Hi, " ^(name) "!" });
+    assert_eq!(s, "<p>Hi, Lyra!</p>");
+}
+
+#[test]
+fn issue_26_2() {
+    macro_rules! to_string {
+        ($($x:tt)*) => {{
+            let mut s = String::new();
+            html!(s, $($x)*).unwrap();
+            s
+        }}
+    }
+
+    let name = "Lyra";
+    let s = to_string!(p { "Hi, " ^("person called ".to_string() + name) "!" });
+    assert_eq!(s, "<p>Hi, person called Lyra!</p>");
+}
+
+#[test]
+fn issue_26_3() {
+    macro_rules! to_string {
+        ($($x:tt)*) => {{
+            let mut s = String::new();
+            html!(s, $($x)*).unwrap();
+            s
+        }}
+    }
+
+    let name = "Lyra";
+    let s = to_string!(p { "Hi, " ^{"person called ".to_string() + name} "!" });
+    assert_eq!(s, "<p>Hi, person called Lyra!</p>");
+}
+
+#[test]
+fn issue_21() {
+    macro_rules! greet {
+        () => ({
+            let mut result = String::new();
+            let name = "Pinkie Pie";
+            html!(result, p { "Hello, " ^name "!" }).map(|()| result)
+        })
+    }
+
+    let s = greet!().unwrap();
+    assert_eq!(s, "<p>Hello, Pinkie Pie!</p>");
+}
+
+#[test]
+fn issue_21_2() {
+    macro_rules! greet {
+        ($name:expr) => ({
+            let mut result = String::new();
+            html!(result, p { "Hello, " ^$name "!" }).map(|()| result)
+        })
+    }
+
+    let s = greet!("Pinkie Pie").unwrap();
+    assert_eq!(s, "<p>Hello, Pinkie Pie!</p>");
 }

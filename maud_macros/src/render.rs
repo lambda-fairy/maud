@@ -118,7 +118,7 @@ impl<'cx> Renderer<'cx> {
     /// Appends the result of an expression, with the specified escaping method.
     pub fn splice(&mut self, expr: P<Expr>) {
         let w = self.writer;
-        let expr = quote_expr!(self.cx, ::maud::Render::render(&$expr, &mut *$w));
+        let expr = quote_expr!(self.cx, { use ::maud::RenderOnce; $expr.render_once(&mut *$w) });
         let stmt = self.wrap_try(expr);
         self.push(stmt);
     }
