@@ -334,7 +334,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 match_var.push(tt.clone());
             },
-            [] => parse_error!(self, sp, "expected body for this #match"),
+            [] => parse_error!(self, sp, "expected body for this @match"),
         }}
         let match_var = try!(self.with_rust_parser(match_var, RustParser::parse_expr));
         self.render.emit_match(match_var, match_bodies);
@@ -370,7 +370,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.shift(1);
                 body.push(tt.clone());
             },
-            _ => parse_error!(self, sp, "invalid #match pattern"),
+            _ => parse_error!(self, sp, "invalid @match pattern"),
         }}
         let mut expr = Vec::new();
         loop { match self.input {
@@ -386,7 +386,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             [comma!(), ..] | [] => {
                 if expr.is_empty() {
-                    parse_error!(self, sp, "expected body for this #match arm");
+                    parse_error!(self, sp, "expected body for this @match arm");
                 } else {
                     expr = try!(self.block(sp, &expr)).to_tokens(self.render.cx);
                     break;
