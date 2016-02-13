@@ -1,6 +1,6 @@
 use std::mem;
 use std::rc::Rc;
-use syntax::ast::{Expr, ExprParen, Lit, Stmt, TokenTree, Delimited};
+use syntax::ast::{Delimited, Expr, ExprKind, Lit, LitKind, Stmt, TokenTree};
 use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
 use syntax::errors::{DiagnosticBuilder, FatalError};
@@ -573,20 +573,19 @@ impl<'cx, 'i> Parser<'cx, 'i> {
 
 /// Converts a literal to a string.
 fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> PResult<String> {
-    use syntax::ast::Lit_::*;
     let mut result = String::new();
     if minus {
         result.push('-');
     }
     match lit.node {
-        LitStr(s, _) => result.push_str(&s),
-        LitByteStr(..) | LitByte(..) => {
+        LitKind::Str(s, _) => result.push_str(&s),
+        LitKind::ByteStr(..) | LitKind::Byte(..) => {
             error!(cx, lit.span, "cannot splice binary data");
         },
-        LitChar(c) => result.push(c),
-        LitInt(x, _) => result.push_str(&x.to_string()),
-        LitFloat(s, _) | LitFloatUnsuffixed(s) => result.push_str(&s),
-        LitBool(b) => result.push_str(if b { "true" } else { "false" }),
+        LitKind::Char(c) => result.push(c),
+        LitKind::Int(x, _) => result.push_str(&x.to_string()),
+        LitKind::Float(s, _) | LitKind::FloatUnsuffixed(s) => result.push_str(&s),
+        LitKind::Bool(b) => result.push_str(if b { "true" } else { "false" }),
     };
     Ok(result)
 }
@@ -594,7 +593,7 @@ fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> PResult<String> {
 /// If the expression is wrapped in parentheses, strip them off.
 fn strip_outer_parens(expr: P<Expr>) -> P<Expr> {
     expr.and_then(|expr| match expr {
-        Expr { node: ExprParen(inner), .. } => inner,
+        Expr { node: ExprKind::Paren(inner), .. } => inner,
         expr => P(expr),
     })
 }
