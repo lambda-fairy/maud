@@ -559,7 +559,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     }
 
     /// Parses the given token tree, returning a vector of statements.
-    fn block(&mut self, sp: Span, tts: &[TokenTree]) -> PResult<Vec<P<Stmt>>> {
+    fn block(&mut self, sp: Span, tts: &[TokenTree]) -> PResult<Vec<Stmt>> {
         let mut parse = Parser {
             in_attr: self.in_attr,
             input: tts,

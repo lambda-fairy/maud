@@ -12,7 +12,7 @@ pub struct Renderer<'cx> {
     writer: Ident,
     result: Ident,
     loop_label: Vec<TokenTree>,
-    stmts: Vec<P<Stmt>>,
+    stmts: Vec<Stmt>,
     tail: String,
 }
 
@@ -79,13 +79,13 @@ impl<'cx> Renderer<'cx> {
     }
 
     /// Reifies the `Renderer` into a raw list of statements.
-    pub fn into_stmts(mut self) -> Vec<P<Stmt>> {
+    pub fn into_stmts(mut self) -> Vec<Stmt> {
         let Renderer { stmts, .. } = { self.flush(); self };
         stmts
     }
 
     /// Pushes a statement, flushing the tail buffer in the process.
-    fn push(&mut self, stmt: P<Stmt>) {
+    fn push(&mut self, stmt: Stmt) {
         self.flush();
         self.stmts.push(stmt);
     }
@@ -96,7 +96,7 @@ impl<'cx> Renderer<'cx> {
     }
 
     /// Wraps an expression in a `try!` call.
-    fn wrap_try(&self, expr: P<Expr>) -> P<Stmt> {
+    fn wrap_try(&self, expr: P<Expr>) -> Stmt {
         let result = self.result;
         let loop_label = &self.loop_label;
         quote_stmt!(
@@ -157,8 +157,8 @@ impl<'cx> Renderer<'cx> {
     ///
     /// The condition is a token tree (not an expression) so we don't
     /// need to special-case `if let`.
-    pub fn emit_if(&mut self, if_cond: Vec<TokenTree>, if_body: Vec<P<Stmt>>,
-                   else_body: Option<Vec<P<Stmt>>>) {
+    pub fn emit_if(&mut self, if_cond: Vec<TokenTree>, if_body: Vec<Stmt>,
+                   else_body: Option<Vec<Stmt>>) {
         let stmt = match else_body {
             None => quote_stmt!(self.cx, if $if_cond { $if_body }),
             Some(else_body) =>
@@ -167,7 +167,7 @@ impl<'cx> Renderer<'cx> {
         self.push(stmt);
     }
 
-    pub fn emit_for(&mut self, pattern: P<Pat>, iterable: P<Expr>, body: Vec<P<Stmt>>) {
+    pub fn emit_for(&mut self, pattern: P<Pat>, iterable: P<Expr>, body: Vec<Stmt>) {
         let stmt = quote_stmt!(self.cx, for $pattern in $iterable { $body }).unwrap();
         self.push(stmt);
     }
