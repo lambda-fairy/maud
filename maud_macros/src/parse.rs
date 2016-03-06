@@ -477,14 +477,9 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     /// Parses and renders the attributes of an element.
     fn class_shorthand(&mut self) -> PResult<()> {
         let mut classes = Vec::new();
-        loop {
-            match self.input {
-                [dot!(), ident!(_, _), ..] => {
-                    self.shift(1);
-                    classes.push(try!(self.name()));
-                },
-                _ => break,
-            }
+        while let [dot!(), ident!(_, _), ..] = self.input {
+            self.shift(1);
+            classes.push(try!(self.name()));
         }
         if !classes.is_empty() {
             self.render.attribute_start("class");
