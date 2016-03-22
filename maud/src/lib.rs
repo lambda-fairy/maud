@@ -30,7 +30,7 @@ pub trait RenderOnce {
 
 impl<'a, T: Render + ?Sized> RenderOnce for &'a T {
     fn render_once(self, w: &mut fmt::Write) -> fmt::Result {
-      Render::render(self, w)
+        Render::render(self, w)
     }
 }
 
