@@ -8,12 +8,12 @@ cd "$base/maud_macros"
 cargo clean
 cargo doc
 
-cd target
+cd target/doc
 
 git init
 trap 'rm -rf .git/' 0
 
-git add doc/
+git add .
 git commit -m 'Update documentation'
 
 git remote add origin git@github.com:lfairy/maud.git
