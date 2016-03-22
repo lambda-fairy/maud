@@ -1,5 +1,6 @@
 #![crate_type = "dylib"]
 #![feature(plugin_registrar, quote)]
+#![feature(question_mark)]
 #![feature(slice_patterns)]
 #![feature(rustc_private)]
 
@@ -22,17 +23,17 @@ mod render;
 pub type PResult<T> = Result<T, FatalError>;
 
 fn html(cx: &mut ExtCtxt, sp: Span, mac_name: &str, args: &[TokenTree]) -> PResult<P<Expr>> {
-    let (write, input) = try!(parse::split_comma(cx, sp, mac_name, args));
+    let (write, input) = parse::split_comma(cx, sp, mac_name, args)?;
     parse::parse(cx, sp, write, input)
 }
 
 fn html_utf8(cx: &mut ExtCtxt, sp: Span, mac_name: &str, args: &[TokenTree]) -> PResult<P<Expr>> {
-    let (io_write, input) = try!(parse::split_comma(cx, sp, mac_name, args));
+    let (io_write, input) = parse::split_comma(cx, sp, mac_name, args)?;
     let io_write = io_write.to_vec();
     let fmt_write = token::gensym_ident("__maud_utf8_writer");
     let fmt_write = vec![
         TokenTree::Token(DUMMY_SP, token::Ident(fmt_write, token::IdentStyle::Plain))];
-    let expr = try!(parse::parse(cx, sp, &fmt_write, input));
+    let expr = parse::parse(cx, sp, &fmt_write, input)?;
     Ok(quote_expr!(cx,
         match ::maud::Utf8Writer::new(&mut $io_write) {
             mut $fmt_write => {

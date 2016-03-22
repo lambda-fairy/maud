@@ -85,7 +85,7 @@ pub fn parse(cx: &ExtCtxt, sp: Span, write: &[TokenTree], input: &[TokenTree])
         span: sp,
         render: Renderer::new(cx),
     };
-    try!(parser.markups());
+    parser.markups()?;
     Ok(parser.into_render().into_expr(write.to_vec()))
 }
 
@@ -145,7 +145,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             match self.input {
                 [] => return Ok(()),
                 [semi!(), ..] => self.shift(1),
-                [_, ..] => try!(self.markup()),
+                [_, ..] => self.markup()?,
             }
         }
     }
@@ -156,43 +156,43 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             // Literal
             [minus!(), ref tt @ literal!(), ..] => {
                 self.shift(2);
-                try!(self.literal(tt, true));
+                self.literal(tt, true)?;
             },
             [ref tt @ literal!(), ..] => {
                 self.shift(1);
-                try!(self.literal(tt, false))
+                self.literal(tt, false)?;
             },
             // If
             [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
                 self.shift(2);
-                try!(self.if_expr(sp));
+                self.if_expr(sp)?;
             },
             // For
             [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::For) => {
                 self.shift(2);
-                try!(self.for_expr(sp));
+                self.for_expr(sp)?;
             },
             // Match
             [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::Match) => {
                 self.shift(2);
-                try!(self.match_expr(sp));
+                self.match_expr(sp)?;
             },
             // Call
             [at!(), ident!(sp, name), ..] if name.name.as_str() == "call" => {
                 self.shift(2);
-                let func = try!(self.splice(sp));
+                let func = self.splice(sp)?;
                 self.render.emit_call(func);
             },
             // Splice
             [ref tt @ caret!(), ..] => {
                 self.shift(1);
-                let expr = try!(self.splice(tt.get_span()));
+                let expr = self.splice(tt.get_span())?;
                 self.render.splice(expr);
             },
             // Element
             [ident!(sp, _), ..] => {
-                let name = try!(self.name());
-                try!(self.element(sp, &name));
+                let name = self.name()?;
+                self.element(sp, &name)?;
             },
             // Block
             [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Brace => {
@@ -202,7 +202,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                     // result inline
                     let mut i = &*d.tts;
                     mem::swap(&mut self.input, &mut i);
-                    try!(self.markups());
+                    self.markups()?;
                     mem::swap(&mut self.input, &mut i);
                 }
             },
@@ -220,8 +220,8 @@ impl<'cx, 'i> Parser<'cx, 'i> {
 
     /// Parses and renders a literal string or number.
     fn literal(&mut self, tt: &TokenTree, minus: bool) -> PResult<()> {
-        let lit = try!(self.with_rust_parser(vec![tt.clone()], RustParser::parse_lit));
-        let s = try!(lit_to_string(self.render.cx, lit, minus));
+        let lit = self.with_rust_parser(vec![tt.clone()], RustParser::parse_lit)?;
+        let s = lit_to_string(self.render.cx, lit, minus)?;
         self.render.string(&s);
         Ok(())
     }
@@ -236,7 +236,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         loop { match self.input {
             [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
-                if_body = try!(self.block(sp, &d.tts));
+                if_body = self.block(sp, &d.tts)?;
                 break;
             },
             [ref tt, ..] => {
@@ -257,7 +257,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                             // rather than emitting it right away
                             let mut r = self.render.fork();
                             mem::swap(&mut self.render, &mut r);
-                            try!(self.if_expr(sp));
+                            self.if_expr(sp)?;
                             mem::swap(&mut self.render, &mut r);
                             r.into_stmts()
                         };
@@ -265,7 +265,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                     },
                     [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                         self.shift(1);
-                        Some(try!(self.block(sp, &d.tts)))
+                        Some(self.block(sp, &d.tts)?)
                     },
                     _ => parse_error!(self, sp, "expected body for this @else"),
                 }
@@ -292,13 +292,13 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             _ => parse_error!(self, sp, "invalid @for"),
         }}
-        let pattern = try!(self.with_rust_parser(pattern, RustParser::parse_pat));
+        let pattern = self.with_rust_parser(pattern, RustParser::parse_pat)?;
         let mut iterable = vec![];
         let body;
         loop { match self.input {
             [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
-                body = try!(self.block(sp, &d.tts));
+                body = self.block(sp, &d.tts)?;
                 break;
             },
             [ref tt, ..] => {
@@ -307,7 +307,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             _ => parse_error!(self, sp, "invalid @for"),
         }}
-        let iterable = try!(self.with_rust_parser(iterable, RustParser::parse_expr));
+        let iterable = self.with_rust_parser(iterable, RustParser::parse_expr)?;
         self.render.emit_for(pattern, iterable, body);
         Ok(())
     }
@@ -322,12 +322,12 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         loop { match self.input {
             [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
-                match_bodies = try!(Parser {
+                match_bodies = Parser {
                     in_attr: self.in_attr,
                     input: &d.tts,
                     span: sp,
                     render: self.render.fork(),
-                }.match_bodies());
+                }.match_bodies()?;
                 break;
             },
             [ref tt, ..] => {
@@ -336,7 +336,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             [] => parse_error!(self, sp, "expected body for this @match"),
         }}
-        let match_var = try!(self.with_rust_parser(match_var, RustParser::parse_expr));
+        let match_var = self.with_rust_parser(match_var, RustParser::parse_expr)?;
         self.render.emit_match(match_var, match_bodies);
         Ok(())
     }
@@ -351,7 +351,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                     bodies.push(tt.clone());
                 },
                 [TokenTree::Token(sp, _), ..] | [TokenTree::Delimited(sp, _), ..] | [TokenTree::Sequence(sp, _), ..] => {
-                    bodies.append(&mut try!(self.match_body(sp)));
+                    bodies.append(&mut self.match_body(sp)?);
                 },
             }
         }
@@ -377,7 +377,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 if expr.is_empty() {
                     self.shift(1);
-                    expr = try!(self.block(sp, &d.tts)).to_tokens(self.render.cx);
+                    expr = self.block(sp, &d.tts)?.to_tokens(self.render.cx);
                     break;
                 } else {
                     self.shift(1);
@@ -388,7 +388,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 if expr.is_empty() {
                     parse_error!(self, sp, "expected body for this @match arm");
                 } else {
-                    expr = try!(self.block(sp, &expr)).to_tokens(self.render.cx);
+                    expr = self.block(sp, &expr)?.to_tokens(self.render.cx);
                     break;
                 }
             },
@@ -462,13 +462,13 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             parse_error!(self, sp, "unexpected element, you silly bumpkin");
         }
         self.render.element_open_start(name);
-        try!(self.class_shorthand());
-        try!(self.attrs());
+        self.class_shorthand()?;
+        self.attrs()?;
         self.render.element_open_end();
         if let [slash!(), ..] = self.input {
             self.shift(1);
         } else {
-            try!(self.markup());
+            self.markup()?;
             self.render.element_close(name);
         }
         Ok(())
@@ -479,7 +479,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         let mut classes = Vec::new();
         while let [dot!(), ident!(_, _), ..] = self.input {
             self.shift(1);
-            classes.push(try!(self.name()));
+            classes.push(self.name()?);
         }
         if !classes.is_empty() {
             self.render.attribute_start("class");
@@ -503,7 +503,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                         // Parse a value under an attribute context
                         let mut in_attr = true;
                         mem::swap(&mut self.in_attr, &mut in_attr);
-                        try!(self.markup());
+                        self.markup()?;
                         mem::swap(&mut self.in_attr, &mut in_attr);
                     }
                     self.render.attribute_end();
@@ -514,7 +514,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                     if let [ref tt @ eq!(), ..] = self.input {
                         // Toggle the attribute based on a boolean expression
                         self.shift(1);
-                        let cond = try!(self.splice(tt.get_span()));
+                        let cond = self.splice(tt.get_span())?;
                         // Silence "unnecessary parentheses" warnings
                         let cond = strip_outer_parens(cond).to_tokens(self.render.cx);
                         let body = {
@@ -561,7 +561,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             span: sp,
             render: self.render.fork(),
         };
-        try!(parse.markups());
+        parse.markups()?;
         Ok(parse.into_render().into_stmts())
     }
 }
