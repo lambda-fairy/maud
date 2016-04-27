@@ -7,8 +7,8 @@ use syntax::errors::{DiagnosticBuilder, FatalError};
 use syntax::ext::base::ExtCtxt;
 use syntax::parse;
 use syntax::parse::parser::Parser as RustParser;
-use syntax::parse::token::{BinOpToken, DelimToken, IdentStyle, Token, Lit as LitToken};
-use syntax::parse::token::keywords::Keyword;
+use syntax::parse::token::{BinOpToken, DelimToken, Token, Lit as LitToken};
+use syntax::parse::token::keywords;
 use syntax::ptr::P;
 
 use super::render::Renderer;
@@ -67,10 +67,10 @@ macro_rules! integer {
     () => (TokenTree::Token(_, Token::Literal(LitToken::Integer(_), _)))
 }
 macro_rules! ident {
-    ($sp:pat, $x:pat) => (TokenTree::Token($sp, Token::Ident($x, IdentStyle::Plain)))
+    ($sp:pat, $x:pat) => (TokenTree::Token($sp, Token::Ident($x)))
 }
 macro_rules! substnt {
-    ($sp:pat, $x:pat) => (TokenTree::Token($sp, Token::SubstNt($x, IdentStyle::Plain)))
+    ($sp:pat, $x:pat) => (TokenTree::Token($sp, Token::SubstNt($x)))
 }
 macro_rules! keyword {
     ($sp:pat, $x:ident) => (TokenTree::Token($sp, ref $x @ Token::Ident(..)))
@@ -163,17 +163,17 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                 self.literal(tt, false)?;
             },
             // If
-            [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
+            [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::If) => {
                 self.shift(2);
                 self.if_expr(sp)?;
             },
             // For
-            [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::For) => {
+            [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::For) => {
                 self.shift(2);
                 self.for_expr(sp)?;
             },
             // Match
-            [at!(), keyword!(sp, k), ..] if k.is_keyword(Keyword::Match) => {
+            [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::Match) => {
                 self.shift(2);
                 self.match_expr(sp)?;
             },
@@ -247,10 +247,10 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         }}
         // Parse the (optional) @else
         let else_body = match self.input {
-            [at!(), keyword!(_, k), ..] if k.is_keyword(Keyword::Else) => {
+            [at!(), keyword!(_, k), ..] if k.is_keyword(keywords::Else) => {
                 self.shift(2);
                 match self.input {
-                    [keyword!(sp, k), ..] if k.is_keyword(Keyword::If) => {
+                    [keyword!(sp, k), ..] if k.is_keyword(keywords::If) => {
                         self.shift(1);
                         let else_body = {
                             // Parse an if expression, but capture the result
@@ -282,7 +282,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     fn for_expr(&mut self, sp: Span) -> PResult<()> {
         let mut pattern = vec![];
         loop { match self.input {
-            [keyword!(_, k), ..] if k.is_keyword(Keyword::In) => {
+            [keyword!(_, k), ..] if k.is_keyword(keywords::In) => {
                 self.shift(1);
                 break;
             },
