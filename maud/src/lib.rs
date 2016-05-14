@@ -40,7 +40,6 @@ pub struct PreEscaped<T>(pub T);
 
 impl<T: fmt::Display> Render for PreEscaped<T> {
     fn render(&self, w: &mut fmt::Write) -> fmt::Result {
-        use std::fmt::Write;
         write!(w, "{}", self.0)
     }
 }
