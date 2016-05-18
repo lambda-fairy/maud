@@ -1,4 +1,3 @@
-use std::fmt::Write;
 use syntax::ast::{Expr, Ident, Pat, Stmt, TokenTree};
 use syntax::codemap::DUMMY_SP;
 use syntax::ext::base::ExtCtxt;
