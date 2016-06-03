@@ -39,6 +39,9 @@ macro_rules! eq {
 macro_rules! not {
     () => (TokenTree::Token(_, Token::Not))
 }
+macro_rules! pound {
+    () => (TokenTree::Token(_, Token::Pound))
+}
 macro_rules! question {
     () => (TokenTree::Token(_, Token::Question))
 }
@@ -462,7 +465,6 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             parse_error!(self, sp, "unexpected element, you silly bumpkin");
         }
         self.render.element_open_start(name);
-        self.class_shorthand()?;
         self.attrs()?;
         self.render.element_open_end();
         if let [slash!(), ..] = self.input {
@@ -475,22 +477,9 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     }
 
     /// Parses and renders the attributes of an element.
-    fn class_shorthand(&mut self) -> PResult<()> {
-        let mut classes = Vec::new();
-        while let [dot!(), ident!(_, _), ..] = self.input {
-            self.shift(1);
-            classes.push(self.name()?);
-        }
-        if !classes.is_empty() {
-            self.render.attribute_start("class");
-            self.render.string(&classes.join(" "));
-            self.render.attribute_end();
-        }
-        Ok(())
-    }
-
-    /// Parses and renders the attributes of an element.
     fn attrs(&mut self) -> PResult<()> {
+        let mut classes = Vec::new();
+        let mut ids = Vec::new();
         loop {
             let old_input = self.input;
             let maybe_name = self.name();
@@ -528,11 +517,32 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                         self.render.attribute_empty(&name);
                     }
                 },
+                (Err(_), [dot!(), ident!(_, _), ..]) => {
+                    // Class shorthand
+                    self.shift(1);
+                    classes.push(self.name()?);
+                },
+                (Err(_), [pound!(), ident!(_, _), ..]) => {
+                    // ID shorthand
+                    self.shift(1);
+                    ids.push(self.name()?);
+                },
                 _ => {
                     self.input = old_input;
                     break;
                 },
-        }}
+            }
+        }
+        if !classes.is_empty() {
+            self.render.attribute_start("class");
+            self.render.string(&classes.join(" "));
+            self.render.attribute_end();
+        }
+        if !ids.is_empty() {
+            self.render.attribute_start("id");
+            self.render.string(&ids.join(" "));
+            self.render.attribute_end();
+        }
         Ok(())
     }
 

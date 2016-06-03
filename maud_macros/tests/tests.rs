@@ -422,10 +422,17 @@ fn classes_shorthand_with_space() {
 }
 
 #[test]
-fn classes_shorthand_with_attrs() {
+fn ids_shorthand() {
     let mut s = String::new();
-    html!(s, p { "Hi, " span.name.here id="thing" { "Lyra" } "!" }).unwrap();
-    assert_eq!(s, "<p>Hi, <span class=\"name here\" id=\"thing\">Lyra</span>!</p>");
+    html!(s, p { "Hi, " span#thing { "Lyra" } "!" }).unwrap();
+    assert_eq!(s, "<p>Hi, <span id=\"thing\">Lyra</span>!</p>");
+}
+
+#[test]
+fn classes_attrs_ids_mixed_up() {
+    let mut s = String::new();
+    html!(s, p { "Hi, " span.name.here lang="en" #thing { "Lyra" } "!" }).unwrap();
+    assert_eq!(s, "<p>Hi, <span lang=\"en\" class=\"name here\" id=\"thing\">Lyra</span>!</p>");
 }
 
 #[test]
