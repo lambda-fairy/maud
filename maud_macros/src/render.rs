@@ -20,7 +20,10 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
     pub fn new(cx: &'cx ExtCtxt<'a>) -> Renderer<'cx, 'a> {
         let writer = token::gensym_ident("__maud_writer");
         let result = token::gensym_ident("__maud_result");
-        let loop_label = token::gensym_ident("__maud_loop_label");
+        // Silence "duplicate loop labels" warning by appending ExpnId to label
+        // FIXME This is a gross hack and should be replaced ASAP
+        // See issues #36 and #37
+        let loop_label = token::gensym_ident(&format!("__maud_loop_label_{}", cx.backtrace.into_u32()));
         Renderer {
             cx: cx,
             writer: writer,
