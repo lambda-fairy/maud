@@ -107,16 +107,16 @@ pub fn split_comma<'a>(cx: &ExtCtxt, sp: Span, mac_name: &str, args: &'a [TokenT
     }
 }
 
-struct Parser<'cx, 'i> {
+struct Parser<'cx, 'a: 'cx, 'i> {
     in_attr: bool,
     input: &'i [TokenTree],
     span: Span,
-    render: Renderer<'cx>,
+    render: Renderer<'cx, 'a>,
 }
 
-impl<'cx, 'i> Parser<'cx, 'i> {
+impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     /// Finalizes the `Parser`, returning the `Renderer` underneath.
-    fn into_render(self) -> Renderer<'cx> {
+    fn into_render(self) -> Renderer<'cx, 'a> {
         let Parser { render, .. } = self;
         render
     }
@@ -145,7 +145,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     /// Parses and renders multiple blocks of markup.
     fn markups(&mut self) -> PResult<()> {
         loop {
-            match self.input {
+            match *self.input {
                 [] => return Ok(()),
                 [semi!(), ..] => self.shift(1),
                 [_, ..] => self.markup()?,
@@ -155,7 +155,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
 
     /// Parses and renders a single block of markup.
     fn markup(&mut self) -> PResult<()> {
-        match self.input {
+        match *self.input {
             // Literal
             [minus!(), ref tt @ literal!(), ..] => {
                 self.shift(2);
@@ -211,7 +211,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             },
             // ???
             _ => {
-                if let [ref tt, ..] = self.input {
+                if let [ref tt, ..] = *self.input {
                     parse_error!(self, tt.get_span(), "invalid syntax");
                 } else {
                     parse_error!(self, self.span, "unexpected end of block");
@@ -236,7 +236,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         // Parse the initial if
         let mut if_cond = vec![];
         let if_body;
-        loop { match self.input {
+        loop { match *self.input {
             [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
                 if_body = self.block(sp, &d.tts)?;
@@ -249,10 +249,10 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             [] => parse_error!(self, sp, "expected body for this @if"),
         }}
         // Parse the (optional) @else
-        let else_body = match self.input {
+        let else_body = match *self.input {
             [at!(), keyword!(_, k), ..] if k.is_keyword(keywords::Else) => {
                 self.shift(2);
-                match self.input {
+                match *self.input {
                     [keyword!(sp, k), ..] if k.is_keyword(keywords::If) => {
                         self.shift(1);
                         let else_body = {
@@ -284,7 +284,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     /// The leading `@for` should already be consumed.
     fn for_expr(&mut self, sp: Span) -> PResult<()> {
         let mut pattern = vec![];
-        loop { match self.input {
+        loop { match *self.input {
             [keyword!(_, k), ..] if k.is_keyword(keywords::In) => {
                 self.shift(1);
                 break;
@@ -298,7 +298,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         let pattern = self.with_rust_parser(pattern, RustParser::parse_pat)?;
         let mut iterable = vec![];
         let body;
-        loop { match self.input {
+        loop { match *self.input {
             [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
                 body = self.block(sp, &d.tts)?;
@@ -322,7 +322,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         // Parse the initial match
         let mut match_var = vec![];
         let match_bodies;
-        loop { match self.input {
+        loop { match *self.input {
             [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
                 match_bodies = Parser {
@@ -346,24 +346,22 @@ impl<'cx, 'i> Parser<'cx, 'i> {
 
     fn match_bodies(&mut self) -> PResult<Vec<TokenTree>> {
         let mut bodies = Vec::new();
-        loop {
-            match self.input {
-                [] => break,
-                [ref tt @ comma!(), ..] => {
-                    self.shift(1);
-                    bodies.push(tt.clone());
-                },
-                [TokenTree::Token(sp, _), ..] | [TokenTree::Delimited(sp, _), ..] | [TokenTree::Sequence(sp, _), ..] => {
-                    bodies.append(&mut self.match_body(sp)?);
-                },
-            }
-        }
+        loop { match *self.input {
+            [] => break,
+            [ref tt @ comma!(), ..] => {
+                self.shift(1);
+                bodies.push(tt.clone());
+            },
+            [TokenTree::Token(sp, _), ..] | [TokenTree::Delimited(sp, _), ..] | [TokenTree::Sequence(sp, _), ..] => {
+                bodies.append(&mut self.match_body(sp)?);
+            },
+        }}
         Ok(bodies)
     }
 
     fn match_body(&mut self, sp: Span) -> PResult<Vec<TokenTree>> {
         let mut body = vec![];
-        loop { match self.input {
+        loop { match *self.input {
             [ref tt @ fat_arrow!(), ..] => {
                 self.shift(1);
                 body.push(tt.clone());
@@ -376,7 +374,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             _ => parse_error!(self, sp, "invalid @match pattern"),
         }}
         let mut expr = Vec::new();
-        loop { match self.input {
+        loop { match *self.input {
             [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
                 if expr.is_empty() {
                     self.shift(1);
@@ -414,7 +412,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     /// The leading `^` should already be consumed.
     fn splice(&mut self, sp: Span) -> PResult<P<Expr>> {
         // First, munch a single token tree
-        let prefix = match self.input {
+        let prefix = match *self.input {
             [ref tt, ..] => {
                 self.shift(1);
                 tt.clone()
@@ -428,7 +426,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
     /// consumed.
     fn splice_with_prefix(&mut self, prefix: TokenTree) -> PResult<P<Expr>> {
         let mut tts = vec![prefix];
-        loop { match self.input {
+        loop { match *self.input {
             // Munch attribute lookups e.g. `^person.address.street`
             [ref dot @ dot!(), ref ident @ ident!(_, _), ..] => {
                 self.shift(2);
@@ -467,7 +465,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
         self.render.element_open_start(name);
         self.attrs()?;
         self.render.element_open_end();
-        if let [slash!(), ..] = self.input {
+        if let [slash!(), ..] = *self.input {
             self.shift(1);
         } else {
             self.markup()?;
@@ -484,7 +482,7 @@ impl<'cx, 'i> Parser<'cx, 'i> {
             let old_input = self.input;
             let maybe_name = self.name();
             match (maybe_name, self.input) {
-                (Ok(name), [eq!(), ..]) => {
+                (Ok(name), &[eq!(), ..]) => {
                     // Non-empty attribute
                     self.shift(1);
                     self.render.attribute_start(&name);
@@ -497,10 +495,10 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                     }
                     self.render.attribute_end();
                 },
-                (Ok(name), [question!(), ..]) => {
+                (Ok(name), &[question!(), ..]) => {
                     // Empty attribute
                     self.shift(1);
-                    if let [ref tt @ eq!(), ..] = self.input {
+                    if let [ref tt @ eq!(), ..] = *self.input {
                         // Toggle the attribute based on a boolean expression
                         self.shift(1);
                         let cond = self.splice(tt.get_span())?;
@@ -517,12 +515,12 @@ impl<'cx, 'i> Parser<'cx, 'i> {
                         self.render.attribute_empty(&name);
                     }
                 },
-                (Err(_), [dot!(), ident!(_, _), ..]) => {
+                (Err(_), &[dot!(), ident!(_, _), ..]) => {
                     // Class shorthand
                     self.shift(1);
                     classes.push(self.name()?);
                 },
-                (Err(_), [pound!(), ident!(_, _), ..]) => {
+                (Err(_), &[pound!(), ident!(_, _), ..]) => {
                     // ID shorthand
                     self.shift(1);
                     ids.push(self.name()?);
@@ -548,14 +546,14 @@ impl<'cx, 'i> Parser<'cx, 'i> {
 
     /// Parses a HTML element or attribute name.
     fn name(&mut self) -> PResult<String> {
-        let mut s = match self.input {
+        let mut s = match *self.input {
             [ident!(_, name), ..] => {
                 self.shift(1);
                 String::from(&name.name.as_str() as &str)
             },
             _ => return Err(FatalError),
         };
-        while let [minus!(), ident!(_, name), ..] = self.input {
+        while let [minus!(), ident!(_, name), ..] = *self.input {
             self.shift(2);
             s.push('-');
             s.push_str(&name.name.as_str());

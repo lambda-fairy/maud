@@ -6,8 +6,8 @@ use syntax::ptr::P;
 
 use maud::Escaper;
 
-pub struct Renderer<'cx> {
-    pub cx: &'cx ExtCtxt<'cx>,
+pub struct Renderer<'cx, 'a: 'cx> {
+    pub cx: &'cx ExtCtxt<'a>,
     writer: Ident,
     result: Ident,
     loop_label: Vec<TokenTree>,
@@ -15,9 +15,9 @@ pub struct Renderer<'cx> {
     tail: String,
 }
 
-impl<'cx> Renderer<'cx> {
+impl<'cx, 'a> Renderer<'cx, 'a> {
     /// Creates a new `Renderer` using the given extension context.
-    pub fn new(cx: &'cx ExtCtxt<'cx>) -> Renderer<'cx> {
+    pub fn new(cx: &'cx ExtCtxt<'a>) -> Renderer<'cx, 'a> {
         let writer = token::gensym_ident("__maud_writer");
         let result = token::gensym_ident("__maud_result");
         let loop_label = token::gensym_ident("__maud_loop_label");
@@ -32,7 +32,7 @@ impl<'cx> Renderer<'cx> {
     }
 
     /// Creates a new `Renderer` under the same context as `self`.
-    pub fn fork(&self) -> Renderer<'cx> {
+    pub fn fork(&self) -> Renderer<'cx, 'a> {
         Renderer {
             cx: self.cx,
             writer: self.writer,
