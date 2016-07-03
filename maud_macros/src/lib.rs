@@ -9,13 +9,14 @@ extern crate syntax;
 extern crate maud;
 
 use rustc_plugin::Registry;
-use syntax::ast::{Expr, TokenTree};
+use syntax::ast::Expr;
 use syntax::codemap::{DUMMY_SP, Span};
 use syntax::errors::FatalError;
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
 use syntax::parse::token;
 use syntax::print::pprust;
 use syntax::ptr::P;
+use syntax::tokenstream::TokenTree;
 
 mod parse;
 mod render;

@@ -1,6 +1,5 @@
 use std::mem;
-use std::rc::Rc;
-use syntax::ast::{Delimited, Expr, ExprKind, Lit, LitKind, Stmt, TokenTree};
+use syntax::ast::{Expr, ExprKind, Lit, LitKind, Stmt};
 use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
 use syntax::errors::{DiagnosticBuilder, FatalError};
@@ -10,6 +9,7 @@ use syntax::parse::parser::Parser as RustParser;
 use syntax::parse::token::{BinOpToken, DelimToken, Token, Lit as LitToken};
 use syntax::parse::token::keywords;
 use syntax::ptr::P;
+use syntax::tokenstream::{Delimited, TokenTree};
 
 use super::render::Renderer;
 use super::PResult;
@@ -398,12 +398,12 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 expr.push(tt.clone());
             },
         }}
-        body.push(TokenTree::Delimited(sp, Rc::new(Delimited {
-          delim: DelimToken::Brace,
-          open_span: sp,
-          tts: expr,
-          close_span: sp,
-        })));
+        body.push(TokenTree::Delimited(sp, Delimited {
+            delim: DelimToken::Brace,
+            open_span: sp,
+            tts: expr,
+            close_span: sp,
+        }));
         Ok(body)
     }
 

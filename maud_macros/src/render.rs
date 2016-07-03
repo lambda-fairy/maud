@@ -1,8 +1,9 @@
-use syntax::ast::{Expr, Ident, Pat, Stmt, TokenTree};
+use syntax::ast::{Expr, Ident, Pat, Stmt};
 use syntax::codemap::DUMMY_SP;
 use syntax::ext::base::ExtCtxt;
 use syntax::parse::token;
 use syntax::ptr::P;
+use syntax::tokenstream::TokenTree;
 
 use maud::Escaper;
 
