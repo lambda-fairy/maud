@@ -1,4 +1,5 @@
 use std::mem;
+use std::rc::Rc;
 use syntax::ast::{Expr, ExprKind, Lit, LitKind, Stmt};
 use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
@@ -398,12 +399,12 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 expr.push(tt.clone());
             },
         }}
-        body.push(TokenTree::Delimited(sp, Delimited {
+        body.push(TokenTree::Delimited(sp, Rc::new(Delimited {
             delim: DelimToken::Brace,
             open_span: sp,
             tts: expr,
             close_span: sp,
-        }));
+        })));
         Ok(body)
     }
 
