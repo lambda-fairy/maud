@@ -49,6 +49,9 @@ macro_rules! question {
 macro_rules! semi {
     () => (TokenTree::Token(_, Token::Semi))
 }
+macro_rules! colon {
+    () => (TokenTree::Token(_, Token::Colon))
+}
 macro_rules! comma {
     () => (TokenTree::Token(_, Token::Comma))
 }
@@ -548,6 +551,13 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     /// Parses a HTML element or attribute name.
     fn name(&mut self) -> PResult<String> {
         let mut s = match *self.input {
+            [ident!(_, namespace), colon!(), ident!(_, name), ..] => {
+                self.shift(3);
+                let mut r = String::from(&namespace.name.as_str() as &str);
+                r.push(':');
+                r.push_str(&name.name.as_str() as &str);
+                r
+            },
             [ident!(_, name), ..] => {
                 self.shift(1);
                 String::from(&name.name.as_str() as &str)
