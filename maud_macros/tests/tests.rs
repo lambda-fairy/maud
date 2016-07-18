@@ -91,8 +91,8 @@ mod elements {
     #[test]
     fn namespaces() {
         let mut s = String::new();
-        html!(s, pon:controls a on:click="yay()" "Yay!").unwrap();
-        assert_eq!(s, r#"<pon:controls><a on:click="yay()">Yay!</a></pon:controls>"#);
+        html!(s, pon-pon:controls-alpha a on:click="yay()" "Yay!").unwrap();
+        assert_eq!(s, r#"<pon-pon:controls-alpha><a on:click="yay()">Yay!</a></pon-pon:controls-alpha>"#);
     }
 }
 

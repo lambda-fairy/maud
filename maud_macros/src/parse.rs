@@ -550,25 +550,30 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
 
     /// Parses a HTML element or attribute name.
     fn name(&mut self) -> PResult<String> {
-        let mut s = match *self.input {
-            [ident!(_, namespace), colon!(), ident!(_, name), ..] => {
-                self.shift(3);
-                let mut r = String::from(&namespace.name.as_str() as &str);
-                r.push(':');
-                r.push_str(&name.name.as_str() as &str);
-                r
-            },
-            [ident!(_, name), ..] => {
+        macro_rules! ident_with_minuses {
+            ($name:ident) => ({
                 self.shift(1);
-                String::from(&name.name.as_str() as &str)
-            },
+                let mut s = String::from(&$name.name.as_str() as &str);
+                while let [minus!(), ident!(_, name), ..] = *self.input {
+                    self.shift(2);
+                    s.push('-');
+                    s.push_str(&name.name.as_str());
+                }
+                s
+            })
+        }
+
+        let mut s = match *self.input {
+            [ident!(_, name), ..] => ident_with_minuses!(name),
             _ => return Err(FatalError),
         };
-        while let [minus!(), ident!(_, name), ..] = *self.input {
-            self.shift(2);
-            s.push('-');
-            s.push_str(&name.name.as_str());
+
+        if let [colon!(), ident!(_, name), ..] = *self.input {
+            self.shift(1);
+            s.push(':');
+            s.push_str(ident_with_minuses!(name).as_str());
         }
+
         Ok(s)
     }
 
