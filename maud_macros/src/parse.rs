@@ -548,32 +548,34 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         Ok(())
     }
 
-    /// Parses a HTML element or attribute name.
-    fn name(&mut self) -> PResult<String> {
-        macro_rules! ident_with_minuses {
-            ($name:ident) => ({
-                self.shift(1);
-                let mut s = String::from(&$name.name.as_str() as &str);
-                while let [minus!(), ident!(_, name), ..] = *self.input {
-                    self.shift(2);
-                    s.push('-');
-                    s.push_str(&name.name.as_str());
-                }
-                s
-            })
-        }
-
+    /// Parses ident with minuses.
+    fn ident_with_minuses(&mut self) -> PResult<String> {
         let mut s = match *self.input {
-            [ident!(_, name), ..] => ident_with_minuses!(name),
+            [ident!(_, name), ..] => {
+                self.shift(1);
+                String::from(&name.name.as_str() as &str)
+            },
             _ => return Err(FatalError),
         };
+        while let [minus!(), ident!(_, name), ..] = *self.input {
+            self.shift(2);
+            s.push('-');
+            s.push_str(&name.name.as_str());
+        }
+        Ok(s)
+    }
 
-        if let [colon!(), ident!(_, name), ..] = *self.input {
+    /// Parses a HTML element or attribute name.
+    fn name(&mut self) -> PResult<String> {
+        let mut s = match self.ident_with_minuses() {
+            Ok(ident) => ident,
+            Err(e) => return Err(e),
+        };
+        if let [colon!(), ident!(_, _), ..] = *self.input {
             self.shift(1);
             s.push(':');
-            s.push_str(ident_with_minuses!(name).as_str());
+            s.push_str(self.ident_with_minuses().unwrap().as_str());
         }
-
         Ok(s)
     }
 
