@@ -49,6 +49,9 @@ macro_rules! question {
 macro_rules! semi {
     () => (TokenTree::Token(_, Token::Semi))
 }
+macro_rules! colon {
+    () => (TokenTree::Token(_, Token::Colon))
+}
 macro_rules! comma {
     () => (TokenTree::Token(_, Token::Comma))
 }
@@ -545,8 +548,8 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         Ok(())
     }
 
-    /// Parses a HTML element or attribute name.
-    fn name(&mut self) -> PResult<String> {
+    /// Parses ident with minuses.
+    fn ident_with_minuses(&mut self) -> PResult<String> {
         let mut s = match *self.input {
             [ident!(_, name), ..] => {
                 self.shift(1);
@@ -558,6 +561,20 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
             self.shift(2);
             s.push('-');
             s.push_str(&name.name.as_str());
+        }
+        Ok(s)
+    }
+
+    /// Parses a HTML element or attribute name.
+    fn name(&mut self) -> PResult<String> {
+        let mut s = match self.ident_with_minuses() {
+            Ok(ident) => ident,
+            Err(e) => return Err(e),
+        };
+        if let [colon!(), ident!(_, _), ..] = *self.input {
+            self.shift(1);
+            s.push(':');
+            s.push_str(self.ident_with_minuses().unwrap().as_str());
         }
         Ok(s)
     }

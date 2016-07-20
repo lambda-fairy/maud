@@ -87,6 +87,13 @@ mod elements {
         html!(s, div readonly? input type="checkbox" checked? /).unwrap();
         assert_eq!(s, r#"<div readonly><input type="checkbox" checked></div>"#);
     }
+
+    #[test]
+    fn namespaces() {
+        let mut s = String::new();
+        html!(s, pon-pon:controls-alpha a on:click="yay()" "Yay!").unwrap();
+        assert_eq!(s, r#"<pon-pon:controls-alpha><a on:click="yay()">Yay!</a></pon-pon:controls-alpha>"#);
+    }
 }
 
 mod splices {
