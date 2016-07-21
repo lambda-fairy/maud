@@ -198,7 +198,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
             },
             // Element
             [ident!(sp, _), ..] => {
-                let name = self.name()?;
+                let name = self.namespaced_name().unwrap();
                 self.element(sp, &name)?;
             },
             // Block
@@ -484,7 +484,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         let mut ids = Vec::new();
         loop {
             let old_input = self.input;
-            let maybe_name = self.name();
+            let maybe_name = self.namespaced_name();
             match (maybe_name, self.input) {
                 (Ok(name), &[eq!(), ..]) => {
                     // Non-empty attribute
@@ -522,12 +522,12 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 (Err(_), &[dot!(), ident!(_, _), ..]) => {
                     // Class shorthand
                     self.shift(1);
-                    classes.push(self.name()?);
+                    classes.push(self.name().unwrap());
                 },
                 (Err(_), &[pound!(), ident!(_, _), ..]) => {
                     // ID shorthand
                     self.shift(1);
-                    ids.push(self.name()?);
+                    ids.push(self.name().unwrap());
                 },
                 _ => {
                     self.input = old_input;
@@ -548,8 +548,8 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         Ok(())
     }
 
-    /// Parses ident with minuses.
-    fn ident_with_minuses(&mut self) -> PResult<String> {
+    /// Parses an identifier, without dealing with namespaces.
+    fn name(&mut self) -> PResult<String> {
         let mut s = match *self.input {
             [ident!(_, name), ..] => {
                 self.shift(1);
@@ -565,16 +565,14 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         Ok(s)
     }
 
-    /// Parses a HTML element or attribute name.
-    fn name(&mut self) -> PResult<String> {
-        let mut s = match self.ident_with_minuses() {
-            Ok(ident) => ident,
-            Err(e) => return Err(e),
-        };
+    /// Parses a HTML element or attribute name, along with a namespace
+    /// if necessary.
+    fn namespaced_name(&mut self) -> PResult<String> {
+        let mut s = self.name()?;
         if let [colon!(), ident!(_, _), ..] = *self.input {
             self.shift(1);
             s.push(':');
-            s.push_str(self.ident_with_minuses().unwrap().as_str());
+            s.push_str(&self.name().unwrap());
         }
         Ok(s)
     }
