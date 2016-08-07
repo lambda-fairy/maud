@@ -131,6 +131,13 @@ fn classes_shorthand() {
 }
 
 #[test]
+fn hyphens_in_class_names() {
+    let mut s = String::new();
+    html!(s, p.rocks-these.are--my--rocks "yes").unwrap();
+    assert_eq!(s, r#"<p class="rocks-these are--my--rocks">yes</p>"#);
+}
+
+#[test]
 fn ids_shorthand() {
     let mut s = String::new();
     html!(s, p { "Hi, " span#thing { "Lyra" } "!" }).unwrap();

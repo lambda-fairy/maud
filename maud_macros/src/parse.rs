@@ -557,10 +557,21 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
             },
             _ => return Err(FatalError),
         };
-        while let [minus!(), ident!(_, name), ..] = *self.input {
-            self.shift(2);
-            s.push('-');
-            s.push_str(&name.name.as_str());
+        let mut expect_ident = false;
+        loop {
+            expect_ident = match *self.input {
+                [minus!(), ..] => {
+                    self.shift(1);
+                    s.push('-');
+                    true
+                },
+                [ident!(_, name), ..] if expect_ident => {
+                    self.shift(1);
+                    s.push_str(&name.name.as_str());
+                    false
+                },
+                _ => break,
+            };
         }
         Ok(s)
     }
