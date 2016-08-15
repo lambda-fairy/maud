@@ -44,6 +44,17 @@ fn html_utf8(cx: &mut ExtCtxt, sp: Span, mac_name: &str, args: &[TokenTree]) -> 
         }))
 }
 
+fn template(cx: &mut ExtCtxt, sp: Span, _mac_name: &str, args: &[TokenTree]) -> PResult<P<Expr>> {
+    let write_ident = token::gensym_ident("__maud_writer");
+    let write = vec![TokenTree::Token(DUMMY_SP, token::Ident(write_ident))];
+    let star_write = vec![
+        TokenTree::Token(DUMMY_SP, token::BinOp(token::BinOpToken::Star)),
+        TokenTree::Token(DUMMY_SP, token::Ident(write_ident)),
+    ];
+    let expr = parse::parse(cx, sp, &star_write, args)?;
+    Ok(quote_expr!(cx, move |$write: &mut ::std::fmt::Write| $expr))
+}
+
 macro_rules! generate_debug_wrappers {
     ($fn_name:ident $fn_debug_name:ident $mac_name:ident) => {
         fn $fn_name<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree])
@@ -72,6 +83,7 @@ macro_rules! generate_debug_wrappers {
 
 generate_debug_wrappers!(expand_html expand_html_debug html);
 generate_debug_wrappers!(expand_html_utf8 expand_html_utf8_debug html_utf8);
+generate_debug_wrappers!(expand_template expand_template_debug template);
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
@@ -79,4 +91,6 @@ pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_macro("html_debug", expand_html_debug);
     reg.register_macro("html_utf8", expand_html_utf8);
     reg.register_macro("html_utf8_debug", expand_html_utf8_debug);
+    reg.register_macro("template", expand_template);
+    reg.register_macro("template_debug", expand_template_debug);
 }

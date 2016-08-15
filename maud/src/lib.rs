@@ -151,3 +151,9 @@ impl<W: io::Write> fmt::Write for Utf8Writer<W> {
         }
     }
 }
+
+/// A template is a closure that, when invoked, outputs markup to a
+/// `std::fmt::Write`.
+pub trait Template: FnOnce(&mut fmt::Write) -> fmt::Result {}
+
+impl<T> Template for T where T: FnOnce(&mut fmt::Write) -> fmt::Result {}
