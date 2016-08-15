@@ -1,4 +1,4 @@
-#![feature(plugin)]
+#![feature(conservative_impl_trait, plugin)]
 #![plugin(maud_macros)]
 
 extern crate maud;
@@ -131,9 +131,27 @@ fn call() {
             panic!("oh noes")
         };
     html!(s, {
-        @call ducks
-        @call (|w: &mut fmt::Write| write!(w, "Geese"))
-        @call swans(true)
+        @ducks
+        @(|w: &mut fmt::Write| write!(w, "Geese"))
+        @swans(true)
     }).unwrap();
     assert_eq!(s, "DucksGeeseSwans");
+}
+
+fn assert_cute<'a>(name: &'a str) -> impl maud::Template + 'a {
+    template! {
+        p {
+            ^name " is the cutest"
+        }
+    }
+}
+
+#[test]
+fn template() {
+    let mut s = String::new();
+    html!(s, {
+        @assert_cute("Pinkie Pie")
+        @assert_cute("Rarity")
+    }).unwrap();
+    assert_eq!(s, "<p>Pinkie Pie is the cutest</p><p>Rarity is the cutest</p>");
 }

@@ -140,21 +140,3 @@ fn render_once_impl() {
     html!(s, ^once).unwrap();
     assert_eq!(s, "pinkie");
 }
-
-fn cute<'a>(name: &'a str) -> impl maud::Template + 'a {
-    template! {
-        p {
-            ^name " is the cutest"
-        }
-    }
-}
-
-#[test]
-fn call() {
-    let mut s = String::new();
-    html!(s, {
-        @call cute("Pinkie Pie")
-        @call cute("Rarity")
-    }).unwrap();
-    assert_eq!(s, "<p>Pinkie Pie is the cutest</p><p>Rarity is the cutest</p>");
-}

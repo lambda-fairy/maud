@@ -185,9 +185,9 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.match_expr(sp)?;
             },
             // Call
-            [at!(), ident!(sp, name), ..] if name.name.as_str() == "call" => {
-                self.shift(2);
-                let func = self.splice(sp)?;
+            [ref tt @ at!(), ..] => {
+                self.shift(1);
+                let func = self.splice(tt.get_span())?;
                 self.render.emit_call(func);
             },
             // Splice
