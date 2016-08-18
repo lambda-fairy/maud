@@ -1,6 +1,6 @@
 use std::mem;
 use std::rc::Rc;
-use syntax::ast::{Expr, Lit, LitKind, Stmt};
+use syntax::ast::{Expr, LitKind, Stmt};
 use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
 use syntax::errors::{DiagnosticBuilder, FatalError};
@@ -158,13 +158,9 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     fn markup(&mut self) -> PResult<()> {
         match *self.input {
             // Literal
-            [minus!(), ref tt @ literal!(), ..] => {
-                self.shift(2);
-                self.literal(tt, true)?;
-            },
             [ref tt @ literal!(), ..] => {
                 self.shift(1);
-                self.literal(tt, false)?;
+                self.literal(tt)?;
             },
             // If
             [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::If) => {
@@ -222,12 +218,15 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         Ok(())
     }
 
-    /// Parses and renders a literal string or number.
-    fn literal(&mut self, tt: &TokenTree, minus: bool) -> PResult<()> {
+    /// Parses and renders a literal string.
+    fn literal(&mut self, tt: &TokenTree) -> PResult<()> {
         let lit = self.with_rust_parser(vec![tt.clone()], RustParser::parse_lit)?;
-        let s = lit_to_string(self.render.cx, lit, minus)?;
-        self.render.string(&s);
-        Ok(())
+        if let LitKind::Str(s, _) = lit.node {
+            self.render.string(&s);
+            Ok(())
+        } else {
+            parse_error!(self, lit.span, "literal strings must be surrounded by quotes (\"like this\")")
+        }
     }
 
     /// Parses and renders an `@if` expression.
@@ -598,23 +597,4 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         parse.markups()?;
         Ok(parse.into_render().into_stmts())
     }
-}
-
-/// Converts a literal to a string.
-fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> PResult<String> {
-    let mut result = String::new();
-    if minus {
-        result.push('-');
-    }
-    match lit.node {
-        LitKind::Str(s, _) => result.push_str(&s),
-        LitKind::ByteStr(..) | LitKind::Byte(..) => {
-            error!(cx, lit.span, "cannot splice binary data");
-        },
-        LitKind::Char(c) => result.push(c),
-        LitKind::Int(x, _) => result.push_str(&x.to_string()),
-        LitKind::Float(s, _) | LitKind::FloatUnsuffixed(s) => result.push_str(&s),
-        LitKind::Bool(b) => result.push_str(if b { "true" } else { "false" }),
-    };
-    Ok(result)
 }

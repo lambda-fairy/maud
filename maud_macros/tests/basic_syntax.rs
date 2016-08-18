@@ -6,7 +6,7 @@ extern crate maud;
 #[test]
 fn literals() {
     let mut s = String::new();
-    html!(s, "du\tcks" -23 3.14 '\n' "geese").unwrap();
+    html!(s, "du\tcks" "-23" "3.14\n" "geese").unwrap();
     assert_eq!(s, "du\tcks-233.14\ngeese");
 }
 
