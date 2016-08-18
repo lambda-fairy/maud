@@ -1,6 +1,6 @@
 use std::mem;
 use std::rc::Rc;
-use syntax::ast::{Expr, ExprKind, Lit, LitKind, Stmt};
+use syntax::ast::{Expr, Lit, LitKind, Stmt};
 use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
 use syntax::errors::{DiagnosticBuilder, FatalError};
@@ -63,9 +63,6 @@ macro_rules! minus {
 }
 macro_rules! slash {
     () => (TokenTree::Token(_, Token::BinOp(BinOpToken::Slash)))
-}
-macro_rules! caret {
-    () => (TokenTree::Token(_, Token::BinOp(BinOpToken::Caret)))
 }
 macro_rules! literal {
     () => (TokenTree::Token(_, Token::Literal(..)))
@@ -190,24 +187,24 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 let func = self.splice(tt.get_span())?;
                 self.render.emit_call(func);
             },
-            // Splice
-            [ref tt @ caret!(), ..] => {
-                self.shift(1);
-                let expr = self.splice(tt.get_span())?;
-                self.render.splice(expr);
-            },
             // Element
             [ident!(sp, _), ..] => {
                 let name = self.namespaced_name().unwrap();
                 self.element(sp, &name)?;
             },
+            // Splice
+            [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Paren => {
+                self.shift(1);
+                let expr = self.with_rust_parser(d.tts.clone(), RustParser::parse_expr)?;
+                self.render.splice(expr);
+            }
             // Block
             [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Brace => {
                 self.shift(1);
                 {
                     // Parse the contents of the block, emitting the
                     // result inline
-                    let mut i = &*d.tts;
+                    let mut i = &d.tts[..];
                     mem::swap(&mut self.input, &mut i);
                     self.markups()?;
                     mem::swap(&mut self.input, &mut i);
@@ -502,21 +499,23 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 (Ok(name), &[question!(), ..]) => {
                     // Empty attribute
                     self.shift(1);
-                    if let [ref tt @ eq!(), ..] = *self.input {
-                        // Toggle the attribute based on a boolean expression
-                        self.shift(1);
-                        let cond = self.splice(tt.get_span())?;
-                        // Silence "unnecessary parentheses" warnings
-                        let cond = strip_outer_parens(cond).to_tokens(self.render.cx);
-                        let body = {
-                            let mut r = self.render.fork();
-                            r.attribute_empty(&name);
-                            r.into_stmts()
-                        };
-                        self.render.emit_if(cond, body, None);
-                    } else {
-                        // Write the attribute unconditionally
-                        self.render.attribute_empty(&name);
+                    match *self.input {
+                        [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Paren => {
+                            // Toggle the attribute based on a boolean expression
+                            self.shift(1);
+                            let cond = self.with_rust_parser(d.tts.clone(), RustParser::parse_expr)?;
+                            let cond = cond.to_tokens(self.render.cx);
+                            let body = {
+                                let mut r = self.render.fork();
+                                r.attribute_empty(&name);
+                                r.into_stmts()
+                            };
+                            self.render.emit_if(cond, body, None);
+                        },
+                        _ => {
+                            // Write the attribute unconditionally
+                            self.render.attribute_empty(&name);
+                        },
                     }
                 },
                 (Err(_), &[dot!(), ident!(_, _), ..]) => {
@@ -618,12 +617,4 @@ fn lit_to_string(cx: &ExtCtxt, lit: Lit, minus: bool) -> PResult<String> {
         LitKind::Bool(b) => result.push_str(if b { "true" } else { "false" }),
     };
     Ok(result)
-}
-
-/// If the expression is wrapped in parentheses, strip them off.
-fn strip_outer_parens(expr: P<Expr>) -> P<Expr> {
-    expr.and_then(|expr| match expr {
-        Expr { node: ExprKind::Paren(inner), .. } => inner,
-        expr => P(expr),
-    })
 }

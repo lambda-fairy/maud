@@ -6,7 +6,7 @@ extern crate maud;
 #[test]
 fn literals() {
     let mut s = String::new();
-    html!(s, ^"<pinkie>").unwrap();
+    html!(s, ("<pinkie>")).unwrap();
     assert_eq!(s, "&lt;pinkie&gt;");
 }
 
@@ -14,7 +14,7 @@ fn literals() {
 fn raw_literals() {
     use maud::PreEscaped;
     let mut s = String::new();
-    html!(s, ^PreEscaped("<pinkie>")).unwrap();
+    html!(s, (PreEscaped("<pinkie>"))).unwrap();
     assert_eq!(s, "<pinkie>");
 }
 
@@ -22,13 +22,13 @@ fn raw_literals() {
 fn blocks() {
     let mut s = String::new();
     html!(s, {
-        ^{
+        ({
             let mut result = 1i32;
             for i in 2..11 {
                 result *= i;
             }
             result
-        }
+        })
     }).unwrap();
     assert_eq!(s, "3628800");
 }
@@ -38,10 +38,10 @@ fn attributes() {
     let rocks = true;
     let mut s = String::new();
     html!(s, {
-        input checked?=true /
-        input checked?=false /
-        input checked?=rocks /
-        input checked?=(!rocks) /
+        input checked?(true) /
+        input checked?(false) /
+        input checked?(rocks) /
+        input checked?(!rocks) /
     }).unwrap();
     assert_eq!(s, concat!(
             r#"<input checked>"#,
@@ -55,7 +55,7 @@ static BEST_PONY: &'static str = "Pinkie Pie";
 #[test]
 fn statics() {
     let mut s = String::new();
-    html!(s, ^BEST_PONY).unwrap();
+    html!(s, (BEST_PONY)).unwrap();
     assert_eq!(s, "Pinkie Pie");
 }
 
@@ -63,7 +63,7 @@ fn statics() {
 fn locals() {
     let best_pony = "Pinkie Pie";
     let mut s = String::new();
-    html!(s, ^best_pony).unwrap();
+    html!(s, (best_pony)).unwrap();
     assert_eq!(s, "Pinkie Pie");
 }
 
@@ -90,7 +90,7 @@ fn structs() {
     };
     let mut s = String::new();
     html!(s, {
-        "Name: " ^pinkie.name ". Rating: " ^pinkie.repugnance()
+        "Name: " (pinkie.name) ". Rating: " (pinkie.repugnance())
     }).unwrap();
     assert_eq!(s, "Name: Pinkie Pie. Rating: 1");
 }
@@ -99,7 +99,7 @@ fn structs() {
 fn tuple_accessors() {
     let mut s = String::new();
     let a = ("ducks", "geese");
-    html!(s, ^a.0).unwrap();
+    html!(s, (a.0)).unwrap();
     assert_eq!(s, "ducks");
 }
 
@@ -111,7 +111,7 @@ fn splice_with_path() {
         }
     }
     let mut s = String::new();
-    html!(s, ^inner::name()).unwrap();
+    html!(s, (inner::name())).unwrap();
     assert_eq!(s, "Maud");
 }
 
@@ -119,6 +119,6 @@ fn splice_with_path() {
 fn nested_macro_invocation() {
     let best_pony = "Pinkie Pie";
     let mut s = String::new();
-    html!(s, ^(format!("{}", best_pony))).unwrap();
+    html!(s, (format!("{}", best_pony))).unwrap();
     assert_eq!(s, "Pinkie Pie");
 }

@@ -16,7 +16,7 @@ fn html_utf8() {
 fn issue_13() {
     let owned = String::from("yay");
     let mut s = String::new();
-    html!(s, ^owned).unwrap();
+    html!(s, (owned)).unwrap();
     // Make sure the `html!` call didn't move it
     let _owned = owned;
 }
@@ -27,7 +27,7 @@ fn issue_21() {
         () => ({
             let mut result = String::new();
             let name = "Pinkie Pie";
-            html!(result, p { "Hello, " ^name "!" }).map(|()| result)
+            html!(result, p { "Hello, " (name) "!" }).map(|()| result)
         })
     }
 
@@ -40,7 +40,7 @@ fn issue_21_2() {
     macro_rules! greet {
         ($name:expr) => ({
             let mut result = String::new();
-            html!(result, p { "Hello, " ^$name "!" }).map(|()| result)
+            html!(result, p { "Hello, " ($name) "!" }).map(|()| result)
         })
     }
 
@@ -59,7 +59,7 @@ fn issue_23() {
     }
 
     let name = "Lyra";
-    let s = to_string!(p { "Hi, " ^name "!" });
+    let s = to_string!(p { "Hi, " (name) "!" });
     assert_eq!(s, "<p>Hi, Lyra!</p>");
 }
 
@@ -74,7 +74,7 @@ fn issue_26() {
     }
 
     let name = "Lyra";
-    let s = to_string!(p { "Hi, " ^(name) "!" });
+    let s = to_string!(p { "Hi, " (name) "!" });
     assert_eq!(s, "<p>Hi, Lyra!</p>");
 }
 
@@ -89,22 +89,7 @@ fn issue_26_2() {
     }
 
     let name = "Lyra";
-    let s = to_string!(p { "Hi, " ^("person called ".to_string() + name) "!" });
-    assert_eq!(s, "<p>Hi, person called Lyra!</p>");
-}
-
-#[test]
-fn issue_26_3() {
-    macro_rules! to_string {
-        ($($x:tt)*) => {{
-            let mut s = String::new();
-            html!(s, $($x)*).unwrap();
-            s
-        }}
-    }
-
-    let name = "Lyra";
-    let s = to_string!(p { "Hi, " ^{"person called ".to_string() + name} "!" });
+    let s = to_string!(p { "Hi, " ("person called ".to_string() + name) "!" });
     assert_eq!(s, "<p>Hi, person called Lyra!</p>");
 }
 
@@ -121,8 +106,8 @@ fn render_impl() {
     let r = R("pinkie");
     // Since `R` is not `Copy`, this shows that Maud will auto-ref splice
     // arguments to find a `Render` impl
-    html!(s, ^r).unwrap();
-    html!(s, ^r).unwrap();
+    html!(s, (r)).unwrap();
+    html!(s, (r)).unwrap();
     assert_eq!(s, "pinkiepinkie");
 }
 
@@ -137,6 +122,6 @@ fn render_once_impl() {
 
     let mut s = String::new();
     let once = Once(String::from("pinkie"));
-    html!(s, ^once).unwrap();
+    html!(s, (once)).unwrap();
     assert_eq!(s, "pinkie");
 }

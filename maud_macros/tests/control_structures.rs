@@ -30,7 +30,7 @@ fn if_let() {
         let mut s = String::new();
         html!(s, {
             @if let Some(value) = input {
-                ^value
+                (value)
             } @else {
                 "oh noes"
             }
@@ -45,7 +45,7 @@ fn for_expr() {
     let mut s = String::new();
     html!(s, {
         ul @for pony in &ponies {
-            li ^pony
+            li (pony)
         }
     }).unwrap();
     assert_eq!(s, concat!(
@@ -63,7 +63,7 @@ fn match_expr() {
         html!(s, {
             @match input {
                 Some(value) => {
-                    div { ^value }
+                    div (value)
                 },
                 None => {
                     "oh noes"
@@ -80,8 +80,8 @@ fn match_expr_without_delims() {
         let mut s = String::new();
         html!(s, {
             @match input {
-                Some(value) => ^value,
-                None => span { "oh noes" },
+                Some(value) => (value),
+                None => span "oh noes",
             }
         }).unwrap();
         assert_eq!(s, output);
@@ -95,7 +95,7 @@ fn match_expr_with_guards() {
         html!(s, {
             @match input {
                 Some(value) if value == 1 => "one",
-                Some(value) => ^value,
+                Some(value) => (value),
                 None => "none",
             }
         }).unwrap();
@@ -112,7 +112,7 @@ fn match_in_attribute() {
                 1 => "one",
                 2 => "two",
                 _ => "many",
-            } { ^input }
+            } { (input) }
         }).unwrap();
         assert_eq!(s, output);
     }
@@ -141,7 +141,7 @@ fn call() {
 fn assert_cute<'a>(name: &'a str) -> impl maud::Template + 'a {
     template! {
         p {
-            ^name " is the cutest"
+            (name) " is the cutest"
         }
     }
 }
