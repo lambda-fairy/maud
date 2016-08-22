@@ -7,7 +7,7 @@ use syntax::errors::{DiagnosticBuilder, FatalError};
 use syntax::ext::base::ExtCtxt;
 use syntax::parse;
 use syntax::parse::parser::Parser as RustParser;
-use syntax::parse::token::{BinOpToken, DelimToken, Token, Lit as LitToken};
+use syntax::parse::token::{BinOpToken, DelimToken, Token};
 use syntax::parse::token::keywords;
 use syntax::ptr::P;
 use syntax::tokenstream::{Delimited, TokenTree};
@@ -37,9 +37,6 @@ macro_rules! modsep {
 macro_rules! eq {
     () => (TokenTree::Token(_, Token::Eq))
 }
-macro_rules! not {
-    () => (TokenTree::Token(_, Token::Not))
-}
 macro_rules! pound {
     () => (TokenTree::Token(_, Token::Pound))
 }
@@ -67,14 +64,8 @@ macro_rules! slash {
 macro_rules! literal {
     () => (TokenTree::Token(_, Token::Literal(..)))
 }
-macro_rules! integer {
-    () => (TokenTree::Token(_, Token::Literal(LitToken::Integer(_), _)))
-}
 macro_rules! ident {
     ($sp:pat, $x:pat) => (TokenTree::Token($sp, Token::Ident($x)))
-}
-macro_rules! substnt {
-    ($sp:pat, $x:pat) => (TokenTree::Token($sp, Token::SubstNt($x)))
 }
 macro_rules! keyword {
     ($sp:pat, $x:ident) => (TokenTree::Token($sp, ref $x @ Token::Ident(..)))
@@ -178,9 +169,9 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.match_expr(sp)?;
             },
             // Call
-            [ref tt @ at!(), ..] => {
-                self.shift(1);
-                let func = self.splice(tt.get_span())?;
+            [at!(), TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Paren => {
+                self.shift(2);
+                let func = self.with_rust_parser(d.tts.clone(), RustParser::parse_expr)?;
                 self.render.emit_call(func);
             },
             // Element
@@ -405,54 +396,6 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
             close_span: sp,
         })));
         Ok(body)
-    }
-
-    /// Parses and renders a `^splice`.
-    ///
-    /// The leading `^` should already be consumed.
-    fn splice(&mut self, sp: Span) -> PResult<P<Expr>> {
-        // First, munch a single token tree
-        let prefix = match *self.input {
-            [ref tt, ..] => {
-                self.shift(1);
-                tt.clone()
-            },
-            [] => parse_error!(self, sp, "expected expression for this splice"),
-        };
-        self.splice_with_prefix(prefix)
-    }
-
-    /// Parses and renders a `^splice`, given a prefix that we've already
-    /// consumed.
-    fn splice_with_prefix(&mut self, prefix: TokenTree) -> PResult<P<Expr>> {
-        let mut tts = vec![prefix];
-        loop { match *self.input {
-            // Munch attribute lookups e.g. `^person.address.street`
-            [ref dot @ dot!(), ref ident @ ident!(_, _), ..] => {
-                self.shift(2);
-                tts.push(dot.clone());
-                tts.push(ident.clone());
-            },
-            // Munch tuple attribute lookups e.g. `^person.1.2`
-            [ref dot @ dot!(), ref num @ integer!(), ..] => {
-                self.shift(2);
-                tts.push(dot.clone());
-                tts.push(num.clone());
-            },
-            // Munch path lookups e.g. `^some_mod::Struct`
-            [ref sep @ modsep!(), ref ident @ ident!(_, _), ..] => {
-                self.shift(2);
-                tts.push(sep.clone());
-                tts.push(ident.clone());
-            },
-            // Munch function calls `()` and indexing operations `[]`
-            [TokenTree::Delimited(sp, ref d), ..] if d.delim != DelimToken::Brace => {
-                self.shift(1);
-                tts.push(TokenTree::Delimited(sp, d.clone()));
-            },
-            _ => break,
-        }}
-        self.with_rust_parser(tts, RustParser::parse_expr)
     }
 
     /// Parses and renders an element node.
