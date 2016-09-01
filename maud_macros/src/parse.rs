@@ -31,9 +31,6 @@ macro_rules! at {
 macro_rules! dot {
     () => (TokenTree::Token(_, Token::Dot))
 }
-macro_rules! modsep {
-    () => (TokenTree::Token(_, Token::ModSep))
-}
 macro_rules! eq {
     () => (TokenTree::Token(_, Token::Eq))
 }
