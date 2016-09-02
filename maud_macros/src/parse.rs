@@ -166,8 +166,10 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.match_expr(sp)?;
             },
             // Call
-            [at!(), TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Paren => {
-                self.shift(2);
+            [at!(), ident!(_, name), TokenTree::Delimited(_, ref d), ..]
+                if name.name.as_str() == "call" && d.delim == DelimToken::Paren =>
+            {
+                self.shift(3);
                 let func = self.with_rust_parser(d.tts.clone(), RustParser::parse_expr)?;
                 self.render.emit_call(func);
             },

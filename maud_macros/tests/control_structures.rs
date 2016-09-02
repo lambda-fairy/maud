@@ -131,9 +131,9 @@ fn call() {
             panic!("oh noes")
         };
     html!(s, {
-        @(ducks)
-        @(|w: &mut fmt::Write| write!(w, "Geese"))
-        @(swans(true))
+        @call (ducks)
+        @call (|w: &mut fmt::Write| write!(w, "Geese"))
+        @call (swans(true))
     }).unwrap();
     assert_eq!(s, "DucksGeeseSwans");
 }
@@ -150,8 +150,8 @@ fn assert_cute<'a>(name: &'a str) -> impl maud::Template + 'a {
 fn template() {
     let mut s = String::new();
     html!(s, {
-        @(assert_cute("Pinkie Pie"))
-        @(assert_cute("Rarity"))
+        @call (assert_cute("Pinkie Pie"))
+        @call (assert_cute("Rarity"))
     }).unwrap();
     assert_eq!(s, "<p>Pinkie Pie is the cutest</p><p>Rarity is the cutest</p>");
 }
