@@ -24,7 +24,7 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
         // Silence "duplicate loop labels" warning by appending ExpnId to label
         // FIXME This is a gross hack and should be replaced ASAP
         // See issues #36 and #37
-        let loop_label = token::gensym_ident(&format!("__maud_loop_label_{}", cx.backtrace.into_u32()));
+        let loop_label = token::gensym_ident(&format!("__maud_loop_label_{}", cx.backtrace().into_u32()));
         Renderer {
             cx: cx,
             writer: writer,
