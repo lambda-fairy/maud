@@ -35,6 +35,14 @@ fn blocks() {
 
 #[test]
 fn attributes() {
+    let alt = "Pinkie Pie";
+    let mut s = String::new();
+    html!(s, img src="pinkie.jpg" alt=(alt) /).unwrap();
+    assert_eq!(s, r#"<img src="pinkie.jpg" alt="Pinkie Pie">"#);
+}
+
+#[test]
+fn empty_attributes() {
     let rocks = true;
     let mut s = String::new();
     html!(s, {
