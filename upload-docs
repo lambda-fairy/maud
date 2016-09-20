@@ -3,7 +3,7 @@
 set -e
 
 base="$(dirname "$(readlink -f $0)")"
-cd "$base/maud_macros"
+cd "$base/iron-maud"
 
 cargo clean
 cargo doc
