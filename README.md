@@ -6,7 +6,7 @@ Maud is a macro for generating HTML.
 
 [API reference]
 
-[Documentation]: http://lfairy.gitbooks.io/maud/content/index.html
+[Documentation]: https://maud.lambda.xyz/
 [API reference]: https://lambda.xyz/maud/maud/
 
 ## Warning
