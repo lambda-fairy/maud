@@ -1,3 +1,5 @@
+#![feature(specialization)]
+
 //! A macro for writing HTML templates.
 //!
 //! This documentation only describes the runtime API. For a general
@@ -7,7 +9,7 @@
 
 #[cfg(feature = "iron")] extern crate iron;
 
-use std::fmt;
+use std::fmt::{self, Write};
 
 /// Represents a type that can be rendered as HTML.
 ///
@@ -18,9 +20,20 @@ pub trait Render {
 }
 
 impl<T: fmt::Display + ?Sized> Render for T {
-    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
-        use std::fmt::Write;
+    default fn render(&self, w: &mut fmt::Write) -> fmt::Result {
         write!(Escaper::new(w), "{}", self)
+    }
+}
+
+impl Render for String {
+    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
+        Escaper::new(w).write_str(self)
+    }
+}
+
+impl Render for str {
+    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
+        Escaper::new(w).write_str(self)
     }
 }
 
@@ -40,8 +53,20 @@ impl<'a, T: Render + ?Sized> RenderOnce for &'a T {
 pub struct PreEscaped<T>(pub T);
 
 impl<T: fmt::Display> Render for PreEscaped<T> {
-    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
+    default fn render(&self, w: &mut fmt::Write) -> fmt::Result {
         write!(w, "{}", self.0)
+    }
+}
+
+impl Render for PreEscaped<String> {
+    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
+        w.write_str(&self.0)
+    }
+}
+
+impl<'a> Render for PreEscaped<&'a str> {
+    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
+        w.write_str(self.0)
     }
 }
 
