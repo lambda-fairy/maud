@@ -5,8 +5,9 @@
 //!
 //! [book]: http://lfairy.gitbooks.io/maud/content/
 
+#[cfg(feature = "iron")] extern crate iron;
+
 use std::fmt;
-use std::io;
 
 /// Represents a type that can be rendered as HTML.
 ///
@@ -41,6 +42,16 @@ pub struct PreEscaped<T>(pub T);
 impl<T: fmt::Display> Render for PreEscaped<T> {
     fn render(&self, w: &mut fmt::Write) -> fmt::Result {
         write!(w, "{}", self.0)
+    }
+}
+
+/// A block of markup is a string that does not need to be escaped.
+pub type Markup = PreEscaped<String>;
+
+impl Markup {
+    /// Synonym for `self.0`.
+    pub fn into_string(self) -> String {
+        self.0
     }
 }
 
@@ -87,73 +98,26 @@ impl<W: fmt::Write> fmt::Write for Escaper<W> {
     }
 }
 
-/// Wraps a `std::io::Write` in a `std::fmt::Write`.
-///
-/// Most I/O libraries work with binary data (`[u8]`), but Maud outputs
-/// Unicode strings (`str`). This adapter links them together by
-/// encoding the output as UTF-8.
-///
-/// # Example
-///
-/// ```rust,ignore
-/// use std::io;
-/// let mut writer = Utf8Writer::new(io::stdout());
-/// let _ = html!(writer, p { "Hello, " $name "!" });
-/// let result = writer.into_result();
-/// result.unwrap();
-/// ```
-pub struct Utf8Writer<W: io::Write> {
-    inner: W,
-    result: io::Result<()>,
-}
+#[cfg(feature = "iron")]
+mod iron_support {
+    use std::io;
+    use iron::headers::ContentType;
+    use iron::modifier::{Modifier, Set};
+    use iron::modifiers::Header;
+    use iron::response::{Response, ResponseBody, WriteBody};
+    use Markup;
 
-impl<W: io::Write> Utf8Writer<W> {
-    /// Creates a `Utf8Writer` from a `std::io::Write`.
-    pub fn new(inner: W) -> Utf8Writer<W> {
-        Utf8Writer {
-            inner: inner,
-            result: Ok(()),
+    impl Modifier<Response> for Markup {
+        fn modify(self, response: &mut Response) {
+            response
+                .set_mut(Header(ContentType::html()))
+                .set_mut(Box::new(self) as Box<WriteBody>);
         }
     }
 
-    /// Extracts the inner writer, along with any errors encountered
-    /// along the way.
-    pub fn into_inner(self) -> (W, io::Result<()>) {
-        let Utf8Writer { inner, result } = self;
-        (inner, result)
-    }
-
-    /// Drops the inner writer, returning any errors encountered
-    /// along the way.
-    pub fn into_result(self) -> io::Result<()> {
-        self.result
-    }
-}
-
-impl<W: io::Write> fmt::Write for Utf8Writer<W> {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        match io::Write::write_all(&mut self.inner, s.as_bytes()) {
-            Ok(()) => Ok(()),
-            Err(e) => {
-                self.result = Err(e);
-                Err(fmt::Error)
-            }
-        }
-    }
-
-    fn write_fmt(&mut self, args: fmt::Arguments) -> fmt::Result {
-        match io::Write::write_fmt(&mut self.inner, args) {
-            Ok(()) => Ok(()),
-            Err(e) => {
-                self.result = Err(e);
-                Err(fmt::Error)
-            }
+    impl WriteBody for Markup {
+        fn write_body(&mut self, body: &mut ResponseBody) -> io::Result<()> {
+            self.0.write_body(body)
         }
     }
 }
-
-/// A template is a closure that, when invoked, outputs markup to a
-/// `std::fmt::Write`.
-pub trait Template: FnOnce(&mut fmt::Write) -> fmt::Result {}
-
-impl<T> Template for T where T: FnOnce(&mut fmt::Write) -> fmt::Result {}

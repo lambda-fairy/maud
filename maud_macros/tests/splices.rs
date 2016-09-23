@@ -5,23 +5,20 @@ extern crate maud;
 
 #[test]
 fn literals() {
-    let mut s = String::new();
-    html!(s, ("<pinkie>")).unwrap();
+    let s = html!(("<pinkie>")).into_string();
     assert_eq!(s, "&lt;pinkie&gt;");
 }
 
 #[test]
 fn raw_literals() {
     use maud::PreEscaped;
-    let mut s = String::new();
-    html!(s, (PreEscaped("<pinkie>"))).unwrap();
+    let s = html!((PreEscaped("<pinkie>"))).into_string();
     assert_eq!(s, "<pinkie>");
 }
 
 #[test]
 fn blocks() {
-    let mut s = String::new();
-    html!(s, {
+    let s = html!({
         ({
             let mut result = 1i32;
             for i in 2..11 {
@@ -29,28 +26,26 @@ fn blocks() {
             }
             result
         })
-    }).unwrap();
+    }).into_string();
     assert_eq!(s, "3628800");
 }
 
 #[test]
 fn attributes() {
     let alt = "Pinkie Pie";
-    let mut s = String::new();
-    html!(s, img src="pinkie.jpg" alt=(alt) /).unwrap();
+    let s = html!(img src="pinkie.jpg" alt=(alt) /).into_string();
     assert_eq!(s, r#"<img src="pinkie.jpg" alt="Pinkie Pie">"#);
 }
 
 #[test]
 fn empty_attributes() {
     let rocks = true;
-    let mut s = String::new();
-    html!(s, {
+    let s = html!({
         input checked?(true) /
         input checked?(false) /
         input checked?(rocks) /
         input checked?(!rocks) /
-    }).unwrap();
+    }).into_string();
     assert_eq!(s, concat!(
             r#"<input checked>"#,
             r#"<input>"#,
@@ -62,16 +57,14 @@ static BEST_PONY: &'static str = "Pinkie Pie";
 
 #[test]
 fn statics() {
-    let mut s = String::new();
-    html!(s, (BEST_PONY)).unwrap();
+    let s = html!((BEST_PONY)).into_string();
     assert_eq!(s, "Pinkie Pie");
 }
 
 #[test]
 fn locals() {
     let best_pony = "Pinkie Pie";
-    let mut s = String::new();
-    html!(s, (best_pony)).unwrap();
+    let s = html!((best_pony)).into_string();
     assert_eq!(s, "Pinkie Pie");
 }
 
@@ -96,18 +89,16 @@ fn structs() {
         name: "Pinkie Pie",
         adorableness: 9,
     };
-    let mut s = String::new();
-    html!(s, {
+    let s = html!({
         "Name: " (pinkie.name) ". Rating: " (pinkie.repugnance())
-    }).unwrap();
+    }).into_string();
     assert_eq!(s, "Name: Pinkie Pie. Rating: 1");
 }
 
 #[test]
 fn tuple_accessors() {
-    let mut s = String::new();
     let a = ("ducks", "geese");
-    html!(s, (a.0)).unwrap();
+    let s = html!((a.0)).into_string();
     assert_eq!(s, "ducks");
 }
 
@@ -118,15 +109,13 @@ fn splice_with_path() {
             "Maud"
         }
     }
-    let mut s = String::new();
-    html!(s, (inner::name())).unwrap();
+    let s = html!((inner::name())).into_string();
     assert_eq!(s, "Maud");
 }
 
 #[test]
 fn nested_macro_invocation() {
     let best_pony = "Pinkie Pie";
-    let mut s = String::new();
-    html!(s, (format!("{}", best_pony))).unwrap();
+    let s = html!((format!("{}", best_pony))).into_string();
     assert_eq!(s, "Pinkie Pie");
 }

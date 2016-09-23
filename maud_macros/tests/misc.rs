@@ -6,17 +6,9 @@ extern crate maud;
 use std::fmt;
 
 #[test]
-fn html_utf8() {
-    let mut buf = vec![];
-    html_utf8!(buf, p "hello").unwrap();
-    assert_eq!(buf, b"<p>hello</p>");
-}
-
-#[test]
 fn issue_13() {
     let owned = String::from("yay");
-    let mut s = String::new();
-    html!(s, (owned)).unwrap();
+    let _ = html!((owned));
     // Make sure the `html!` call didn't move it
     let _owned = owned;
 }
@@ -25,13 +17,12 @@ fn issue_13() {
 fn issue_21() {
     macro_rules! greet {
         () => ({
-            let mut result = String::new();
             let name = "Pinkie Pie";
-            html!(result, p { "Hello, " (name) "!" }).map(|()| result)
+            html!(p { "Hello, " (name) "!" })
         })
     }
 
-    let s = greet!().unwrap();
+    let s = greet!().into_string();
     assert_eq!(s, "<p>Hello, Pinkie Pie!</p>");
 }
 
@@ -39,58 +30,25 @@ fn issue_21() {
 fn issue_21_2() {
     macro_rules! greet {
         ($name:expr) => ({
-            let mut result = String::new();
-            html!(result, p { "Hello, " ($name) "!" }).map(|()| result)
+            html!(p { "Hello, " ($name) "!" })
         })
     }
 
-    let s = greet!("Pinkie Pie").unwrap();
+    let s = greet!("Pinkie Pie").into_string();
     assert_eq!(s, "<p>Hello, Pinkie Pie!</p>");
 }
 
 #[test]
 fn issue_23() {
-    macro_rules! to_string {
+    macro_rules! wrapper {
         ($($x:tt)*) => {{
-            let mut s = String::new();
-            html!(s, $($x)*).unwrap();
-            s
+            html!($($x)*)
         }}
     }
 
     let name = "Lyra";
-    let s = to_string!(p { "Hi, " (name) "!" });
+    let s = wrapper!(p { "Hi, " (name) "!" }).into_string();
     assert_eq!(s, "<p>Hi, Lyra!</p>");
-}
-
-#[test]
-fn issue_26() {
-    macro_rules! to_string {
-        ($($x:tt)*) => {{
-            let mut s = String::new();
-            html!(s, $($x)*).unwrap();
-            s
-        }}
-    }
-
-    let name = "Lyra";
-    let s = to_string!(p { "Hi, " (name) "!" });
-    assert_eq!(s, "<p>Hi, Lyra!</p>");
-}
-
-#[test]
-fn issue_26_2() {
-    macro_rules! to_string {
-        ($($x:tt)*) => {{
-            let mut s = String::new();
-            html!(s, $($x)*).unwrap();
-            s
-        }}
-    }
-
-    let name = "Lyra";
-    let s = to_string!(p { "Hi, " ("person called ".to_string() + name) "!" });
-    assert_eq!(s, "<p>Hi, person called Lyra!</p>");
 }
 
 #[test]
@@ -102,13 +60,13 @@ fn render_impl() {
         }
     }
 
-    let mut s = String::new();
     let r = R("pinkie");
     // Since `R` is not `Copy`, this shows that Maud will auto-ref splice
     // arguments to find a `Render` impl
-    html!(s, (r)).unwrap();
-    html!(s, (r)).unwrap();
-    assert_eq!(s, "pinkiepinkie");
+    let s1 = html!((r)).into_string();
+    let s2 = html!((r)).into_string();
+    assert_eq!(s1, "pinkie");
+    assert_eq!(s2, "pinkie");
 }
 
 #[test]
@@ -120,8 +78,7 @@ fn render_once_impl() {
         }
     }
 
-    let mut s = String::new();
     let once = Once(String::from("pinkie"));
-    html!(s, (once)).unwrap();
+    let s = html!((once)).into_string();
     assert_eq!(s, "pinkie");
 }

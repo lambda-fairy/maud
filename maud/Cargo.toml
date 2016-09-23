@@ -11,3 +11,6 @@ repository = "https://github.com/lfairy/maud"
 description = """
 Compile-time HTML templates.
 """
+
+[dependencies]
+iron = { version = "0.4.0", optional = true }

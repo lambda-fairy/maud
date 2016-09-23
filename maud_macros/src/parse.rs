@@ -68,9 +68,7 @@ macro_rules! keyword {
     ($sp:pat, $x:ident) => (TokenTree::Token($sp, ref $x @ Token::Ident(..)))
 }
 
-pub fn parse(cx: &ExtCtxt, sp: Span, write: &[TokenTree], input: &[TokenTree])
-    -> PResult<P<Expr>>
-{
+pub fn parse(cx: &ExtCtxt, sp: Span, input: &[TokenTree]) -> PResult<P<Expr>> {
     let mut parser = Parser {
         in_attr: false,
         input: input,
@@ -78,22 +76,7 @@ pub fn parse(cx: &ExtCtxt, sp: Span, write: &[TokenTree], input: &[TokenTree])
         render: Renderer::new(cx),
     };
     parser.markups()?;
-    Ok(parser.into_render().into_expr(write.to_vec()))
-}
-
-pub fn split_comma<'a>(cx: &ExtCtxt, sp: Span, mac_name: &str, args: &'a [TokenTree])
-    -> PResult<(&'a [TokenTree], &'a [TokenTree])>
-{
-    fn is_comma(t: &TokenTree) -> bool {
-        match *t {
-            TokenTree::Token(_, Token::Comma) => true,
-            _ => false,
-        }
-    }
-    match args.iter().position(is_comma) {
-        Some(i) => Ok((&args[..i], &args[1+i..])),
-        None => error!(cx, sp, &format!("expected two arguments to `{}!`", mac_name)),
-    }
+    Ok(parser.into_render().into_expr())
 }
 
 struct Parser<'cx, 'a: 'cx, 'i> {
@@ -166,12 +149,9 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.match_expr(sp)?;
             },
             // Call
-            [at!(), ident!(_, name), TokenTree::Delimited(_, ref d), ..]
-                if name.name.as_str() == "call" && d.delim == DelimToken::Paren =>
-            {
-                self.shift(3);
-                let func = self.with_rust_parser(d.tts.clone(), RustParser::parse_expr)?;
-                self.render.emit_call(func);
+            [at!(), ident!(sp, name), ..] if name.name.as_str() == "call" => {
+                self.shift(2);
+                self.call(sp)?;
             },
             // Element
             [ident!(sp, _), ..] => {
@@ -395,6 +375,21 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
             close_span: sp,
         })));
         Ok(body)
+    }
+
+    /// Parses and renders a `@call` expression.
+    ///
+    /// The leading `@call` should already be consumed.
+    fn call(&mut self, sp: Span) -> PResult<()> {
+        match *self.input {
+            [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Paren => {
+                self.shift(1);
+                let func = self.with_rust_parser(d.tts.clone(), RustParser::parse_expr)?;
+                self.render.emit_call(func);
+                Ok(())
+            },
+            _ => parse_error!(self, sp, "expected (parenthesized) expression for @call"),
+        }
     }
 
     /// Parses and renders an element node.

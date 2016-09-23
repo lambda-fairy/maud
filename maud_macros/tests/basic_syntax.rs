@@ -5,74 +5,66 @@ extern crate maud;
 
 #[test]
 fn literals() {
-    let mut s = String::new();
-    html!(s, "du\tcks" "-23" "3.14\n" "geese").unwrap();
+    let s = html!("du\tcks" "-23" "3.14\n" "geese").into_string();
     assert_eq!(s, "du\tcks-233.14\ngeese");
 }
 
 #[test]
 fn escaping() {
-    let mut s = String::new();
-    html!(s, "<flim&flam>").unwrap();
+    let s = html!("<flim&flam>").into_string();
     assert_eq!(s, "&lt;flim&amp;flam&gt;");
 }
 
 #[test]
 fn semicolons() {
-    let mut s = String::new();
-    html!(s, {
+    let s = html! {
         "one";
         "two";
         "three";
         ;;;;;;;;;;;;;;;;;;;;;;;;
         "four";
-    }).unwrap();
+    }.into_string();
     assert_eq!(s, "onetwothreefour");
 }
 
 #[test]
 fn blocks() {
-    let mut s = String::new();
-    html!(s, {
+    let s = html! {
         "hello"
         {
             " ducks" " geese"
         }
         " swans"
-    }).unwrap();
+    }.into_string();
     assert_eq!(s, "hello ducks geese swans");
 }
 
 #[test]
 fn simple_elements() {
-    let mut s = String::new();
-    html!(s, p { b { "pickle" } "barrel" i { "kumquat" } }).unwrap();
+    let s = html!(p { b { "pickle" } "barrel" i { "kumquat" } }).into_string();
     assert_eq!(s, "<p><b>pickle</b>barrel<i>kumquat</i></p>");
 }
 
 #[test]
 fn nesting_elements() {
-    let mut s = String::new();
-    html!(s, html body div p sup "butts").unwrap();
+    let s = html!(html body div p sup "butts").into_string();
     assert_eq!(s, "<html><body><div><p><sup>butts</sup></p></div></body></html>");
 }
 
 #[test]
 fn empty_elements() {
-    let mut s = String::new();
-    html!(s, "pinkie" br/ "pie").unwrap();
+    let s = html!("pinkie" br/ "pie").into_string();
     assert_eq!(s, "pinkie<br>pie");
 }
 
 #[test]
 fn simple_attributes() {
-    let mut s = String::new();
-    html!(s, {
+    let s = html! {
         link rel="stylesheet" href="styles.css"/
         section id="midriff" {
             p class="hotpink" "Hello!"
         }
-    }).unwrap();
+    }.into_string();
     assert_eq!(s, concat!(
             r#"<link rel="stylesheet" href="styles.css">"#,
             r#"<section id="midriff"><p class="hotpink">Hello!</p></section>"#));
@@ -80,15 +72,13 @@ fn simple_attributes() {
 
 #[test]
 fn empty_attributes() {
-    let mut s = String::new();
-    html!(s, div readonly? input type="checkbox" checked? /).unwrap();
+    let s = html!(div readonly? input type="checkbox" checked? /).into_string();
     assert_eq!(s, r#"<div readonly><input type="checkbox" checked></div>"#);
 }
 
 #[test]
 fn colons_in_names() {
-    let mut s = String::new();
-    html!(s, pon-pon:controls-alpha a on:click="yay()" "Yay!").unwrap();
+    let s = html!(pon-pon:controls-alpha a on:click="yay()" "Yay!").into_string();
     assert_eq!(s, concat!(
             r#"<pon-pon:controls-alpha>"#,
             r#"<a on:click="yay()">Yay!</a>"#,
@@ -97,56 +87,48 @@ fn colons_in_names() {
 
 #[test]
 fn hyphens_in_element_names() {
-    let mut s = String::new();
-    html!(s, custom-element {}).unwrap();
+    let s = html!(custom-element {}).into_string();
     assert_eq!(s, "<custom-element></custom-element>");
 }
 
 #[test]
 fn hyphens_in_attribute_names() {
-    let mut s = String::new();
-    html!(s, this sentence-is="false" of-course? {}).unwrap();
+    let s = html!(this sentence-is="false" of-course? {}).into_string();
     assert_eq!(s, r#"<this sentence-is="false" of-course></this>"#);
 }
 
 #[test]
 fn class_shorthand() {
-    let mut s = String::new();
-    html!(s, p { "Hi, " span.name { "Lyra" } "!" }).unwrap();
+    let s = html!(p { "Hi, " span.name { "Lyra" } "!" }).into_string();
     assert_eq!(s, r#"<p>Hi, <span class="name">Lyra</span>!</p>"#);
 }
 
 #[test]
 fn class_shorthand_with_space() {
-    let mut s = String::new();
-    html!(s, p { "Hi, " span .name { "Lyra" } "!" }).unwrap();
+    let s = html!(p { "Hi, " span .name { "Lyra" } "!" }).into_string();
     assert_eq!(s, r#"<p>Hi, <span class="name">Lyra</span>!</p>"#);
 }
 
 #[test]
 fn classes_shorthand() {
-    let mut s = String::new();
-    html!(s, p { "Hi, " span.name.here { "Lyra" } "!" }).unwrap();
+    let s = html!(p { "Hi, " span.name.here { "Lyra" } "!" }).into_string();
     assert_eq!(s, r#"<p>Hi, <span class="name here">Lyra</span>!</p>"#);
 }
 
 #[test]
 fn hyphens_in_class_names() {
-    let mut s = String::new();
-    html!(s, p.rocks-these.are--my--rocks "yes").unwrap();
+    let s = html!(p.rocks-these.are--my--rocks "yes").into_string();
     assert_eq!(s, r#"<p class="rocks-these are--my--rocks">yes</p>"#);
 }
 
 #[test]
 fn ids_shorthand() {
-    let mut s = String::new();
-    html!(s, p { "Hi, " span#thing { "Lyra" } "!" }).unwrap();
+    let s = html!(p { "Hi, " span#thing { "Lyra" } "!" }).into_string();
     assert_eq!(s, r#"<p>Hi, <span id="thing">Lyra</span>!</p>"#);
 }
 
 #[test]
 fn classes_attrs_ids_mixed_up() {
-    let mut s = String::new();
-    html!(s, p { "Hi, " span.name.here lang="en" #thing { "Lyra" } "!" }).unwrap();
+    let s = html!(p { "Hi, " span.name.here lang="en" #thing { "Lyra" } "!" }).into_string();
     assert_eq!(s, "<p>Hi, <span lang=\"en\" class=\"name here\" id=\"thing\">Lyra</span>!</p>");
 }

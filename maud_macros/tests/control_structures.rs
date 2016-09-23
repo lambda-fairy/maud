@@ -3,13 +3,10 @@
 
 extern crate maud;
 
-use std::fmt;
-
 #[test]
 fn if_expr() {
     for (number, &name) in (1..4).zip(["one", "two", "three"].iter()) {
-        let mut s = String::new();
-        html!(s, {
+        let s = html! {
             @if number == 1 {
                 "one"
             } @else if number == 2 {
@@ -19,7 +16,7 @@ fn if_expr() {
             } @else {
                 "oh noes"
             }
-        }).unwrap();
+        }.into_string();
         assert_eq!(s, name);
     }
 }
@@ -27,14 +24,13 @@ fn if_expr() {
 #[test]
 fn if_let() {
     for &(input, output) in [(Some("yay"), "yay"), (None, "oh noes")].iter() {
-        let mut s = String::new();
-        html!(s, {
+        let s = html! {
             @if let Some(value) = input {
                 (value)
             } @else {
                 "oh noes"
             }
-        }).unwrap();
+        }.into_string();
         assert_eq!(s, output);
     }
 }
@@ -42,12 +38,11 @@ fn if_let() {
 #[test]
 fn for_expr() {
     let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
-    let mut s = String::new();
-    html!(s, {
+    let s = html! {
         ul @for pony in &ponies {
             li (pony)
         }
-    }).unwrap();
+    }.into_string();
     assert_eq!(s, concat!(
             "<ul>",
             "<li>Apple Bloom</li>",
@@ -59,8 +54,7 @@ fn for_expr() {
 #[test]
 fn match_expr() {
     for &(input, output) in [(Some("yay"), "<div>yay</div>"), (None, "oh noes")].iter() {
-        let mut s = String::new();
-        html!(s, {
+        let s = html! {
             @match input {
                 Some(value) => {
                     div (value)
@@ -69,7 +63,7 @@ fn match_expr() {
                     "oh noes"
                 },
             }
-        }).unwrap();
+        }.into_string();
         assert_eq!(s, output);
     }
 }
@@ -77,13 +71,12 @@ fn match_expr() {
 #[test]
 fn match_expr_without_delims() {
     for &(input, output) in [(Some("yay"), "yay"), (None, "<span>oh noes</span>")].iter() {
-        let mut s = String::new();
-        html!(s, {
+        let s = html! {
             @match input {
                 Some(value) => (value),
                 None => span "oh noes",
             }
-        }).unwrap();
+        }.into_string();
         assert_eq!(s, output);
     }
 }
@@ -91,14 +84,13 @@ fn match_expr_without_delims() {
 #[test]
 fn match_expr_with_guards() {
     for &(input, output) in [(Some(1), "one"), (None, "none"), (Some(2), "2")].iter() {
-        let mut s = String::new();
-        html!(s, {
+        let s = html! {
             @match input {
                 Some(value) if value == 1 => "one",
                 Some(value) => (value),
                 None => "none",
             }
-        }).unwrap();
+        }.into_string();
         assert_eq!(s, output);
     }
 }
@@ -106,52 +98,30 @@ fn match_expr_with_guards() {
 #[test]
 fn match_in_attribute() {
     for &(input, output) in [(1, "<span class=\"one\">1</span>"), (2, "<span class=\"two\">2</span>"), (3, "<span class=\"many\">3</span>")].iter() {
-        let mut s = String::new();
-        html!(s, {
+        let s = html! {
             span class=@match input {
                 1 => "one",
                 2 => "two",
                 _ => "many",
             } { (input) }
-        }).unwrap();
+        }.into_string();
         assert_eq!(s, output);
     }
 }
 
-#[test]
-fn call() {
-    fn ducks(w: &mut fmt::Write) -> fmt::Result {
-        write!(w, "Ducks")
-    }
-    let mut s = String::new();
-    let swans = |yes|
-        if yes {
-            |w: &mut fmt::Write| write!(w, "Swans")
-        } else {
-            panic!("oh noes")
-        };
-    html!(s, {
-        @call (ducks)
-        @call (|w: &mut fmt::Write| write!(w, "Geese"))
-        @call (swans(true))
-    }).unwrap();
-    assert_eq!(s, "DucksGeeseSwans");
-}
-
-fn assert_cute<'a>(name: &'a str) -> impl maud::Template + 'a {
-    template! {
+fn assert_cute<'a>(name: &'a str) -> impl FnOnce(&mut String) + 'a {
+    move |s: &mut String| s.push_str(&html! {
         p {
             (name) " is the cutest"
         }
-    }
+    }.into_string())
 }
 
 #[test]
-fn template() {
-    let mut s = String::new();
-    html!(s, {
+fn call() {
+    let s = html! {
         @call (assert_cute("Pinkie Pie"))
         @call (assert_cute("Rarity"))
-    }).unwrap();
+    }.into_string();
     assert_eq!(s, "<p>Pinkie Pie is the cutest</p><p>Rarity is the cutest</p>");
 }
