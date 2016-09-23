@@ -148,11 +148,6 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(2);
                 self.match_expr(sp)?;
             },
-            // Call
-            [at!(), ident!(sp, name), ..] if name.name.as_str() == "call" => {
-                self.shift(2);
-                self.call(sp)?;
-            },
             // Element
             [ident!(sp, _), ..] => {
                 let name = self.namespaced_name().unwrap();
@@ -375,21 +370,6 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
             close_span: sp,
         })));
         Ok(body)
-    }
-
-    /// Parses and renders a `@call` expression.
-    ///
-    /// The leading `@call` should already be consumed.
-    fn call(&mut self, sp: Span) -> PResult<()> {
-        match *self.input {
-            [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Paren => {
-                self.shift(1);
-                let func = self.with_rust_parser(d.tts.clone(), RustParser::parse_expr)?;
-                self.render.emit_call(func);
-                Ok(())
-            },
-            _ => parse_error!(self, sp, "expected (parenthesized) expression for @call"),
-        }
     }
 
     /// Parses and renders an element node.

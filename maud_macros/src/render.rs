@@ -147,13 +147,6 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
         let stmt = quote_stmt!(self.cx, match $match_var { $match_body }).unwrap();
         self.push(stmt);
     }
-
-    pub fn emit_call(&mut self, func: P<Expr>) {
-        let w = self.writer;
-        let expr = quote_expr!(self.cx, ($func)(&mut $w) as ());
-        let stmt = self.wrap_stmt(expr);
-        self.push(stmt);
-    }
 }
 
 fn html_escape(s: &str) -> String {

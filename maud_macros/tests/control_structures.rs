@@ -108,20 +108,3 @@ fn match_in_attribute() {
         assert_eq!(s, output);
     }
 }
-
-fn assert_cute<'a>(name: &'a str) -> impl FnOnce(&mut String) + 'a {
-    move |s: &mut String| s.push_str(&html! {
-        p {
-            (name) " is the cutest"
-        }
-    }.into_string())
-}
-
-#[test]
-fn call() {
-    let s = html! {
-        @call (assert_cute("Pinkie Pie"))
-        @call (assert_cute("Rarity"))
-    }.into_string();
-    assert_eq!(s, "<p>Pinkie Pie is the cutest</p><p>Rarity is the cutest</p>");
-}
