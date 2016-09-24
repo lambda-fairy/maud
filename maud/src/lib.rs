@@ -43,7 +43,7 @@ impl Render for str {
 }
 
 /// Represents a type that can be rendered as HTML, where the rendering
-/// operation must consume the input data.
+/// operation must consume the value.
 pub trait RenderOnce {
     fn render_once(self, &mut fmt::Write) -> fmt::Result;
 }
