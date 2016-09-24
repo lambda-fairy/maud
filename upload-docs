@@ -3,10 +3,10 @@
 set -e
 
 base="$(dirname "$(readlink -f $0)")"
-cd "$base/maud_macros"
+cd "$base/maud"
 
 cargo clean
-cargo doc
+cargo doc --all-features --no-deps
 
 cd target/doc
 
