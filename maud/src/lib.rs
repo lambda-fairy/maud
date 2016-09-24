@@ -86,7 +86,7 @@ impl<'a> Render for PreEscaped<&'a str> {
 /// The `html!` macro expands to an expression of this type.
 pub type Markup = PreEscaped<String>;
 
-impl Markup {
+impl PreEscaped<String> {
     /// Extracts the inner `String`. This is a synonym for `self.0`.
     pub fn into_string(self) -> String {
         self.0
@@ -153,9 +153,9 @@ mod iron_support {
     use iron::modifier::{Modifier, Set};
     use iron::modifiers::Header;
     use iron::response::{Response, ResponseBody, WriteBody};
-    use Markup;
+    use PreEscaped;
 
-    impl Modifier<Response> for Markup {
+    impl Modifier<Response> for PreEscaped<String> {
         fn modify(self, response: &mut Response) {
             response
                 .set_mut(Header(ContentType::html()))
@@ -163,7 +163,7 @@ mod iron_support {
         }
     }
 
-    impl WriteBody for Markup {
+    impl WriteBody for PreEscaped<String> {
         fn write_body(&mut self, body: &mut ResponseBody) -> io::Result<()> {
             self.0.write_body(body)
         }
