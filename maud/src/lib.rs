@@ -5,7 +5,7 @@
 //! This documentation only describes the runtime API. For a general
 //! guide, check out the [book] instead.
 //!
-//! [book]: http://lfairy.gitbooks.io/maud/content/
+//! [book]: https://maud.lambda.xyz/
 
 #[cfg(feature = "iron")] extern crate iron;
 
@@ -16,6 +16,11 @@ use std::fmt::{self, Write};
 /// Most of the time you should implement `std::fmt::Display` instead,
 /// which will be picked up by the blanket impl.
 pub trait Render {
+    /// Renders `self` to the given writer.
+    ///
+    /// Note that the writer does *not* perform automatic escaping. You
+    /// must make sure that any data written is properly escaped,
+    /// whether by hand or using the `Escaper` wrapper struct.
     fn render(&self, &mut fmt::Write) -> fmt::Result;
 }
 
@@ -37,12 +42,18 @@ impl Render for str {
     }
 }
 
-/// Represents a type that can be rendered as HTML just once.
+/// Represents a type that can be rendered as HTML, where the rendering
+/// operation must consume the input data.
 pub trait RenderOnce {
     fn render_once(self, &mut fmt::Write) -> fmt::Result;
 }
 
 impl<'a, T: Render + ?Sized> RenderOnce for &'a T {
+    /// Renders `self` to the given writer.
+    ///
+    /// Note that the writer does *not* perform automatic escaping. You
+    /// must make sure that any data written is properly escaped,
+    /// whether by hand or using the `Escaper` wrapper struct.
     fn render_once(self, w: &mut fmt::Write) -> fmt::Result {
         Render::render(self, w)
     }
@@ -71,16 +82,28 @@ impl<'a> Render for PreEscaped<&'a str> {
 }
 
 /// A block of markup is a string that does not need to be escaped.
+///
+/// The `html!` macro expands to an expression of this type.
 pub type Markup = PreEscaped<String>;
 
 impl Markup {
-    /// Synonym for `self.0`.
+    /// Extracts the inner `String`. This is a synonym for `self.0`.
     pub fn into_string(self) -> String {
         self.0
     }
 }
 
 /// An adapter that escapes HTML special characters.
+///
+/// The following characters are escaped:
+///
+/// * `&` is escaped as `&amp;`
+/// * `<` is escaped as `&lt;`
+/// * `>` is escaped as `&gt;`
+/// * `"` is escaped as `&quot;`
+/// * `'` is escaped as `&#39;`
+///
+/// All other characters are passed through unchanged.
 ///
 /// # Example
 ///
@@ -91,11 +114,11 @@ impl Markup {
 /// write!(escaper, "<script>launchMissiles()</script>").unwrap();
 /// assert_eq!(escaper.into_inner(), "&lt;script&gt;launchMissiles()&lt;/script&gt;");
 /// ```
-pub struct Escaper<W: fmt::Write> {
+pub struct Escaper<W> {
     inner: W,
 }
 
-impl<W: fmt::Write> Escaper<W> {
+impl<W> Escaper<W> {
     /// Creates an `Escaper` from a `std::fmt::Write`.
     pub fn new(inner: W) -> Escaper<W> {
         Escaper { inner: inner }
