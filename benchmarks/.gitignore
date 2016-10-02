@@ -1,0 +1,2 @@
+# Keep this lock file to ensure that benchmarks are reproducible
+!Cargo.lock

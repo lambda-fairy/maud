@@ -1,0 +1,12 @@
+[package]
+name = "benchmarks"
+version = "0.1.0"
+authors = ["Chris Wong <lambda.fairy@gmail.com>"]
+
+[dependencies]
+maud = { path = "../maud" }
+maud_macros = { path = "../maud_macros" }
+handlebars = "*"
+horrorshow = "*"
+liquid = "*"
+rustc-serialize = "*"
