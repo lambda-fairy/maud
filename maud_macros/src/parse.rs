@@ -9,6 +9,7 @@ use syntax::parse;
 use syntax::parse::parser::Parser as RustParser;
 use syntax::parse::token::{BinOpToken, DelimToken, Token};
 use syntax::parse::token::keywords;
+use syntax::print::pprust;
 use syntax::ptr::P;
 use syntax::tokenstream::{Delimited, TokenTree};
 
@@ -76,7 +77,10 @@ pub fn parse(cx: &ExtCtxt, sp: Span, input: &[TokenTree]) -> PResult<P<Expr>> {
         render: Renderer::new(cx),
     };
     parser.markups()?;
-    Ok(parser.into_render().into_expr())
+    // Heuristic: the size of the resulting markup tends to correlate with the
+    // code size of the template itself
+    let size_hint = pprust::tts_to_string(input).len();
+    Ok(parser.into_render().into_expr(size_hint))
 }
 
 struct Parser<'cx, 'a: 'cx, 'i> {

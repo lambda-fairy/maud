@@ -50,10 +50,10 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
     }
 
     /// Reifies the `Renderer` into a block of markup.
-    pub fn into_expr(mut self) -> P<Expr> {
+    pub fn into_expr(mut self, size_hint: usize) -> P<Expr> {
         let Renderer { cx, writer, stmts, .. } = { self.flush(); self };
         quote_expr!(cx, {
-            let mut $writer = ::std::string::String::new();
+            let mut $writer = ::std::string::String::with_capacity($size_hint);
             $stmts
             ::maud::PreEscaped($writer)
         })
