@@ -78,7 +78,7 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
 
     /// Ignores the result of an expression.
     fn wrap_stmt(&self, expr: P<Expr>) -> Stmt {
-        quote_stmt!(self.cx, let _ = $expr).unwrap()
+        quote_stmt!(self.cx, $expr).unwrap()
     }
 
     /// Appends a literal string.
