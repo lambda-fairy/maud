@@ -3,8 +3,6 @@
 
 extern crate maud;
 
-use std::fmt;
-
 #[test]
 fn issue_13() {
     let owned = String::from("yay");
@@ -55,8 +53,8 @@ fn issue_23() {
 fn render_impl() {
     struct R(&'static str);
     impl maud::Render for R {
-        fn render(&self, w: &mut fmt::Write) -> fmt::Result {
-            w.write_str(self.0)
+        fn render(&self, w: &mut String) {
+            w.push_str(self.0);
         }
     }
 
@@ -73,8 +71,8 @@ fn render_impl() {
 fn render_once_impl() {
     struct Once(String);
     impl maud::RenderOnce for Once {
-        fn render_once(self, w: &mut fmt::Write) -> fmt::Result {
-            w.write_str(&self.0)
+        fn render_once(self, w: &mut String) {
+            w.push_str(&self.0);
         }
     }
 
