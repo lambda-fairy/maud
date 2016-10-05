@@ -16,46 +16,46 @@ use std::fmt::{self, Write};
 /// Most of the time you should implement `std::fmt::Display` instead,
 /// which will be picked up by the blanket impl.
 pub trait Render {
-    /// Renders `self` to the given writer.
+    /// Appends a representation of `self` to the given string.
     ///
-    /// Note that the writer does *not* perform automatic escaping. You
+    /// Note that the runtime does *not* perform automatic escaping. You
     /// must make sure that any data written is properly escaped,
     /// whether by hand or using the `Escaper` wrapper struct.
-    fn render(&self, &mut fmt::Write) -> fmt::Result;
+    fn render(&self, &mut String);
 }
 
 impl<T: fmt::Display + ?Sized> Render for T {
-    default fn render(&self, w: &mut fmt::Write) -> fmt::Result {
-        write!(Escaper::new(w), "{}", self)
+    default fn render(&self, w: &mut String) {
+        write!(Escaper::new(w), "{}", self).unwrap();
     }
 }
 
 impl Render for String {
-    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
-        Escaper::new(w).write_str(self)
+    fn render(&self, w: &mut String) {
+        Escaper::new(w).write_str(self).unwrap();
     }
 }
 
 impl Render for str {
-    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
-        Escaper::new(w).write_str(self)
+    fn render(&self, w: &mut String) {
+        Escaper::new(w).write_str(self).unwrap();
     }
 }
 
 /// Represents a type that can be rendered as HTML, where the rendering
 /// operation must consume the value.
 pub trait RenderOnce {
-    fn render_once(self, &mut fmt::Write) -> fmt::Result;
+    /// Appends a representation of `self` to the given string.
+    ///
+    /// Note that the runtime does *not* perform automatic escaping. You
+    /// must make sure that any data written is properly escaped,
+    /// whether by hand or using the `Escaper` wrapper struct.
+    fn render_once(self, &mut String);
 }
 
 impl<'a, T: Render + ?Sized> RenderOnce for &'a T {
-    /// Renders `self` to the given writer.
-    ///
-    /// Note that the writer does *not* perform automatic escaping. You
-    /// must make sure that any data written is properly escaped,
-    /// whether by hand or using the `Escaper` wrapper struct.
-    fn render_once(self, w: &mut fmt::Write) -> fmt::Result {
-        Render::render(self, w)
+    fn render_once(self, w: &mut String) {
+        Render::render(self, w);
     }
 }
 
@@ -64,20 +64,20 @@ impl<'a, T: Render + ?Sized> RenderOnce for &'a T {
 pub struct PreEscaped<T>(pub T);
 
 impl<T: fmt::Display> Render for PreEscaped<T> {
-    default fn render(&self, w: &mut fmt::Write) -> fmt::Result {
-        write!(w, "{}", self.0)
+    default fn render(&self, w: &mut String) {
+        write!(w, "{}", self.0).unwrap();
     }
 }
 
 impl Render for PreEscaped<String> {
-    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
-        w.write_str(&self.0)
+    fn render(&self, w: &mut String) {
+        w.push_str(&self.0);
     }
 }
 
 impl<'a> Render for PreEscaped<&'a str> {
-    fn render(&self, w: &mut fmt::Write) -> fmt::Result {
-        w.write_str(self.0)
+    fn render(&self, w: &mut String) {
+        w.push_str(self.0);
     }
 }
 
@@ -110,37 +110,30 @@ impl PreEscaped<String> {
 /// ```
 /// # use maud::Escaper;
 /// use std::fmt::Write;
-/// let mut escaper = Escaper::new(String::new());
-/// write!(escaper, "<script>launchMissiles()</script>").unwrap();
-/// assert_eq!(escaper.into_inner(), "&lt;script&gt;launchMissiles()&lt;/script&gt;");
+/// let mut s = String::new();
+/// write!(Escaper::new(&mut s), "<script>launchMissiles()</script>").unwrap();
+/// assert_eq!(s, "&lt;script&gt;launchMissiles()&lt;/script&gt;");
 /// ```
-pub struct Escaper<W> {
-    inner: W,
-}
+pub struct Escaper<'a>(&'a mut String);
 
-impl<W> Escaper<W> {
-    /// Creates an `Escaper` from a `std::fmt::Write`.
-    pub fn new(inner: W) -> Escaper<W> {
-        Escaper { inner: inner }
-    }
-
-    /// Extracts the inner writer.
-    pub fn into_inner(self) -> W {
-        self.inner
+impl<'a> Escaper<'a> {
+    /// Creates an `Escaper` from a `String`.
+    pub fn new(buffer: &'a mut String) -> Escaper<'a> {
+        Escaper(buffer)
     }
 }
 
-impl<W: fmt::Write> fmt::Write for Escaper<W> {
+impl<'a> fmt::Write for Escaper<'a> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        for c in s.chars() {
-            try!(match c {
-                '&' => self.inner.write_str("&amp;"),
-                '<' => self.inner.write_str("&lt;"),
-                '>' => self.inner.write_str("&gt;"),
-                '"' => self.inner.write_str("&quot;"),
-                '\'' => self.inner.write_str("&#39;"),
-                _ => self.inner.write_char(c),
-            });
+        for b in s.bytes() {
+            match b {
+                b'&' => self.0.push_str("&amp;"),
+                b'<' => self.0.push_str("&lt;"),
+                b'>' => self.0.push_str("&gt;"),
+                b'"' => self.0.push_str("&quot;"),
+                b'\'' => self.0.push_str("&#39;"),
+                _ => unsafe { self.0.as_mut_vec().push(b) },
+            }
         }
         Ok(())
     }

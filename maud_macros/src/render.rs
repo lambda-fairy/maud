@@ -151,7 +151,7 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
 
 fn html_escape(s: &str) -> String {
     use std::fmt::Write;
-    let mut escaper = Escaper::new(String::new());
-    escaper.write_str(s).unwrap();
-    escaper.into_inner()
+    let mut buffer = String::new();
+    Escaper::new(&mut buffer).write_str(s).unwrap();
+    buffer
 }
