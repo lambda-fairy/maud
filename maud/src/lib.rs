@@ -13,49 +13,111 @@ use std::fmt::{self, Write};
 
 /// Represents a type that can be rendered as HTML.
 ///
-/// Most of the time you should implement `std::fmt::Display` instead,
-/// which will be picked up by the blanket impl.
+/// If your type implements [`Display`][1], then it will implement this
+/// trait automatically through a blanket impl.
+///
+/// [1]: https://doc.rust-lang.org/std/fmt/trait.Display.html
+///
+/// On the other hand, if your type has a custom HTML representation,
+/// then you can implement `Render` by hand. To do this, override
+/// either the `.render()` or `.render_to()` methods; since each is
+/// defined in terms of the other, you only need to implement one of
+/// them. See the example below.
+///
+/// # Minimal implementation
+///
+/// An implementation of this trait must override at least one of
+/// `.render()` or `.render_to()`. Since the default definitions of
+/// these methods call each other, not doing this will result in
+/// infinite recursion.
+///
+/// # Example
+///
+/// ```rust
+/// /// Provides a shorthand for linking to a CSS stylesheet.
+/// pub struct Stylesheet(&'static str);
+///
+/// impl Render for Stylesheet {
+///     fn render(&self) -> Markup {
+///         html! {
+///             link rel="stylesheet" type="text/css" href=(self.0) /
+///         }
+///     }
+/// }
+/// ```
 pub trait Render {
-    /// Appends a representation of `self` to the given string.
+    /// Renders `self` as a block of `Markup`.
+    fn render(&self) -> Markup {
+        let mut buffer = String::new();
+        self.render_to(&mut buffer);
+        PreEscaped(buffer)
+    }
+
+    /// Appends a representation of `self` to the given buffer.
     ///
-    /// Note that the runtime does *not* perform automatic escaping. You
-    /// must make sure that any data written is properly escaped,
-    /// whether by hand or using the `Escaper` wrapper struct.
-    fn render(&self, &mut String);
+    /// Its default implementation just calls `.render()`, but you may
+    /// override it with something more efficient.
+    ///
+    /// Note that no further escaping is performed on data written to
+    /// the buffer. If you override this method, you must make sure that
+    /// any data written is properly escaped, whether by hand or using
+    /// the [`Escaper`](struct.Escaper.html) wrapper struct.
+    fn render_to(&self, buffer: &mut String) {
+        buffer.push_str(&self.render().into_string());
+    }
 }
 
 impl<T: fmt::Display + ?Sized> Render for T {
-    default fn render(&self, w: &mut String) {
-        write!(Escaper::new(w), "{}", self).unwrap();
+    #[inline(never)]  // reduce code bloat due to write!()
+    default fn render_to(&self, w: &mut String) {
+        let _ = write!(Escaper::new(w), "{}", self);
     }
 }
 
 impl Render for String {
-    fn render(&self, w: &mut String) {
-        Escaper::new(w).write_str(self).unwrap();
+    fn render_to(&self, w: &mut String) {
+        let _ = Escaper::new(w).write_str(self);
     }
 }
 
 impl Render for str {
-    fn render(&self, w: &mut String) {
-        Escaper::new(w).write_str(self).unwrap();
+    fn render_to(&self, w: &mut String) {
+        let _ = Escaper::new(w).write_str(self);
     }
 }
 
 /// Represents a type that can be rendered as HTML, where the rendering
-/// operation must consume the value.
-pub trait RenderOnce {
-    /// Appends a representation of `self` to the given string.
+/// operation consumes the value.
+///
+/// See the [`Render`](trait.Render.html) documentation for advice on
+/// how to use this trait.
+pub trait RenderOnce: Sized {
+    /// Renders `self` as a block of `Markup`, consuming it in the
+    /// process.
+    fn render_once(self) -> Markup {
+        let mut buffer = String::new();
+        self.render_once_to(&mut buffer);
+        PreEscaped(buffer)
+    }
+
+    /// Appends a representation of `self` to the given string,
+    /// consuming `self` in the process.
     ///
-    /// Note that the runtime does *not* perform automatic escaping. You
-    /// must make sure that any data written is properly escaped,
-    /// whether by hand or using the `Escaper` wrapper struct.
-    fn render_once(self, &mut String);
+    /// Its default implementation just calls `.render_once()`, but you
+    /// may override it with something more efficient.
+    ///
+    /// Note that no further escaping is performed on data written to
+    /// the buffer. If you override this method, you must make sure that
+    /// any data written is properly escaped, whether by hand or using
+    /// the [`Escaper`](struct.Escaper.html) wrapper struct.
+    fn render_once_to(self, buffer: &mut String) {
+        buffer.push_str(&self.render_once().into_string());
+    }
 }
 
 impl<'a, T: Render + ?Sized> RenderOnce for &'a T {
-    fn render_once(self, w: &mut String) {
-        Render::render(self, w);
+    fn render_once_to(self, w: &mut String) {
+        self.render_to(w);
     }
 }
 
@@ -64,19 +126,20 @@ impl<'a, T: Render + ?Sized> RenderOnce for &'a T {
 pub struct PreEscaped<T>(pub T);
 
 impl<T: fmt::Display> Render for PreEscaped<T> {
-    default fn render(&self, w: &mut String) {
-        write!(w, "{}", self.0).unwrap();
+    #[inline(never)]  // reduce code bloat due to write!()
+    default fn render_to(&self, w: &mut String) {
+        let _ = write!(w, "{}", self.0);
     }
 }
 
 impl Render for PreEscaped<String> {
-    fn render(&self, w: &mut String) {
+    fn render_to(&self, w: &mut String) {
         w.push_str(&self.0);
     }
 }
 
 impl<'a> Render for PreEscaped<&'a str> {
-    fn render(&self, w: &mut String) {
+    fn render_to(&self, w: &mut String) {
         w.push_str(self.0);
     }
 }

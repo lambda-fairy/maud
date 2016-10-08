@@ -53,7 +53,7 @@ fn issue_23() {
 fn render_impl() {
     struct R(&'static str);
     impl maud::Render for R {
-        fn render(&self, w: &mut String) {
+        fn render_to(&self, w: &mut String) {
             w.push_str(self.0);
         }
     }
@@ -71,7 +71,7 @@ fn render_impl() {
 fn render_once_impl() {
     struct Once(String);
     impl maud::RenderOnce for Once {
-        fn render_once(self, w: &mut String) {
+        fn render_once_to(self, w: &mut String) {
             w.push_str(&self.0);
         }
     }
