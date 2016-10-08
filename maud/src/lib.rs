@@ -33,7 +33,7 @@ use std::fmt::{self, Write};
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust,ignore
 /// /// Provides a shorthand for linking to a CSS stylesheet.
 /// pub struct Stylesheet(&'static str);
 ///
