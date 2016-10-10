@@ -68,7 +68,6 @@ pub trait Render {
 }
 
 impl<T: fmt::Display + ?Sized> Render for T {
-    #[inline(never)]  // reduce code bloat due to write!()
     default fn render_to(&self, w: &mut String) {
         let _ = write!(Escaper::new(w), "{}", self);
     }
@@ -126,7 +125,6 @@ impl<'a, T: Render + ?Sized> RenderOnce for &'a T {
 pub struct PreEscaped<T>(pub T);
 
 impl<T: fmt::Display> Render for PreEscaped<T> {
-    #[inline(never)]  // reduce code bloat due to write!()
     default fn render_to(&self, w: &mut String) {
         let _ = write!(w, "{}", self.0);
     }
