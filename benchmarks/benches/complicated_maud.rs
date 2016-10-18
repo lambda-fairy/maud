@@ -9,7 +9,7 @@ use maud::Markup;
 #[derive(Debug)]
 struct Entry {
     name: &'static str,
-    score: usize,
+    score: u32,
 }
 
 mod btn {
