@@ -138,6 +138,15 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
         self.push(stmt);
     }
 
+    /// Emits an `while` expression.
+    ///
+    /// The condition is a token tree (not an expression) so we don't
+    /// need to special-case `while let`.
+    pub fn emit_while(&mut self, cond: Vec<TokenTree>, body: Vec<Stmt>) {
+        let stmt = quote_stmt!(self.cx, while $cond { $body }).unwrap();
+        self.push(stmt);
+    }
+
     pub fn emit_for(&mut self, pattern: P<Pat>, iterable: P<Expr>, body: Vec<Stmt>) {
         let stmt = quote_stmt!(self.cx, for $pattern in $iterable { $body }).unwrap();
         self.push(stmt);

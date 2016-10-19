@@ -142,6 +142,11 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(2);
                 self.if_expr(sp)?;
             },
+            // While
+            [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::While) => {
+                self.shift(2);
+                self.while_expr(sp)?;
+            },
             // For
             [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::For) => {
                 self.shift(2);
@@ -245,6 +250,28 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
             _ => None,
         };
         self.render.emit_if(if_cond, if_body, else_body);
+        Ok(())
+    }
+
+    /// Parses and renders an `@while` expression.
+    ///
+    /// The leading `@while` should already be consumed.
+    fn while_expr(&mut self, sp: Span) -> PResult<()> {
+        let mut cond = vec![];
+        let body;
+        loop { match *self.input {
+            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
+                self.shift(1);
+                body = self.block(sp, &d.tts)?;
+                break;
+            },
+            [ref tt, ..] => {
+                self.shift(1);
+                cond.push(tt.clone());
+            },
+            [] => parse_error!(self, sp, "expected body for this @while"),
+        }}
+        self.render.emit_while(cond, body);
         Ok(())
     }
 

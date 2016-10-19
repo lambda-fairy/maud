@@ -36,6 +36,28 @@ fn if_let() {
 }
 
 #[test]
+fn while_expr() {
+    let mut numbers = (0..3).into_iter().peekable();
+    let s = html! {
+        ul @while numbers.peek().is_some() {
+            li (numbers.next().unwrap())
+        }
+    }.into_string();
+    assert_eq!(s, "<ul><li>0</li><li>1</li><li>2</li></ul>");
+}
+
+#[test]
+fn while_let_expr() {
+    let mut numbers = (0..3).into_iter();
+    let s = html! {
+        ul @while let Some(n) = numbers.next() {
+            li (n)
+        }
+    }.into_string();
+    assert_eq!(s, "<ul><li>0</li><li>1</li><li>2</li></ul>");
+}
+
+#[test]
 fn for_expr() {
     let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
     let s = html! {
