@@ -122,23 +122,11 @@ impl<'a, T: Render + ?Sized> RenderOnce for &'a T {
 
 /// A wrapper that renders the inner value without escaping.
 #[derive(Debug)]
-pub struct PreEscaped<T>(pub T);
+pub struct PreEscaped<T: AsRef<str>>(pub T);
 
-impl<T: fmt::Display> Render for PreEscaped<T> {
-    default fn render_to(&self, w: &mut String) {
-        let _ = write!(w, "{}", self.0);
-    }
-}
-
-impl Render for PreEscaped<String> {
+impl<T: AsRef<str>> Render for PreEscaped<T> {
     fn render_to(&self, w: &mut String) {
-        w.push_str(&self.0);
-    }
-}
-
-impl<'a> Render for PreEscaped<&'a str> {
-    fn render_to(&self, w: &mut String) {
-        w.push_str(self.0);
+        w.push_str(self.0.as_ref());
     }
 }
 
