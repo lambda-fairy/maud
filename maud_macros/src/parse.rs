@@ -106,8 +106,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     fn with_rust_parser<F, T>(&self, tts: Vec<TokenTree>, callback: F) -> PResult<T> where
         F: FnOnce(&mut RustParser<'cx>) -> Result<T, DiagnosticBuilder<'cx>>
     {
-        let mut parser = parse::tts_to_parser(self.render.cx.parse_sess, tts,
-                                              self.render.cx.cfg.clone());
+        let mut parser = parse::tts_to_parser(self.render.cx.parse_sess, tts);
         let result = callback(&mut parser).map_err(|mut e| { e.emit(); FatalError });
         // Make sure all tokens were consumed
         if parser.token != Token::Eof {
