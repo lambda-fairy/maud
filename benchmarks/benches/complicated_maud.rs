@@ -13,7 +13,7 @@ struct Entry {
 }
 
 mod btn {
-    use maud::Render;
+    use maud::{Markup, Render};
 
     #[derive(Copy, Clone)]
     pub enum RequestMethod {
@@ -43,19 +43,17 @@ mod btn {
     }
 
     impl<'a> Render for Button<'a> {
-        fn render_to(&self, mut f: &mut String) {
+        fn render(&self) -> Markup {
             match self.req_meth {
                 RequestMethod::Get => {
-                    f.push_str(&html!(
-                        a.btn href=(self.path) (self.label)
-                    ).into_string())
+                    html! { a.btn href=(self.path) (self.label) }
                 }
                 RequestMethod::Post => {
-                    f.push_str(&html!(
+                    html! {
                         form method="POST" action=(self.path) {
                             input.btn type="submit" value=(self.label) /
                         }
-                    ).into_string())
+                    }
                 }
             }
         }
