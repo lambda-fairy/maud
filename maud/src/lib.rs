@@ -150,9 +150,11 @@ impl PreEscaped<String> {
 /// * `<` is escaped as `&lt;`
 /// * `>` is escaped as `&gt;`
 /// * `"` is escaped as `&quot;`
-/// * `'` is escaped as `&#39;`
 ///
 /// All other characters are passed through unchanged.
+///
+/// **Note:** In versions prior to 0.13, the single quote (`'`) was
+/// escaped as well.
 ///
 /// # Example
 ///
@@ -180,7 +182,6 @@ impl<'a> fmt::Write for Escaper<'a> {
                 b'<' => self.0.push_str("&lt;"),
                 b'>' => self.0.push_str("&gt;"),
                 b'"' => self.0.push_str("&quot;"),
-                b'\'' => self.0.push_str("&#39;"),
                 _ => unsafe { self.0.as_mut_vec().push(b) },
             }
         }
