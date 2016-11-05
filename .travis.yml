@@ -1,6 +1,12 @@
 language: rust
 rust: nightly
 sudo: false
+
+before_script:
+  - cargo install clippy
+
 script:
-  - ( cd maud && cargo test --all-features --verbose )
-  - ( cd maud_macros && cargo test --all-features --verbose )
+  - ( cd maud && cargo test --all-features )
+  - ( cd maud && cargo clippy -- -D warnings )
+  - ( cd maud_macros && cargo test --all-features )
+  - ( cd maud_macros && cargo clippy -- -D warnings )
