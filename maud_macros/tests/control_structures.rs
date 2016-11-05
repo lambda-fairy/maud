@@ -23,7 +23,7 @@ fn if_expr() {
 
 #[test]
 fn if_let() {
-    for &(input, output) in [(Some("yay"), "yay"), (None, "oh noes")].iter() {
+    for &(input, output) in &[(Some("yay"), "yay"), (None, "oh noes")] {
         let s = html! {
             @if let Some(value) = input {
                 (value)
@@ -49,6 +49,7 @@ fn while_expr() {
 #[test]
 fn while_let_expr() {
     let mut numbers = (0..3).into_iter();
+    #[allow(while_let_on_iterator)]  // Clippy
     let s = html! {
         ul @while let Some(n) = numbers.next() {
             li (n)
@@ -75,7 +76,7 @@ fn for_expr() {
 
 #[test]
 fn match_expr() {
-    for &(input, output) in [(Some("yay"), "<div>yay</div>"), (None, "oh noes")].iter() {
+    for &(input, output) in &[(Some("yay"), "<div>yay</div>"), (None, "oh noes")] {
         let s = html! {
             @match input {
                 Some(value) => {
@@ -92,7 +93,7 @@ fn match_expr() {
 
 #[test]
 fn match_expr_without_delims() {
-    for &(input, output) in [(Some("yay"), "yay"), (None, "<span>oh noes</span>")].iter() {
+    for &(input, output) in &[(Some("yay"), "yay"), (None, "<span>oh noes</span>")] {
         let s = html! {
             @match input {
                 Some(value) => (value),
@@ -105,7 +106,7 @@ fn match_expr_without_delims() {
 
 #[test]
 fn match_expr_with_guards() {
-    for &(input, output) in [(Some(1), "one"), (None, "none"), (Some(2), "2")].iter() {
+    for &(input, output) in &[(Some(1), "one"), (None, "none"), (Some(2), "2")] {
         let s = html! {
             @match input {
                 Some(value) if value == 1 => "one",
@@ -119,7 +120,7 @@ fn match_expr_with_guards() {
 
 #[test]
 fn match_in_attribute() {
-    for &(input, output) in [(1, "<span class=\"one\">1</span>"), (2, "<span class=\"two\">2</span>"), (3, "<span class=\"many\">3</span>")].iter() {
+    for &(input, output) in &[(1, "<span class=\"one\">1</span>"), (2, "<span class=\"two\">2</span>"), (3, "<span class=\"many\">3</span>")] {
         let s = html! {
             span class=@match input {
                 1 => "one",

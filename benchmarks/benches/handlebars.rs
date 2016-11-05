@@ -34,12 +34,14 @@ fn make_data() -> BTreeMap<String, Json> {
 
     let mut teams = Vec::new();
 
-    for v in vec![("Jiangsu", 43u16),
-                  ("Beijing", 27u16),
-                  ("Guangzhou", 22u16),
-                  ("Shandong", 12u16)]
-                 .iter() {
-        let (name, score) = *v;
+    for &(name, score) in
+        &[
+            ("Jiangsu", 43u16),
+            ("Beijing", 27u16),
+            ("Guangzhou", 22u16),
+            ("Shandong", 12u16),
+        ]
+    {
         let mut t = BTreeMap::new();
         t.insert("name".to_string(), name.to_json());
         t.insert("score".to_string(), score.to_json());
@@ -54,7 +56,6 @@ fn make_data() -> BTreeMap<String, Json> {
 fn render_template(b: &mut test::Bencher) {
     let mut handlebars = Handlebars::new();
     handlebars.register_template_string("table", SOURCE.to_string())
-              .ok()
               .expect("Invalid template format");
 
     let data = make_data();
