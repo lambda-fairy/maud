@@ -131,3 +131,27 @@ fn match_in_attribute() {
         assert_eq!(s, output);
     }
 }
+
+#[test]
+fn let_expr() {
+    let s = html! {
+        @let x = 42 {
+            "I have " (x) " cupcakes!"
+        }
+    }.into_string();
+    assert_eq!(s, "I have 42 cupcakes!");
+}
+
+#[test]
+fn let_lexical_scope() {
+    let x = 42;
+    let s = html! {
+        @let x = 99 {
+            "Twilight thought I had " (x) " cupcakes, "
+        }
+        "but I only had " (x) "."
+    }.into_string();
+    assert_eq!(s, concat!(
+            "Twilight thought I had 99 cupcakes, ",
+            "but I only had 42."));
+}

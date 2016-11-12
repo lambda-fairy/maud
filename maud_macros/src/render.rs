@@ -156,6 +156,11 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
         let stmt = quote_stmt!(self.cx, match $match_var { $match_body }).unwrap();
         self.push(stmt);
     }
+
+    pub fn emit_let(&mut self, pattern: P<Pat>, rhs: P<Expr>, body: Vec<Stmt>) {
+        let stmt = quote_stmt!(self.cx, { let $pattern = $rhs; $body }).unwrap();
+        self.push(stmt);
+    }
 }
 
 fn html_escape(s: &str) -> String {

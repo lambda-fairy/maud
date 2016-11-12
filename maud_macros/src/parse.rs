@@ -156,6 +156,11 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(2);
                 self.match_expr(sp)?;
             },
+            // Let
+            [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::Let) => {
+                self.shift(2);
+                self.let_expr(sp)?;
+            }
             // Element
             [ident!(sp, _), ..] => {
                 let name = self.namespaced_name().unwrap();
@@ -400,6 +405,42 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
             close_span: sp,
         })));
         Ok(body)
+    }
+
+    /// Parses and renders a `@let` expression.
+    ///
+    /// The leading `@let` should already be consumed.
+    fn let_expr(&mut self, sp: Span) -> PResult<()> {
+        let mut pattern = vec![];
+        loop { match *self.input {
+            [eq!(), ..] => {
+                self.shift(1);
+                break;
+            },
+            [ref tt, ..] => {
+                self.shift(1);
+                pattern.push(tt.clone());
+            },
+            _ => parse_error!(self, sp, "invalid @let"),
+        }}
+        let pattern = self.with_rust_parser(pattern, RustParser::parse_pat)?;
+        let mut rhs = vec![];
+        let body;
+        loop { match *self.input {
+            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
+                self.shift(1);
+                body = self.block(sp, &d.tts)?;
+                break;
+            },
+            [ref tt, ..] => {
+                self.shift(1);
+                rhs.push(tt.clone());
+            },
+            _ => parse_error!(self, sp, "invalid @let"),
+        }}
+        let rhs = self.with_rust_parser(rhs, RustParser::parse_expr)?;
+        self.render.emit_let(pattern, rhs, body);
+        Ok(())
     }
 
     /// Parses and renders an element node.
