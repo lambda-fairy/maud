@@ -5,9 +5,10 @@ use syntax::ext::quote::rt::ToTokens;
 use syntax::codemap::Span;
 use syntax::errors::{DiagnosticBuilder, FatalError};
 use syntax::ext::base::ExtCtxt;
+use syntax::fold::Folder;
 use syntax::parse;
 use syntax::parse::parser::Parser as RustParser;
-use syntax::parse::token::{BinOpToken, DelimToken, Token};
+use syntax::parse::token::{BinOpToken, DelimToken, Nonterminal, Token};
 use syntax::parse::token::keywords;
 use syntax::print::pprust;
 use syntax::ptr::P;
@@ -70,17 +71,33 @@ macro_rules! keyword {
 }
 
 pub fn parse(cx: &ExtCtxt, sp: Span, input: &[TokenTree]) -> PResult<P<Expr>> {
+    let input = FlattenNtFolder.fold_tts(input);
     let mut parser = Parser {
         in_attr: false,
-        input: input,
+        input: &input,
         span: sp,
         render: Renderer::new(cx),
     };
     parser.markups()?;
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
-    let size_hint = pprust::tts_to_string(input).len();
+    let size_hint = pprust::tts_to_string(&input).len();
     Ok(parser.into_render().into_expr(size_hint))
+}
+
+struct FlattenNtFolder;
+
+impl Folder for FlattenNtFolder {
+    fn fold_tt(&mut self, mut tt: &TokenTree) -> TokenTree {
+        while let TokenTree::Token(_, Token::Interpolated(ref nt)) = *tt {
+            if let Nonterminal::NtTT(ref sub_tt) = **nt {
+                tt = sub_tt;
+            } else {
+                break;
+            }
+        }
+        tt.clone()
+    }
 }
 
 struct Parser<'cx, 'a: 'cx, 'i> {
