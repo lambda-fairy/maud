@@ -15,6 +15,6 @@ For more info on Maud, see the [official book][book].
 
 ## Stability
 
-As of version 0.11, I am satisfied with the core syntax and semantics of the library. Most versions from now on should not change too much.
+As of version 0.11, I am satisfied with the core syntax and semantics of the library. Development at this stage is focused on adding features and fixing bugs.
 
 The underlying syntax extension API is still unstable though, so updating your compiler may break things. Please file an issue when this happens!
