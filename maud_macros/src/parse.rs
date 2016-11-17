@@ -504,7 +504,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                     // Empty attribute
                     self.shift(1);
                     match *self.input {
-                        [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Paren => {
+                        [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Bracket => {
                             // Toggle the attribute based on a boolean expression
                             self.shift(1);
                             let cond = self.with_rust_parser(d.tts.clone(), RustParser::parse_expr)?;
