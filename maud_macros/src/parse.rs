@@ -481,7 +481,8 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
 
     /// Parses and renders the attributes of an element.
     fn attrs(&mut self) -> PResult<()> {
-        let mut classes = Vec::new();
+        let mut classes_static = Vec::new();
+        let mut classes_toggled = Vec::new();
         let mut ids = Vec::new();
         loop {
             let old_input = self.input;
@@ -525,7 +526,18 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 (Err(_), &[dot!(), ident!(_, _), ..]) => {
                     // Class shorthand
                     self.shift(1);
-                    classes.push(self.name().unwrap());
+                    let class_name = self.name().unwrap();
+                    match *self.input {
+                        [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Bracket => {
+                            // Toggle the class based on a boolean expression
+                            self.shift(1);
+                            let cond = self.with_rust_parser(d.tts.clone(), RustParser::parse_expr)?;
+                            let cond = cond.to_tokens(self.render.cx);
+                            classes_toggled.push((cond, class_name));
+                        },
+                        // Emit the class unconditionally
+                        _ => classes_static.push(class_name),
+                    }
                 },
                 (Err(_), &[pound!(), ident!(_, _), ..]) => {
                     // ID shorthand
@@ -538,9 +550,22 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 },
             }
         }
-        if !classes.is_empty() {
+        if !classes_static.is_empty() || !classes_toggled.is_empty() {
             self.render.attribute_start("class");
-            self.render.string(&classes.join(" "));
+            self.render.string(&classes_static.join(" "));
+            for (i, (cond, mut class_name)) in classes_toggled.into_iter().enumerate() {
+                // If a class comes first in the list, then it shouldn't be
+                // prefixed by a space
+                if i > 0 || !classes_static.is_empty() {
+                    class_name = format!(" {}", class_name);
+                }
+                let body = {
+                    let mut r = self.render.fork();
+                    r.string(&class_name);
+                    r.into_stmts()
+                };
+                self.render.emit_if(cond, body, None);
+            }
             self.render.attribute_end();
         }
         if !ids.is_empty() {

@@ -37,22 +37,6 @@ fn attributes() {
     assert_eq!(s, r#"<img src="pinkie.jpg" alt="Pinkie Pie">"#);
 }
 
-#[test]
-fn empty_attributes() {
-    let rocks = true;
-    let s = html!({
-        input checked?[true] /
-        input checked?[false] /
-        input checked?[rocks] /
-        input checked?[!rocks] /
-    }).into_string();
-    assert_eq!(s, concat!(
-            r#"<input checked>"#,
-            r#"<input>"#,
-            r#"<input checked>"#,
-            r#"<input>"#));
-}
-
 static BEST_PONY: &'static str = "Pinkie Pie";
 
 #[test]

@@ -3,6 +3,8 @@
 
 extern crate maud;
 
+use maud::Markup;
+
 #[test]
 fn literals() {
     let s = html!("du\tcks" "-23" "3.14\n" "geese").into_string();
@@ -77,6 +79,22 @@ fn empty_attributes() {
 }
 
 #[test]
+fn toggle_empty_attributes() {
+    let rocks = true;
+    let s = html!({
+        input checked?[true] /
+        input checked?[false] /
+        input checked?[rocks] /
+        input checked?[!rocks] /
+    }).into_string();
+    assert_eq!(s, concat!(
+            r#"<input checked>"#,
+            r#"<input>"#,
+            r#"<input checked>"#,
+            r#"<input>"#));
+}
+
+#[test]
 fn colons_in_names() {
     let s = html!(pon-pon:controls-alpha a on:click="yay()" "Yay!").into_string();
     assert_eq!(s, concat!(
@@ -119,6 +137,26 @@ fn classes_shorthand() {
 fn hyphens_in_class_names() {
     let s = html!(p.rocks-these.are--my--rocks "yes").into_string();
     assert_eq!(s, r#"<p class="rocks-these are--my--rocks">yes</p>"#);
+}
+
+#[test]
+fn toggle_classes() {
+    fn test(is_cupcake: bool, is_muffin: bool) -> Markup {
+        html!(p.cupcake[is_cupcake].muffin[is_muffin] "Testing!")
+    }
+    assert_eq!(test(true, true).into_string(), r#"<p class="cupcake muffin">Testing!</p>"#);
+    assert_eq!(test(false, true).into_string(), r#"<p class=" muffin">Testing!</p>"#);
+    assert_eq!(test(true, false).into_string(), r#"<p class="cupcake">Testing!</p>"#);
+    assert_eq!(test(false, false).into_string(), r#"<p class="">Testing!</p>"#);
+}
+
+#[test]
+fn mixed_classes() {
+    fn test(is_muffin: bool) -> Markup {
+        html!(p.cupcake.muffin[is_muffin].lamington "Testing!")
+    }
+    assert_eq!(test(true).into_string(), r#"<p class="cupcake lamington muffin">Testing!</p>"#);
+    assert_eq!(test(false).into_string(), r#"<p class="cupcake lamington">Testing!</p>"#);
 }
 
 #[test]
