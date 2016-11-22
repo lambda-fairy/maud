@@ -6,7 +6,7 @@ base="$(dirname "$(readlink -f $0)")"
 cd "$base/maud_extras"
 
 cargo clean
-cargo doc --all-features --no-deps
+cargo doc -p maud -p maud_macros -p maud_extras --all-features --no-deps
 
 cd target/doc
 
