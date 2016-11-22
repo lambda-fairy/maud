@@ -10,3 +10,5 @@ script:
   - ( cd maud && cargo clippy -- -D warnings )
   - ( cd maud_macros && cargo test --all-features )
   - ( cd maud_macros && cargo clippy -- -D warnings )
+  - ( cd maud_extras && cargo test --all-features )
+  - ( cd maud_extras && cargo clippy -- -D warnings )
