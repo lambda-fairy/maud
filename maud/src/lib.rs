@@ -189,6 +189,30 @@ impl<'a> fmt::Write for Escaper<'a> {
     }
 }
 
+/// The literal string `<!DOCTYPE html>`.
+///
+/// # Example
+///
+/// A minimal web page:
+///
+/// ```rust,ignore
+/// use maud::DOCTYPE;
+///
+/// let markup = html! {
+///     (DOCTYPE)
+///     html {
+///         head {
+///             meta charset="utf-8" /
+///             title "Test page"
+///         }
+///         body {
+///             p "Hello, world!"
+///         }
+///     }
+/// };
+/// ```
+pub const DOCTYPE: PreEscaped<&'static str> = PreEscaped("<!DOCTYPE html>");
+
 #[cfg(feature = "iron")]
 mod iron_support {
     use std::io;
