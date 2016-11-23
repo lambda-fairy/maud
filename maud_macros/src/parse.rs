@@ -9,9 +9,9 @@ use syntax::fold::Folder;
 use syntax::parse;
 use syntax::parse::parser::Parser as RustParser;
 use syntax::parse::token::{BinOpToken, DelimToken, Nonterminal, Token};
-use syntax::parse::token::keywords;
 use syntax::print::pprust;
 use syntax::ptr::P;
+use syntax::symbol::keywords;
 use syntax::tokenstream::{Delimited, TokenTree};
 
 use super::render::Renderer;
@@ -217,7 +217,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     fn literal(&mut self, tt: &TokenTree) -> PResult<()> {
         let lit = self.with_rust_parser(vec![tt.clone()], RustParser::parse_lit)?;
         if let LitKind::Str(s, _) = lit.node {
-            self.render.string(&s);
+            self.render.string(&s.as_str());
             Ok(())
         } else {
             parse_error!(self, lit.span, "literal strings must be surrounded by quotes (\"like this\")")

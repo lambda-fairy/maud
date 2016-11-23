@@ -1,7 +1,7 @@
 use syntax::ast::{Expr, Ident, Pat, Stmt};
 use syntax::ext::base::ExtCtxt;
-use syntax::parse::token;
 use syntax::ptr::P;
+use syntax::symbol::Symbol;
 use syntax::tokenstream::TokenTree;
 
 use maud::Escaper;
@@ -16,7 +16,7 @@ pub struct Renderer<'cx, 'a: 'cx> {
 impl<'cx, 'a> Renderer<'cx, 'a> {
     /// Creates a new `Renderer` using the given extension context.
     pub fn new(cx: &'cx ExtCtxt<'a>) -> Renderer<'cx, 'a> {
-        let writer = token::gensym_ident("__maud_writer");
+        let writer = Ident::with_empty_ctxt(Symbol::gensym("__maud_output"));
         Renderer {
             cx: cx,
             writer: writer,
