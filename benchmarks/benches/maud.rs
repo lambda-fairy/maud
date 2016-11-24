@@ -29,7 +29,7 @@ fn render_template(b: &mut test::Bencher) {
                     h1 { "CSL " (year) }
                     ul {
                         @for (i, team) in teams.iter().enumerate() {
-                            li class=@if i == 0 { "champion" } {
+                            li.champion[i == 0] {
                                 b (team.name) ": " (team.score)
                             }
                         }
