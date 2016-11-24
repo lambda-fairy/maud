@@ -1,5 +1,17 @@
 # Change Log
 
+## [0.14.0] - 2016-11-24
+
+- [Added] Add a pre-defined constant for `<!DOCTYPE html>`
+- [Added] Toggle a class using a boolean flag
+  [#44](https://github.com/lfairy/maud/issues/44)
+- [Added] Let expressions
+  [#57](https://github.com/lfairy/maud/issues/57)
+- [Changed] Toggled empty attributes now use `foo?[bar]` syntax
+  [#59](https://github.com/lfairy/maud/issues/59)
+- [Fixed] Update to latest syntax extension API
+
+
 ## [0.13.0] - 2016-11-03
 
 - [Added] Support `@while` and `@while let`
@@ -8,6 +20,7 @@
   [#54](https://github.com/lfairy/maud/issues/54)
 - [Changed] Single quotes (`'`) are no longer escaped
 - [Fixed] Update to latest syntax extension API
+
 
 ## [0.12.0] - 2016-10-09
 
@@ -82,8 +95,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/lfairy/maud/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/lfairy/maud/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/lfairy/maud/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/lfairy/maud/compare/v0.11.0...v0.11.1
