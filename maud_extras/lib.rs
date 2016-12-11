@@ -56,3 +56,29 @@ impl<T: AsRef<str>> Render for Js<T> {
         }
     }
 }
+
+/// Generate <meta> elements.
+///
+/// # Example
+///
+/// ```rust
+/// # #![feature(plugin)]
+/// # #![plugin(maud_macros)]
+/// # extern crate maud;
+/// # extern crate maud_extras;
+/// # use maud_extras::*;
+/// # fn main() {
+/// let m = Meta("description", "test description");
+/// assert_eq!(html!{ (m) }.into_string(),
+///            r#"<meta name="description" content="test description">"#);
+/// # }
+/// ```
+pub struct Meta<T: AsRef<str>, U: AsRef<str>>(pub T, pub U);
+
+impl<T: AsRef<str>, U: AsRef<str>> Render for Meta<T, U> {
+    fn render(&self) -> Markup {
+        html! {
+            meta name=(self.0.as_ref()) content=(self.1.as_ref()) /
+        }
+    }
+}
