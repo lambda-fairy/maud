@@ -108,3 +108,29 @@ impl<T: AsRef<str>> Render for Title<T> {
         }
     }
 }
+
+/// Generate <meta charset=""> element.
+///
+/// # Example
+///
+/// ```rust
+/// # #![feature(plugin)]
+/// # #![plugin(maud_macros)]
+/// # extern crate maud;
+/// # extern crate maud_extras;
+/// # use maud_extras::*;
+/// # fn main() {
+/// let markup = html! { (Charset("utf-8")) };
+/// assert_eq!(markup.into_string(),
+///            r#"<meta charset="utf-8">"#);
+/// # }
+/// ```
+pub struct Charset<T: AsRef<str>>(pub T);
+
+impl<T: AsRef<str>> Render for Charset<T> {
+    fn render(&self) -> Markup {
+        html! {
+            meta charset=(self.0.as_ref()) /
+        }
+    }
+}
