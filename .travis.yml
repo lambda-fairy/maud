@@ -3,12 +3,12 @@ rust: nightly
 sudo: false
 
 before_script:
-  - cargo install clippy
+  - cargo install clippy || true
 
 script:
   - ( cd maud && cargo test --all-features )
-  - ( cd maud && cargo clippy -- -D warnings )
+  - if command -v cargo-clippy; then ( cd maud && cargo clippy -- -D warnings ); fi
   - ( cd maud_macros && cargo test --all-features )
-  - ( cd maud_macros && cargo clippy -- -D warnings )
+  - if command -v cargo-clippy; then ( cd maud_macros && cargo clippy -- -D warnings ); fi
   - ( cd maud_extras && cargo test --all-features )
-  - ( cd maud_extras && cargo clippy -- -D warnings )
+  - if command -v cargo-clippy; then ( cd maud_extras && cargo clippy -- -D warnings ); fi
