@@ -31,7 +31,7 @@ impl<T: AsRef<str>> Render for Css<T> {
     }
 }
 
-/// Links to an external javascript.
+/// Links to an external script.
 ///
 /// # Example
 ///
@@ -57,7 +57,7 @@ impl<T: AsRef<str>> Render for Js<T> {
     }
 }
 
-/// Generate <meta> elements.
+/// Generate a `<meta>` element.
 ///
 /// # Example
 ///
@@ -68,8 +68,8 @@ impl<T: AsRef<str>> Render for Js<T> {
 /// # extern crate maud_extras;
 /// # use maud_extras::*;
 /// # fn main() {
-/// let m = Meta("description", "test description");
-/// assert_eq!(html!{ (m) }.into_string(),
+/// let markup = html! { (Meta("description", "test description")) };
+/// assert_eq!(markup.into_string(),
 ///            r#"<meta name="description" content="test description">"#);
 /// # }
 /// ```
@@ -83,7 +83,7 @@ impl<T: AsRef<str>, U: AsRef<str>> Render for Meta<T, U> {
     }
 }
 
-/// Generate <title> element.
+/// Generate a `<title>` element.
 ///
 /// # Example
 ///
@@ -109,7 +109,7 @@ impl<T: AsRef<str>> Render for Title<T> {
     }
 }
 
-/// Generate <meta charset=""> element.
+/// Generate a `<meta charset="...">` element.
 ///
 /// # Example
 ///
