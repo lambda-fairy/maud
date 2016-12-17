@@ -135,10 +135,16 @@ impl<T: AsRef<str>> Render for PreEscaped<T> {
 /// The `html!` macro expands to an expression of this type.
 pub type Markup = PreEscaped<String>;
 
-impl PreEscaped<String> {
-    /// Extracts the inner `String`. This is a synonym for `self.0`.
+impl<T: AsRef<str> + Into<String>> PreEscaped<T> {
+    /// Converts the inner value to a string.
     pub fn into_string(self) -> String {
-        self.0
+        self.0.into()
+    }
+}
+
+impl<T: AsRef<str> + Into<String>> Into<String> for PreEscaped<T> {
+    fn into(self) -> String {
+        self.into_string()
     }
 }
 
