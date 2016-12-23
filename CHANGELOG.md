@@ -1,5 +1,11 @@
 # Change Log
 
+## Unreleased
+
+- [Added] Implement `Into<String>` for `Markup`
+- [Removed] Remove the `RenderOnce` trait
+  [#68](https://github.com/lfairy/maud/issues/68)
+
 ## [0.14.0] - 2016-11-24
 
 - [Added] Add a pre-defined constant for `<!DOCTYPE html>`
