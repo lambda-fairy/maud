@@ -85,41 +85,6 @@ impl Render for str {
     }
 }
 
-/// Represents a type that can be rendered as HTML, where the rendering
-/// operation consumes the value.
-///
-/// See the [`Render`](trait.Render.html) documentation for advice on
-/// how to use this trait.
-pub trait RenderOnce: Sized {
-    /// Renders `self` as a block of `Markup`, consuming it in the
-    /// process.
-    fn render_once(self) -> Markup {
-        let mut buffer = String::new();
-        self.render_once_to(&mut buffer);
-        PreEscaped(buffer)
-    }
-
-    /// Appends a representation of `self` to the given string,
-    /// consuming `self` in the process.
-    ///
-    /// Its default implementation just calls `.render_once()`, but you
-    /// may override it with something more efficient.
-    ///
-    /// Note that no further escaping is performed on data written to
-    /// the buffer. If you override this method, you must make sure that
-    /// any data written is properly escaped, whether by hand or using
-    /// the [`Escaper`](struct.Escaper.html) wrapper struct.
-    fn render_once_to(self, buffer: &mut String) {
-        buffer.push_str(&self.render_once().into_string());
-    }
-}
-
-impl<'a, T: Render + ?Sized> RenderOnce for &'a T {
-    fn render_once_to(self, w: &mut String) {
-        self.render_to(w);
-    }
-}
-
 /// A wrapper that renders the inner value without escaping.
 #[derive(Debug)]
 pub struct PreEscaped<T: AsRef<str>>(pub T);

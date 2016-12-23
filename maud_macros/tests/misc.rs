@@ -66,17 +66,3 @@ fn render_impl() {
     assert_eq!(s1, "pinkie");
     assert_eq!(s2, "pinkie");
 }
-
-#[test]
-fn render_once_impl() {
-    struct Once(String);
-    impl maud::RenderOnce for Once {
-        fn render_once_to(self, w: &mut String) {
-            w.push_str(&self.0);
-        }
-    }
-
-    let once = Once(String::from("pinkie"));
-    let s = html!((once)).into_string();
-    assert_eq!(s, "pinkie");
-}
