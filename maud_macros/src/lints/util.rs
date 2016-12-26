@@ -7,60 +7,26 @@ use rustc::lint::LateContext;
 use rustc::ty;
 use syntax::symbol::{InternedString, Symbol};
 
-/// Produce a nested chain of if-lets and ifs from the patterns:
-///
-/// ```rust,ignore
-/// if_let_chain! {[
-///     let Some(y) = x,
-///     y.len() == 2,
-///     let Some(z) = y,
-/// ], {
-///     block
-/// }}
-/// ```
-///
-/// becomes
-///
-/// ```rust,ignore
-/// if let Some(y) = x {
-///     if y.len() == 2 {
-///         if let Some(z) = y {
-///             block
-///         }
-///     }
-/// }
-/// ```
 #[macro_export]
-macro_rules! if_let_chain {
-    ([let $pat:pat = $expr:expr, $($tt:tt)+], $block:block) => {
+macro_rules! if_chain {
+    (let $pat:pat = $expr:expr; $($tt:tt)+) => {
+        {
+            let $pat = $expr;
+            if_chain! { $($tt)+ }
+        }
+    };
+    (if let $pat:pat = $expr:expr; $($tt:tt)+) => {
         if let $pat = $expr {
-           if_let_chain!{ [$($tt)+], $block }
+            if_chain! { $($tt)+ }
         }
     };
-    ([let $pat:pat = $expr:expr], $block:block) => {
-        if let $pat = $expr {
-           $block
-        }
-    };
-    ([let $pat:pat = $expr:expr,], $block:block) => {
-        if let $pat = $expr {
-           $block
-        }
-    };
-    ([$expr:expr, $($tt:tt)+], $block:block) => {
+    (if $expr:expr; $($tt:tt)+) => {
         if $expr {
-           if_let_chain!{ [$($tt)+], $block }
+            if_chain! { $($tt)+ }
         }
     };
-    ([$expr:expr], $block:block) => {
-        if $expr {
-           $block
-        }
-    };
-    ([$expr:expr,], $block:block) => {
-        if $expr {
-           $block
-        }
+    ($expr:expr) => {
+        $expr
     };
 }
 

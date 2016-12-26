@@ -20,23 +20,21 @@ impl LintPass for DoctypeHtml {
 
 impl<'a, 'tcx> LateLintPass<'a, 'tcx> for DoctypeHtml {
     fn check_expr(&mut self, cx: &LateContext<'a, 'tcx>, expr: &'tcx Expr) {
-        if_let_chain! {[
+        if_chain! {
             // It's a function call...
-            let ExprCall(ref path_expr, ref args) = expr.node,
+            if let ExprCall(ref path_expr, ref args) = expr.node;
             // ... where the argument is a literal "<!doctype html>"
-            let Some(first_arg) = args.first(),
-            let ExprLit(ref lit) = first_arg.node,
-            let LitKind::Str(s, _) = lit.node,
-            s.as_str().eq_ignore_ascii_case("<!doctype html>"),
-        ], {
+            if let Some(first_arg) = args.first();
+            if let ExprLit(ref lit) = first_arg.node;
+            if let LitKind::Str(s, _) = lit.node;
+            if s.as_str().eq_ignore_ascii_case("<!doctype html>");
             // ... and the callee is `maud::PreEscaped`
-            if let ExprPath(ref qpath) = path_expr.node {
-                let def_id = cx.tcx.tables().qpath_def(qpath, path_expr.id).def_id();
-                if match_def_path(cx, def_id, &["maud", "PreEscaped", "{{constructor}}"]) {
-                    cx.struct_span_lint(MAUD_DOCTYPE_HTML, expr.span,
-                                        "use `maud::DOCTYPE_HTML` instead").emit();
-                }
+            if let ExprPath(ref qpath) = path_expr.node;
+            let def_id = cx.tcx.tables().qpath_def(qpath, path_expr.id).def_id();
+            if match_def_path(cx, def_id, &["maud", "PreEscaped", "{{constructor}}"]) {
+                cx.struct_span_lint(MAUD_DOCTYPE_HTML, expr.span,
+                                    "use `maud::DOCTYPE_HTML` instead").emit();
             }
-        }}
+        }
     }
 }
