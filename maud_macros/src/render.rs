@@ -90,6 +90,7 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
     pub fn splice(&mut self, expr: P<Expr>) {
         let w = self.writer;
         let expr = quote_expr!(self.cx, {
+            #[allow(unused_imports)]
             use ::maud::Render as __maud_Render;
             $expr.render_to(&mut $w);
         });
