@@ -12,9 +12,9 @@ description = """
 Compile-time HTML templates.
 """
 
-[dependencies.maud]
-path = "../maud"
-version = "0.14.0"
+[dependencies]
+if_chain = "0.1"
+maud = { path = "../maud", version = "0.14.0" }
 
 [lib]
 name = "maud_macros"

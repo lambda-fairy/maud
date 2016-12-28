@@ -7,29 +7,6 @@ use rustc::lint::LateContext;
 use rustc::ty;
 use syntax::symbol::{InternedString, Symbol};
 
-#[macro_export]
-macro_rules! if_chain {
-    (let $pat:pat = $expr:expr; $($tt:tt)+) => {
-        {
-            let $pat = $expr;
-            if_chain! { $($tt)+ }
-        }
-    };
-    (if let $pat:pat = $expr:expr; $($tt:tt)+) => {
-        if let $pat = $expr {
-            if_chain! { $($tt)+ }
-        }
-    };
-    (if $expr:expr; $($tt:tt)+) => {
-        if $expr {
-            if_chain! { $($tt)+ }
-        }
-    };
-    ($expr:expr) => {
-        $expr
-    };
-}
-
 /// Check if a `DefId`'s path matches the given absolute type path usage.
 ///
 /// # Examples
