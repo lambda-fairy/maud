@@ -8,6 +8,7 @@
 //! [book]: https://maud.lambda.xyz/
 
 #[cfg(feature = "iron")] extern crate iron;
+#[cfg(feature = "rocket")] extern crate rocket;
 
 use std::fmt::{self, Write};
 
@@ -204,6 +205,19 @@ mod iron_support {
     impl WriteBody for PreEscaped<String> {
         fn write_body(&mut self, body: &mut ResponseBody) -> io::Result<()> {
             self.0.write_body(body)
+        }
+    }
+}
+
+#[cfg(feature = "rocket")]
+mod rocket_support {
+    use rocket::http::Status;
+    use rocket::response::{Responder, Response};
+    use PreEscaped;
+
+    impl Responder<'static> for PreEscaped<String> {
+        fn respond(self) -> Result<Response<'static>, Status> {
+            self.into_string().respond()
         }
     }
 }
