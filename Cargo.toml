@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "maud",
+    "maud_macros",
+    "maud_extras",
+]
