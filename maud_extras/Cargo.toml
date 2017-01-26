@@ -5,7 +5,7 @@ version = "0.0.0"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 
 license = "CC0-1.0"
-repository = "https://github.com/lfairy/maud_extras"
+repository = "https://github.com/lfairy/maud"
 description = "Extra bits and pieces for use in Maud templates."
 
 [dependencies]
