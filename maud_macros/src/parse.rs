@@ -417,9 +417,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         }}
         body.push(TokenTree::Delimited(sp, Rc::new(Delimited {
             delim: DelimToken::Brace,
-            open_span: sp,
             tts: expr,
-            close_span: sp,
         })));
         Ok(body)
     }
