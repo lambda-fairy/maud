@@ -1,7 +1,7 @@
 [package]
 
 name = "maud_macros"
-version = "0.14.0"
+version = "0.15.0"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 
 license = "MIT/Apache-2.0"
@@ -14,7 +14,7 @@ Compile-time HTML templates.
 
 [dependencies]
 if_chain = "0.1"
-maud = { path = "../maud", version = "0.14.0" }
+maud = { path = "../maud", version = "0.15.0" }
 
 [lib]
 name = "maud_macros"

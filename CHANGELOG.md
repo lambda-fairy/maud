@@ -1,10 +1,13 @@
 # Change Log
 
-## Unreleased
+## [0.15.0] - 2017-01-26
 
 - [Added] Implement `Into<String>` for `Markup`
+- [Added] Add a lint that suggests using the `maud::DOCTYPE` constant
+  [#66](https://github.com/lfairy/maud/issues/66)
 - [Removed] Remove the `RenderOnce` trait
   [#68](https://github.com/lfairy/maud/issues/68)
+- [Fixed] Update to latest syntax extension API
 
 ## [0.14.0] - 2016-11-24
 
@@ -101,7 +104,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/lfairy/maud/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/lfairy/maud/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/lfairy/maud/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/lfairy/maud/compare/v0.11.1...v0.12.0
