@@ -191,7 +191,7 @@ mod iron_support {
     use iron::headers::ContentType;
     use iron::modifier::{Modifier, Set};
     use iron::modifiers::Header;
-    use iron::response::{Response, ResponseBody, WriteBody};
+    use iron::response::{Response, WriteBody};
     use PreEscaped;
 
     impl Modifier<Response> for PreEscaped<String> {
@@ -203,7 +203,7 @@ mod iron_support {
     }
 
     impl WriteBody for PreEscaped<String> {
-        fn write_body(&mut self, body: &mut ResponseBody) -> io::Result<()> {
+        fn write_body(&mut self, body: &mut io::Write) -> io::Result<()> {
             self.0.write_body(body)
         }
     }
