@@ -8,7 +8,7 @@ cd "$base/maud_extras"
 cargo clean
 cargo doc -p maud -p maud_macros -p maud_extras --all-features --no-deps
 
-cd target/doc
+cd "$base/target/doc"
 
 git init
 trap 'rm -rf .git/' 0
