@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.16.0] - 2017-02-06
+
+- [Changed] Update to Iron 0.5
+  [#70](https://github.com/lfairy/maud/issues/70)
+- [Fixed] Correct typo in `<!doctype html>` lint
+  [#69](https://github.com/lfairy/maud/issues/69)
+
 ## [0.15.0] - 2017-01-26
 
 - [Added] Implement `Into<String>` for `Markup`
@@ -104,7 +111,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/lfairy/maud/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/lfairy/maud/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/lfairy/maud/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/lfairy/maud/compare/v0.12.0...v0.13.0
