@@ -5,20 +5,20 @@ use super::util::match_def_path;
 use syntax::ast::LitKind;
 
 declare_lint! {
-    pub MAUD_DOCTYPE_HTML,
+    pub MAUD_DOCTYPE,
     Warn,
-    "suggest using the maud::DOCTYPE_HTML constant"
+    "suggest using the maud::DOCTYPE constant"
 }
 
-pub struct DoctypeHtml;
+pub struct Doctype;
 
-impl LintPass for DoctypeHtml {
+impl LintPass for Doctype {
     fn get_lints(&self) -> LintArray {
-        lint_array![MAUD_DOCTYPE_HTML]
+        lint_array![MAUD_DOCTYPE]
     }
 }
 
-impl<'a, 'tcx> LateLintPass<'a, 'tcx> for DoctypeHtml {
+impl<'a, 'tcx> LateLintPass<'a, 'tcx> for Doctype {
     fn check_expr(&mut self, cx: &LateContext<'a, 'tcx>, expr: &'tcx Expr) {
         if_chain! {
             // It's a function call...
@@ -33,8 +33,8 @@ impl<'a, 'tcx> LateLintPass<'a, 'tcx> for DoctypeHtml {
             let def_id = cx.tables.qpath_def(qpath, path_expr.id).def_id();
             if match_def_path(cx, def_id, &["maud", "PreEscaped", "{{constructor}}"]);
             then {
-                cx.struct_span_lint(MAUD_DOCTYPE_HTML, expr.span,
-                                    "use `maud::DOCTYPE_HTML` instead").emit();
+                cx.struct_span_lint(MAUD_DOCTYPE, expr.span,
+                                    "use `maud::DOCTYPE` instead").emit();
             }
         }
     }
