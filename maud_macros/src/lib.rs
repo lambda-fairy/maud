@@ -23,7 +23,7 @@ mod lints;
 mod parse;
 mod render;
 
-pub type PResult<T> = Result<T, FatalError>;
+type PResult<T> = Result<T, FatalError>;
 
 fn expand_html<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree]) -> Box<MacResult + 'cx> {
     match parse::parse(cx, sp, args) {
