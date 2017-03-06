@@ -369,9 +369,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(1);
                 bodies.push(tt.clone());
             },
-            [TokenTree::Token(sp, _), ..] | [TokenTree::Delimited(sp, _), ..] => {
-                bodies.append(&mut self.match_body(sp)?);
-            },
+			[ref tt, ..] => bodies.append(&mut self.match_body(tt.span())?),
         }}
         Ok(bodies)
     }
