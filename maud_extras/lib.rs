@@ -134,3 +134,29 @@ impl<T: AsRef<str>> Render for Charset<T> {
         }
     }
 }
+
+/// Generate a `<meta property>` element.
+///
+/// # Example
+///
+/// ```rust
+/// # #![feature(plugin)]
+/// # #![plugin(maud_macros)]
+/// # extern crate maud;
+/// # extern crate maud_extras;
+/// # use maud_extras::*;
+/// # fn main() {
+/// let markup = html! { (MetaProperty("og:description", "test description")) };
+/// assert_eq!(markup.into_string(),
+///            r#"<meta property="og:description" content="test description">"#);
+/// # }
+/// ```
+pub struct MetaProperty<T: AsRef<str>, U: AsRef<str>>(pub T, pub U);
+
+impl<T: AsRef<str>, U: AsRef<str>> Render for MetaProperty<T, U> {
+    fn render(&self) -> Markup {
+        html! {
+            meta property=(self.0.as_ref()) content=(self.1.as_ref()) /
+        }
+    }
+}
