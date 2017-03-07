@@ -9,7 +9,7 @@ before_script:
 script:
   - |
     if [ -n "$TRAVIS_COMMIT_RANGE" ]; then
-      echo 'Checking for tabs'
+      printf 'Checking for tabs in %s\n' "$TRAVIS_COMMIT_RANGE"
       ! git diff --name-only --diff-filter=ACMR "$TRAVIS_COMMIT_RANGE" | xargs grep $'\t'
     fi
   - ( cd maud && cargo test --all-features )
