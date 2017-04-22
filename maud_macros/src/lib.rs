@@ -14,7 +14,6 @@ extern crate maud;
 
 use rustc_plugin::Registry;
 use syntax::codemap::Span;
-use syntax::errors::FatalError;
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
 use syntax::print::pprust;
 use syntax::tokenstream::TokenTree;
@@ -23,7 +22,7 @@ mod lints;
 mod parse;
 mod render;
 
-type PResult<T> = Result<T, FatalError>;
+type ParseResult<T> = Result<T, ()>;
 
 fn expand_html<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree]) -> Box<MacResult + 'cx> {
     match parse::parse(cx, sp, args) {

@@ -1,7 +1,6 @@
 use std::mem;
 use syntax::ast::LitKind;
 use syntax::codemap::Span;
-use syntax::errors::FatalError;
 use syntax::ext::base::ExtCtxt;
 use syntax::fold::Folder;
 use syntax::parse;
@@ -11,12 +10,12 @@ use syntax::symbol::keywords;
 use syntax::tokenstream::{Delimited, TokenStream, TokenTree};
 
 use super::render::Renderer;
-use super::PResult;
+use super::ParseResult;
 
 macro_rules! error {
     ($cx:expr, $sp:expr, $msg:expr) => ({
         $cx.span_err($sp, $msg);
-        return Err(::syntax::errors::FatalError);
+        return Err(());
     })
 }
 
@@ -63,7 +62,7 @@ macro_rules! keyword {
     ($sp:pat, $x:ident) => (TokenTree::Token($sp, ref $x @ Token::Ident(..)))
 }
 
-pub fn parse(cx: &ExtCtxt, sp: Span, input: &[TokenTree]) -> PResult<Vec<TokenTree>> {
+pub fn parse(cx: &ExtCtxt, sp: Span, input: &[TokenTree]) -> ParseResult<Vec<TokenTree>> {
     let input: Vec<TokenTree> = FlattenNtFolder.fold_tts(input.iter().cloned().collect())
         .into_trees().collect();
     let mut render = Renderer::new(cx);
@@ -109,7 +108,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     }
 
     /// Parses and renders multiple blocks of markup.
-    fn markups(&mut self, render: &mut Renderer) -> PResult<()> {
+    fn markups(&mut self, render: &mut Renderer) -> ParseResult<()> {
         loop {
             match *self.input {
                 [] => return Ok(()),
@@ -120,7 +119,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     }
 
     /// Parses and renders a single block of markup.
-    fn markup(&mut self, render: &mut Renderer) -> PResult<()> {
+    fn markup(&mut self, render: &mut Renderer) -> ParseResult<()> {
         match *self.input {
             // Literal
             [ref tt @ literal!(), ..] => {
@@ -185,9 +184,9 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     }
 
     /// Parses and renders a literal string.
-    fn literal(&mut self, tt: &TokenTree, render: &mut Renderer) -> PResult<()> {
+    fn literal(&mut self, tt: &TokenTree, render: &mut Renderer) -> ParseResult<()> {
         let mut rust_parser = parse::stream_to_parser(self.cx.parse_sess, tt.clone().into());
-        let lit = rust_parser.parse_lit().map_err(|mut e| { e.emit(); FatalError })?;
+        let lit = rust_parser.parse_lit().map_err(|mut e| e.emit())?;
         if let LitKind::Str(s, _) = lit.node {
             render.string(&s.as_str());
             Ok(())
@@ -199,7 +198,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     /// Parses and renders an `@if` expression.
     ///
     /// The leading `@if` should already be consumed.
-    fn if_expr(&mut self, sp: Span, render: &mut Renderer) -> PResult<()> {
+    fn if_expr(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<()> {
         // Parse the initial if
         let mut if_cond = vec![];
         let if_body;
@@ -242,7 +241,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     /// Parses and renders an `@while` expression.
     ///
     /// The leading `@while` should already be consumed.
-    fn while_expr(&mut self, sp: Span, render: &mut Renderer) -> PResult<()> {
+    fn while_expr(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<()> {
         let mut cond = vec![];
         let body;
         loop { match *self.input {
@@ -264,7 +263,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     /// Parses and renders a `@for` expression.
     ///
     /// The leading `@for` should already be consumed.
-    fn for_expr(&mut self, sp: Span, render: &mut Renderer) -> PResult<()> {
+    fn for_expr(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<()> {
         let mut pattern = vec![];
         loop { match *self.input {
             [keyword!(_, k), ..] if k.is_keyword(keywords::In) => {
@@ -298,7 +297,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     /// Parses and renders a `@match` expression.
     ///
     /// The leading `@match` should already be consumed.
-    fn match_expr(&mut self, sp: Span, render: &mut Renderer) -> PResult<()> {
+    fn match_expr(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<()> {
         // Parse the initial match
         let mut match_var = vec![];
         let match_bodies;
@@ -323,7 +322,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         Ok(())
     }
 
-    fn match_bodies(&mut self, render: &mut Renderer) -> PResult<Vec<TokenTree>> {
+    fn match_bodies(&mut self, render: &mut Renderer) -> ParseResult<Vec<TokenTree>> {
         let mut bodies = Vec::new();
         loop { match *self.input {
             [] => break,
@@ -336,7 +335,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         Ok(bodies)
     }
 
-    fn match_body(&mut self, sp: Span, render: &mut Renderer) -> PResult<Vec<TokenTree>> {
+    fn match_body(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<Vec<TokenTree>> {
         let mut body = vec![];
         loop { match *self.input {
             [ref tt @ fat_arrow!(), ..] => {
@@ -385,7 +384,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     /// Parses and renders a `@let` expression.
     ///
     /// The leading `@let` should already be consumed.
-    fn let_expr(&mut self, sp: Span, render: &mut Renderer) -> PResult<()> {
+    fn let_expr(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<()> {
         let mut pattern = vec![];
         loop { match *self.input {
             [eq!(), ..] => {
@@ -419,7 +418,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     /// Parses and renders an element node.
     ///
     /// The element name should already be consumed.
-    fn element(&mut self, sp: Span, name: &str, render: &mut Renderer) -> PResult<()> {
+    fn element(&mut self, sp: Span, name: &str, render: &mut Renderer) -> ParseResult<()> {
         if self.in_attr {
             error!(self.cx, sp, "unexpected element, you silly bumpkin");
         }
@@ -436,7 +435,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     }
 
     /// Parses and renders the attributes of an element.
-    fn attrs(&mut self, render: &mut Renderer) -> PResult<()> {
+    fn attrs(&mut self, render: &mut Renderer) -> ParseResult<()> {
         let mut classes_static = Vec::new();
         let mut classes_toggled = Vec::new();
         let mut ids = Vec::new();
@@ -531,13 +530,13 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     }
 
     /// Parses an identifier, without dealing with namespaces.
-    fn name(&mut self) -> PResult<String> {
+    fn name(&mut self) -> ParseResult<String> {
         let mut s = match *self.input {
             [ident!(_, name), ..] => {
                 self.shift(1);
                 String::from(&name.name.as_str() as &str)
             },
-            _ => return Err(FatalError),
+            _ => return Err(()),
         };
         let mut expect_ident = false;
         loop {
@@ -560,7 +559,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
 
     /// Parses a HTML element or attribute name, along with a namespace
     /// if necessary.
-    fn namespaced_name(&mut self) -> PResult<String> {
+    fn namespaced_name(&mut self) -> ParseResult<String> {
         let mut s = self.name()?;
         if let [colon!(), ident!(_, _), ..] = *self.input {
             self.shift(1);
@@ -571,7 +570,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     }
 
     /// Parses the given token tree, returning a vector of statements.
-    fn block(&mut self, sp: Span, tts: TokenStream, render: &mut Renderer) -> PResult<TokenStream> {
+    fn block(&mut self, sp: Span, tts: TokenStream, render: &mut Renderer) -> ParseResult<TokenStream> {
         let mut render = render.fork();
         let mut parse = Parser {
             cx: self.cx,
