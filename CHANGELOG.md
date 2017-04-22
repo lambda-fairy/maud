@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.16.3] - 2017-04-22
+
+- [Fixed] Update to rustc 1.18.0-nightly (1785bca51 2017-04-21)
+  [#80](https://github.com/lfairy/maud/issues/80)
+
 ## [0.16.2] - 2017-03-07
 
 - [Fixed] Update to rustc 1.17.0-nightly (b1e31766d 2017-03-03)
