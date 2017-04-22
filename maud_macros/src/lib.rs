@@ -27,7 +27,7 @@ type PResult<T> = Result<T, FatalError>;
 
 fn expand_html<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree]) -> Box<MacResult + 'cx> {
     match parse::parse(cx, sp, args) {
-        Ok(expr) => MacEager::expr(expr),
+        Ok(expr) => MacEager::expr(quote_expr!(cx, $expr)),
         Err(..) => DummyResult::expr(sp),
     }
 }
@@ -35,6 +35,7 @@ fn expand_html<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree]) -> Box<M
 fn expand_html_debug<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree]) -> Box<MacResult + 'cx> {
     match parse::parse(cx, sp, args) {
         Ok(expr) => {
+            let expr = quote_expr!(cx, $expr);
             cx.span_warn(sp, &format!("expansion:\n{}",
                                       pprust::expr_to_string(&expr)));
             MacEager::expr(expr)

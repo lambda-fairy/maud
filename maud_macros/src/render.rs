@@ -1,15 +1,18 @@
-use syntax::ast::{Expr, Ident, Pat, Stmt};
+use syntax::ast::Ident;
 use syntax::ext::base::ExtCtxt;
-use syntax::ptr::P;
 use syntax::symbol::Symbol;
-use syntax::tokenstream::TokenTree;
+use syntax::tokenstream::{TokenStream, TokenTree};
 
 use maud::Escaper;
 
+// FIXME(rust-lang/rust#40939):
+// * Use `TokenStreamBuilder` instead of `Vec<TokenStream>`
+// * Use `quote!()` instead of `quote_tokens!()`
+
 pub struct Renderer<'cx, 'a: 'cx> {
-    pub cx: &'cx ExtCtxt<'a>,
+    cx: &'cx ExtCtxt<'a>,
     writer: Ident,
-    stmts: Vec<Stmt>,
+    stmts: Vec<TokenStream>,
     tail: String,
 }
 
@@ -20,7 +23,7 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
         Renderer {
             cx: cx,
             writer: writer,
-            stmts: vec![],
+            stmts: Vec::new(),
             tail: String::new(),
         }
     }
@@ -41,44 +44,39 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
             let expr = {
                 let w = self.writer;
                 let s = &*self.tail;
-                quote_expr!(self.cx, $w.push_str($s))
+                quote_tokens!(self.cx, $w.push_str($s);)
             };
-            let stmt = self.wrap_stmt(expr);
-            self.stmts.push(stmt);
+            self.stmts.push(expr.into_iter().collect());
             self.tail.clear();
         }
     }
 
     /// Reifies the `Renderer` into a block of markup.
-    pub fn into_expr(mut self, size_hint: usize) -> P<Expr> {
+    pub fn into_expr(mut self, size_hint: usize) -> TokenStream {
         let Renderer { cx, writer, stmts, .. } = { self.flush(); self };
-        quote_expr!(cx, {
+        let stmts: Vec<TokenTree> = TokenStream::concat(stmts).into_trees().collect();
+        quote_tokens!(cx, {
             let mut $writer = ::std::string::String::with_capacity($size_hint);
             $stmts
             ::maud::PreEscaped($writer)
-        })
+        }).into_iter().collect()
     }
 
     /// Reifies the `Renderer` into a raw list of statements.
-    pub fn into_stmts(mut self) -> Vec<Stmt> {
+    pub fn into_stmts(mut self) -> TokenStream {
         let Renderer { stmts, .. } = { self.flush(); self };
-        stmts
+        TokenStream::concat(stmts)
     }
 
     /// Pushes a statement, flushing the tail buffer in the process.
-    fn push(&mut self, stmt: Stmt) {
+    fn push<T>(&mut self, stmt: T) where T: IntoIterator<Item=TokenTree> {
         self.flush();
-        self.stmts.push(stmt);
+        self.stmts.push(stmt.into_iter().collect())
     }
 
     /// Pushes a literal string to the tail buffer.
     fn push_str(&mut self, s: &str) {
         self.tail.push_str(s);
-    }
-
-    /// Ignores the result of an expression.
-    fn wrap_stmt(&self, expr: P<Expr>) -> Stmt {
-        quote_stmt!(self.cx, $expr).unwrap()
     }
 
     /// Appends a literal string.
@@ -87,15 +85,14 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
     }
 
     /// Appends the result of an expression.
-    pub fn splice(&mut self, expr: P<Expr>) {
+    pub fn splice(&mut self, expr: TokenStream) {
         let w = self.writer;
-        let expr = quote_expr!(self.cx, {
+        let expr: Vec<TokenTree> = expr.into_trees().collect();
+        self.push(quote_tokens!(self.cx, {
             #[allow(unused_imports)]
             use ::maud::Render as __maud_Render;
             $expr.render_to(&mut $w);
-        });
-        let stmt = self.wrap_stmt(expr);
-        self.push(stmt);
+        }));
     }
 
     pub fn element_open_start(&mut self, name: &str) {
@@ -132,13 +129,17 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
     ///
     /// The condition is a token tree (not an expression) so we don't
     /// need to special-case `if let`.
-    pub fn emit_if(&mut self, if_cond: Vec<TokenTree>, if_body: Vec<Stmt>,
-                   else_body: Option<Vec<Stmt>>) {
+    pub fn emit_if(&mut self, if_cond: TokenStream, if_body: TokenStream,
+                   else_body: Option<TokenStream>) {
+        let if_cond: Vec<TokenTree> = if_cond.into_trees().collect();
+        let if_body: Vec<TokenTree> = if_body.into_trees().collect();
         let stmt = match else_body {
-            None => quote_stmt!(self.cx, if $if_cond { $if_body }),
-            Some(else_body) =>
-                quote_stmt!(self.cx, if $if_cond { $if_body } else { $else_body }),
-        }.unwrap();
+            None => quote_tokens!(self.cx, if $if_cond { $if_body }),
+            Some(else_body) => {
+                let else_body: Vec<TokenTree> = else_body.into_trees().collect();
+                quote_tokens!(self.cx, if $if_cond { $if_body } else { $else_body })
+            },
+        };
         self.push(stmt);
     }
 
@@ -146,23 +147,33 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
     ///
     /// The condition is a token tree (not an expression) so we don't
     /// need to special-case `while let`.
-    pub fn emit_while(&mut self, cond: Vec<TokenTree>, body: Vec<Stmt>) {
-        let stmt = quote_stmt!(self.cx, while $cond { $body }).unwrap();
+    pub fn emit_while(&mut self, cond: TokenStream, body: TokenStream) {
+        let cond: Vec<TokenTree> = cond.into_trees().collect();
+        let body: Vec<TokenTree> = body.into_trees().collect();
+        let stmt = quote_tokens!(self.cx, while $cond { $body });
         self.push(stmt);
     }
 
-    pub fn emit_for(&mut self, pattern: P<Pat>, iterable: P<Expr>, body: Vec<Stmt>) {
-        let stmt = quote_stmt!(self.cx, for $pattern in $iterable { $body }).unwrap();
+    pub fn emit_for(&mut self, pattern: TokenStream, iterable: TokenStream, body: TokenStream) {
+        let pattern: Vec<TokenTree> = pattern.into_trees().collect();
+        let iterable: Vec<TokenTree> = iterable.into_trees().collect();
+        let body: Vec<TokenTree> = body.into_trees().collect();
+        let stmt = quote_tokens!(self.cx, for $pattern in $iterable { $body });
         self.push(stmt);
     }
 
-    pub fn emit_match(&mut self, match_var: P<Expr>, match_body: Vec<TokenTree>) {
-        let stmt = quote_stmt!(self.cx, match $match_var { $match_body }).unwrap();
+    pub fn emit_match(&mut self, match_var: TokenStream, match_body: TokenStream) {
+        let match_var: Vec<TokenTree> = match_var.into_trees().collect();
+        let match_body: Vec<TokenTree> = match_body.into_trees().collect();
+        let stmt = quote_tokens!(self.cx, match $match_var { $match_body });
         self.push(stmt);
     }
 
-    pub fn emit_let(&mut self, pattern: P<Pat>, rhs: P<Expr>, body: Vec<Stmt>) {
-        let stmt = quote_stmt!(self.cx, { let $pattern = $rhs; $body }).unwrap();
+    pub fn emit_let(&mut self, pattern: TokenStream, rhs: TokenStream, body: TokenStream) {
+        let pattern: Vec<TokenTree> = pattern.into_trees().collect();
+        let rhs: Vec<TokenTree> = rhs.into_trees().collect();
+        let body: Vec<TokenTree> = body.into_trees().collect();
+        let stmt = quote_tokens!(self.cx, { let $pattern = $rhs; $body });
         self.push(stmt);
     }
 }
