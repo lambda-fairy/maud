@@ -2,9 +2,8 @@ use std::mem;
 use syntax::ast::LitKind;
 use syntax::codemap::Span;
 use syntax::ext::base::ExtCtxt;
-use syntax::fold::Folder;
 use syntax::parse;
-use syntax::parse::token::{BinOpToken, DelimToken, Nonterminal, Token};
+use syntax::parse::token::{BinOpToken, DelimToken, Token};
 use syntax::print::pprust;
 use syntax::symbol::keywords;
 use syntax::tokenstream::{Delimited, TokenStream, TokenTree};
@@ -63,35 +62,17 @@ macro_rules! keyword {
 }
 
 pub fn parse(cx: &ExtCtxt, sp: Span, input: &[TokenTree]) -> ParseResult<Vec<TokenTree>> {
-    let input: Vec<TokenTree> = FlattenNtFolder.fold_tts(input.iter().cloned().collect())
-        .into_trees().collect();
     let mut render = Renderer::new(cx);
     Parser {
         cx,
         in_attr: false,
-        input: &input,
+        input: input,
         span: sp,
     }.markups(&mut render)?;
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
-    let size_hint = pprust::tts_to_string(&input).len();
+    let size_hint = pprust::tts_to_string(input).len();
     Ok(render.into_expr(size_hint).into_trees().collect())
-}
-
-struct FlattenNtFolder;
-
-impl Folder for FlattenNtFolder {
-    fn fold_tt(&mut self, tt: TokenTree) -> TokenTree {
-        let mut tt = &tt;
-        while let TokenTree::Token(_, Token::Interpolated(ref nt)) = *tt {
-            if let Nonterminal::NtTT(ref sub_tt) = **nt {
-                tt = sub_tt;
-            } else {
-                break;
-            }
-        }
-        tt.clone()
-    }
 }
 
 struct Parser<'cx, 'a: 'cx, 'i> {
