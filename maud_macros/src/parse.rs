@@ -11,13 +11,6 @@ use syntax::tokenstream::{Delimited, TokenStream, TokenTree};
 use super::render::Renderer;
 use super::ParseResult;
 
-macro_rules! error {
-    ($cx:expr, $sp:expr, $msg:expr) => ({
-        $cx.span_err($sp, $msg);
-        return Err(());
-    })
-}
-
 macro_rules! at {
     () => (TokenTree::Token(_, Token::At))
 }
@@ -88,6 +81,12 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         self.input = &self.input[n..];
     }
 
+    /// Returns error message attached to sp and stops compilation immediately.
+   fn error<T>(&self, span: Span, message: &'static str) -> ParseResult<T> {
+        self.cx.span_err(span, message);
+        Err(())
+   }
+
     /// Parses and renders multiple blocks of markup.
     fn markups(&mut self, render: &mut Renderer) -> ParseResult<()> {
         loop {
@@ -155,9 +154,9 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
             // ???
             _ => {
                 if let [ref tt, ..] = *self.input {
-                    error!(self.cx, tt.span(), "invalid syntax");
+                    return self.error(tt.span(), "invalid syntax");
                 } else {
-                    error!(self.cx, self.span, "unexpected end of block");
+                    return self.error(self.span, "unexpected end of block");
                 }
             },
         }
@@ -172,7 +171,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
             render.string(&s.as_str());
             Ok(())
         } else {
-            error!(self.cx, lit.span, "literal strings must be surrounded by quotes (\"like this\")")
+            return self.error(lit.span, "literal strings must be surrounded by quotes (\"like this\")")
         }
     }
 
@@ -193,7 +192,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(1);
                 if_cond.push(tt.clone());
             },
-            [] => error!(self.cx, sp, "expected body for this @if"),
+            [] => return self.error(sp, "expected body for this @if"),
         }}
         // Parse the (optional) @else
         let else_body = match *self.input {
@@ -210,7 +209,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                         self.shift(1);
                         Some(self.block(sp, d.stream(), render)?)
                     },
-                    _ => error!(self.cx, sp, "expected body for this @else"),
+                    _ => return self.error(sp, "expected body for this @else"),
                 }
             },
             _ => None,
@@ -235,7 +234,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(1);
                 cond.push(tt.clone());
             },
-            [] => error!(self.cx, sp, "expected body for this @while"),
+            [] => return self.error(sp, "expected body for this @while"),
         }}
         render.emit_while(cond.into_iter().collect(), body);
         Ok(())
@@ -255,7 +254,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(1);
                 pattern.push(tt.clone());
             },
-            _ => error!(self.cx, sp, "invalid @for"),
+            _ => return self.error(sp, "invalid @for"),
         }}
         let mut iterable = vec![];
         let body;
@@ -269,7 +268,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(1);
                 iterable.push(tt.clone());
             },
-            _ => error!(self.cx, sp, "invalid @for"),
+            _ => return self.error(sp, "invalid @for"),
         }}
         render.emit_for(pattern.into_iter().collect(), iterable.into_iter().collect(), body);
         Ok(())
@@ -297,7 +296,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(1);
                 match_var.push(tt.clone());
             },
-            [] => error!(self.cx, sp, "expected body for this @match"),
+            [] => return self.error(sp, "expected body for this @match"),
         }}
         render.emit_match(match_var.into_iter().collect(), match_bodies.into_iter().collect());
         Ok(())
@@ -328,7 +327,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(1);
                 body.push(tt.clone());
             },
-            _ => error!(self.cx, sp, "invalid @match pattern"),
+            _ => return self.error(sp, "invalid @match pattern"),
         }}
         let mut expr = Vec::new();
         loop { match *self.input {
@@ -344,7 +343,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
             },
             [comma!(), ..] | [] => {
                 if expr.is_empty() {
-                    error!(self.cx, sp, "expected body for this @match arm");
+                    return self.error(sp, "expected body for this @match arm");
                 } else {
                     expr = self.block(sp, expr.into_iter().collect(), render)?.into_trees().collect();
                     break;
@@ -376,7 +375,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(1);
                 pattern.push(tt.clone());
             },
-            _ => error!(self.cx, sp, "invalid @let"),
+            _ => return self.error(sp, "invalid @let"),
         }}
         let mut rhs = vec![];
         let body;
@@ -390,7 +389,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
                 self.shift(1);
                 rhs.push(tt.clone());
             },
-            _ => error!(self.cx, sp, "invalid @let"),
+            _ => return self.error(sp, "invalid @let"),
         }}
         render.emit_let(pattern.into_iter().collect(), rhs.into_iter().collect(), body);
         Ok(())
@@ -401,7 +400,7 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     /// The element name should already be consumed.
     fn element(&mut self, sp: Span, name: &str, render: &mut Renderer) -> ParseResult<()> {
         if self.in_attr {
-            error!(self.cx, sp, "unexpected element, you silly bumpkin");
+            return self.error(sp, "unexpected element, you silly bumpkin");
         }
         render.element_open_start(name);
         self.attrs(render)?;
