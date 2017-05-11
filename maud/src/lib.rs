@@ -210,7 +210,7 @@ mod iron_support {
 }
 
 #[cfg(feature = "rocket")]
-mod rocket_support {
+pub mod rocket_support {
     use rocket::http::{ContentType, Status};
     use rocket::response::{Responder, Response};
     use std::io::Cursor;
