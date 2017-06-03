@@ -81,11 +81,11 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
         self.input = &self.input[n..];
     }
 
-    /// Returns error message attached to sp and stops compilation immediately.
-   fn error<T>(&self, span: Span, message: &'static str) -> ParseResult<T> {
+    /// Attaches an error message to the span and returns `Err`.
+    fn error<T>(&self, span: Span, message: &str) -> ParseResult<T> {
         self.cx.span_err(span, message);
         Err(())
-   }
+    }
 
     /// Parses and renders multiple blocks of markup.
     fn markups(&mut self, render: &mut Renderer) -> ParseResult<()> {
