@@ -150,14 +150,28 @@ impl<'a> Escaper<'a> {
 
 impl<'a> fmt::Write for Escaper<'a> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        for b in s.bytes() {
-            match b {
-                b'&' => self.0.push_str("&amp;"),
-                b'<' => self.0.push_str("&lt;"),
-                b'>' => self.0.push_str("&gt;"),
-                b'"' => self.0.push_str("&quot;"),
-                _ => unsafe { self.0.as_mut_vec().push(b) },
+        let bytes = s.as_bytes();
+        let mut last = 0;
+        for (i, &b) in bytes.iter().enumerate() {
+            macro_rules! push {
+                ($str:expr) => {{
+                    unsafe {
+                        self.0.as_mut_vec().extend_from_slice(&bytes[last..i]);
+                    }
+                    self.0.push_str($str);
+                    last = i + 1;
+                }}
             }
+            match b {
+                b'&' => push!("&amp;"),
+                b'<' => push!("&lt;"),
+                b'>' => push!("&gt;"),
+                b'"' => push!("&quot;"),
+                _ => {}
+            }
+        }
+        unsafe {
+            self.0.as_mut_vec().extend_from_slice(&bytes[last..]);
         }
         Ok(())
     }
