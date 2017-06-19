@@ -1,11 +1,12 @@
 [package]
 
 name = "maud"
+# When releasing a new version, please update html_root_url in src/lib.rs
 version = "0.16.2"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 
 license = "MIT/Apache-2.0"
-documentation = "https://lambda.xyz/maud/maud/"
+documentation = "https://docs.rs/maud/"
 homepage = "https://maud.lambda.xyz/"
 repository = "https://github.com/lfairy/maud"
 description = "Compile-time HTML templates."
@@ -17,3 +18,6 @@ rocket = { version = ">= 0.1.2, < 0.3", optional = true }
 
 [badges]
 travis-ci = { repository = "lfairy/maud" }
+
+[package.metadata.docs.rs]
+all-features = true

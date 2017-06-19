@@ -4,7 +4,7 @@
 #![feature(rustc_private)]
 #![recursion_limit = "1000"]  // if_chain
 
-#![doc(html_root_url = "https://lambda.xyz/maud/")]
+#![doc(html_root_url = "https://docs.rs/maud_macros/0.16.3")]
 
 #[macro_use]
 extern crate if_chain;

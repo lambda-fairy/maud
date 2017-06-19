@@ -1,8 +1,6 @@
 #![feature(plugin)]
 #![plugin(maud_macros)]
 
-#![doc(html_root_url = "https://lambda.xyz/maud/")]
-
 extern crate maud;
 
 use maud::{Markup, Render};
