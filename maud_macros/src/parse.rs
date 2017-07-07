@@ -1,484 +1,246 @@
+use proc_macro::{Delimiter, Literal, TokenNode, TokenStream, TokenTree, TokenTreeIter};
 use std::mem;
-use syntax::ast::LitKind;
-use syntax::codemap::Span;
-use syntax::ext::base::ExtCtxt;
-use syntax::parse;
-use syntax::parse::token::{BinOpToken, DelimToken, Token};
-use syntax::print::pprust;
-use syntax::symbol::keywords;
-use syntax::tokenstream::{Delimited, TokenStream, TokenTree};
+
+use literalext::LiteralExt;
 
 use super::render::Renderer;
 use super::ParseResult;
 
-macro_rules! at {
-    () => (TokenTree::Token(_, Token::At))
-}
-macro_rules! dot {
-    () => (TokenTree::Token(_, Token::Dot))
-}
-macro_rules! eq {
-    () => (TokenTree::Token(_, Token::Eq))
-}
-macro_rules! pound {
-    () => (TokenTree::Token(_, Token::Pound))
-}
-macro_rules! question {
-    () => (TokenTree::Token(_, Token::Question))
-}
-macro_rules! semi {
-    () => (TokenTree::Token(_, Token::Semi))
-}
-macro_rules! colon {
-    () => (TokenTree::Token(_, Token::Colon))
-}
-macro_rules! comma {
-    () => (TokenTree::Token(_, Token::Comma))
-}
-macro_rules! fat_arrow {
-    () => (TokenTree::Token(_, Token::FatArrow))
-}
-macro_rules! minus {
-    () => (TokenTree::Token(_, Token::BinOp(BinOpToken::Minus)))
-}
-macro_rules! slash {
-    () => (TokenTree::Token(_, Token::BinOp(BinOpToken::Slash)))
-}
-macro_rules! literal {
-    () => (TokenTree::Token(_, Token::Literal(..)))
-}
-macro_rules! ident {
-    ($sp:pat, $x:pat) => (TokenTree::Token($sp, Token::Ident($x)))
-}
-macro_rules! keyword {
-    ($sp:pat, $x:ident) => (TokenTree::Token($sp, ref $x @ Token::Ident(..)))
-}
-
-pub fn parse(cx: &ExtCtxt, sp: Span, input: &[TokenTree]) -> ParseResult<Vec<TokenTree>> {
-    let mut render = Renderer::new(cx);
-    Parser {
-        cx,
+pub fn parse(input: TokenStream) -> ParseResult<TokenStream> {
+    let mut render = Renderer::new();
+    let _ = Parser {
         in_attr: false,
-        input: input,
-        span: sp,
+        input: Lookahead::new(input.clone()),
+    }.markups(&mut render);
+    /*
+    Parser {
+        in_attr: false,
+        input: Lookahead::new(input.clone()),
     }.markups(&mut render)?;
+    */
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
-    let size_hint = pprust::tts_to_string(input).len();
-    Ok(render.into_expr(size_hint).into_trees().collect())
+    let size_hint = input.to_string().len();
+    Ok(render.into_expr(size_hint))
 }
 
-struct Parser<'cx, 'a: 'cx, 'i> {
-    cx: &'cx ExtCtxt<'a>,
+struct Parser {
     in_attr: bool,
-    input: &'i [TokenTree],
-    span: Span,
+    input: Lookahead<TokenTree>,
 }
 
-impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
-    /// Consumes `n` items from the input.
-    fn shift(&mut self, n: usize) {
-        self.input = &self.input[n..];
+impl Parser {
+    fn next(&mut self) -> Option<TokenNode> {
+        self.input.next().map(|tt| tt.kind)
+    }
+
+    fn peek(&mut self) -> Option<TokenNode> {
+        self.input.peek().map(|tt| tt.kind)
+    }
+
+    fn advance(&mut self) {
+        self.next();
     }
 
     /// Attaches an error message to the span and returns `Err`.
-    fn error<T>(&self, span: Span, message: &str) -> ParseResult<T> {
-        self.cx.span_err(span, message);
-        Err(())
+    fn error<T, E: Into<String>>(&self, message: E) -> ParseResult<T> {
+        Err(message.into())
     }
 
     /// Parses and renders multiple blocks of markup.
     fn markups(&mut self, render: &mut Renderer) -> ParseResult<()> {
         loop {
-            match *self.input {
-                [] => return Ok(()),
-                [semi!(), ..] => self.shift(1),
-                [_, ..] => self.markup(render)?,
+            match self.peek() {
+                None => return Ok(()),
+                Some(TokenNode::Op(';', _)) => self.advance(),
+                _ => self.markup(render)?,
             }
         }
     }
 
     /// Parses and renders a single block of markup.
     fn markup(&mut self, render: &mut Renderer) -> ParseResult<()> {
-        match *self.input {
+        let token = match self.peek() {
+            Some(token) => token,
+            None => return self.error("unexpected end of input"),
+        };
+        match token {
             // Literal
-            [ref tt @ literal!(), ..] => {
-                self.shift(1);
-                self.literal(tt, render)?;
+            TokenNode::Literal(lit) => {
+                self.advance();
+                self.literal(lit, render)?;
             },
-            // If
-            [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::If) => {
-                self.shift(2);
-                self.if_expr(sp, render)?;
-            },
-            // While
-            [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::While) => {
-                self.shift(2);
-                self.while_expr(sp, render)?;
-            },
-            // For
-            [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::For) => {
-                self.shift(2);
-                self.for_expr(sp, render)?;
-            },
-            // Match
-            [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::Match) => {
-                self.shift(2);
-                self.match_expr(sp, render)?;
-            },
-            // Let
-            [at!(), keyword!(sp, k), ..] if k.is_keyword(keywords::Let) => {
-                self.shift(2);
-                self.let_expr(sp, render)?;
+            // Special form
+            TokenNode::Op('@', _) => {
+                self.advance();
+                match self.next() {
+                    Some(TokenNode::Term(term)) => match term.as_str() {
+                        "if" => self.if_expr(render)?,
+                        "while" => self.while_expr(render)?,
+                        "for" => self.for_expr(render)?,
+                        "match" => self.match_expr(render)?,
+                        "let" => self.let_expr(render)?,
+                        other => return self.error(format!("unknown keyword `@{}`", other)),
+                    },
+                    _ => return self.error("expected keyword after `@`"),
+                }
             }
             // Element
-            [ident!(sp, _), ..] => {
-                let name = self.namespaced_name().unwrap();
-                self.element(sp, &name, render)?;
+            TokenNode::Term(_) => {
+                let name = self.namespaced_name()?;
+                self.element(&name, render)?;
             },
             // Splice
-            [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Paren => {
-                self.shift(1);
-                render.splice(d.stream());
+            TokenNode::Group(Delimiter::Parenthesis, expr) => {
+                self.advance();
+                render.splice(expr);
             }
             // Block
-            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
-                self.shift(1);
+            TokenNode::Group(Delimiter::Brace, block) => {
+                self.advance();
                 Parser {
-                    cx: self.cx,
                     in_attr: self.in_attr,
-                    input: &d.stream().into_trees().collect::<Vec<_>>(),
-                    span: sp,
+                    input: Lookahead::new(block),
                 }.markups(render)?;
             },
             // ???
-            _ => {
-                if let [ref tt, ..] = *self.input {
-                    return self.error(tt.span(), "invalid syntax");
-                } else {
-                    return self.error(self.span, "unexpected end of block");
-                }
-            },
+            _ => return self.error("invalid syntax"),
         }
         Ok(())
     }
 
     /// Parses and renders a literal string.
-    fn literal(&mut self, tt: &TokenTree, render: &mut Renderer) -> ParseResult<()> {
-        let mut rust_parser = parse::stream_to_parser(self.cx.parse_sess, tt.clone().into());
-        let lit = rust_parser.parse_lit().map_err(|mut e| e.emit())?;
-        if let LitKind::Str(s, _) = lit.node {
-            render.string(&s.as_str());
+    fn literal(&mut self, lit: Literal, render: &mut Renderer) -> ParseResult<()> {
+        if let Some(s) = lit.parse_string() {
+            render.string(&s);
             Ok(())
         } else {
-            return self.error(lit.span, "literal strings must be surrounded by quotes (\"like this\")")
+            self.error("expected string")
         }
     }
 
     /// Parses and renders an `@if` expression.
     ///
     /// The leading `@if` should already be consumed.
-    fn if_expr(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<()> {
-        // Parse the initial if
-        let mut if_cond = vec![];
-        let if_body;
-        loop { match *self.input {
-            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
-                self.shift(1);
-                if_body = self.block(sp, d.stream(), render)?;
-                break;
-            },
-            [ref tt, ..] => {
-                self.shift(1);
-                if_cond.push(tt.clone());
-            },
-            [] => return self.error(sp, "expected body for this @if"),
-        }}
-        // Parse the (optional) @else
-        let else_body = match *self.input {
-            [at!(), keyword!(_, k), ..] if k.is_keyword(keywords::Else) => {
-                self.shift(2);
-                match *self.input {
-                    [keyword!(sp, k), ..] if k.is_keyword(keywords::If) => {
-                        self.shift(1);
-                        let mut render = render.fork();
-                        self.if_expr(sp, &mut render)?;
-                        Some(render.into_stmts())
-                    },
-                    [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
-                        self.shift(1);
-                        Some(self.block(sp, d.stream(), render)?)
-                    },
-                    _ => return self.error(sp, "expected body for this @else"),
-                }
-            },
-            _ => None,
-        };
-        render.emit_if(if_cond.into_iter().collect(), if_body, else_body);
-        Ok(())
+    fn if_expr(&mut self, render: &mut Renderer) -> ParseResult<()> {
+        self.error("unimplemented")
     }
 
     /// Parses and renders an `@while` expression.
     ///
     /// The leading `@while` should already be consumed.
-    fn while_expr(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<()> {
-        let mut cond = vec![];
-        let body;
-        loop { match *self.input {
-            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
-                self.shift(1);
-                body = self.block(sp, d.stream(), render)?;
-                break;
-            },
-            [ref tt, ..] => {
-                self.shift(1);
-                cond.push(tt.clone());
-            },
-            [] => return self.error(sp, "expected body for this @while"),
-        }}
-        render.emit_while(cond.into_iter().collect(), body);
-        Ok(())
+    fn while_expr(&mut self, render: &mut Renderer) -> ParseResult<()> {
+        self.error("unimplemented")
     }
 
     /// Parses and renders a `@for` expression.
     ///
     /// The leading `@for` should already be consumed.
-    fn for_expr(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<()> {
-        let mut pattern = vec![];
-        loop { match *self.input {
-            [keyword!(_, k), ..] if k.is_keyword(keywords::In) => {
-                self.shift(1);
-                break;
-            },
-            [ref tt, ..] => {
-                self.shift(1);
-                pattern.push(tt.clone());
-            },
-            _ => return self.error(sp, "invalid @for"),
-        }}
-        let mut iterable = vec![];
-        let body;
-        loop { match *self.input {
-            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
-                self.shift(1);
-                body = self.block(sp, d.stream(), render)?;
-                break;
-            },
-            [ref tt, ..] => {
-                self.shift(1);
-                iterable.push(tt.clone());
-            },
-            _ => return self.error(sp, "invalid @for"),
-        }}
-        render.emit_for(pattern.into_iter().collect(), iterable.into_iter().collect(), body);
-        Ok(())
+    fn for_expr(&mut self, render: &mut Renderer) -> ParseResult<()> {
+        self.error("unimplemented")
     }
 
     /// Parses and renders a `@match` expression.
     ///
     /// The leading `@match` should already be consumed.
-    fn match_expr(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<()> {
-        // Parse the initial match
-        let mut match_var = vec![];
-        let match_bodies;
-        loop { match *self.input {
-            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
-                self.shift(1);
-                match_bodies = Parser {
-                    cx: self.cx,
-                    in_attr: self.in_attr,
-                    input: &d.stream().into_trees().collect::<Vec<_>>(),
-                    span: sp,
-                }.match_bodies(render)?;
-                break;
-            },
-            [ref tt, ..] => {
-                self.shift(1);
-                match_var.push(tt.clone());
-            },
-            [] => return self.error(sp, "expected body for this @match"),
-        }}
-        render.emit_match(match_var.into_iter().collect(), match_bodies.into_iter().collect());
-        Ok(())
+    fn match_expr(&mut self, render: &mut Renderer) -> ParseResult<()> {
+        self.error("unimplemented")
     }
 
     fn match_bodies(&mut self, render: &mut Renderer) -> ParseResult<Vec<TokenTree>> {
-        let mut bodies = Vec::new();
-        loop { match *self.input {
-            [] => break,
-            [ref tt @ comma!(), ..] => {
-                self.shift(1);
-                bodies.push(tt.clone());
-            },
-            [ref tt, ..] => bodies.append(&mut self.match_body(tt.span(), render)?),
-        }}
-        Ok(bodies)
+        self.error("unimplemented")
     }
 
-    fn match_body(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<Vec<TokenTree>> {
-        let mut body = vec![];
-        loop { match *self.input {
-            [ref tt @ fat_arrow!(), ..] => {
-                self.shift(1);
-                body.push(tt.clone());
-                break;
-            },
-            [ref tt, ..] => {
-                self.shift(1);
-                body.push(tt.clone());
-            },
-            _ => return self.error(sp, "invalid @match pattern"),
-        }}
-        let mut expr = Vec::new();
-        loop { match *self.input {
-            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
-                if expr.is_empty() {
-                    self.shift(1);
-                    expr = self.block(sp, d.stream(), render)?.into_trees().collect();
-                    break;
-                } else {
-                    self.shift(1);
-                    expr.push(TokenTree::Delimited(sp, d.clone()));
-                }
-            },
-            [comma!(), ..] | [] => {
-                if expr.is_empty() {
-                    return self.error(sp, "expected body for this @match arm");
-                } else {
-                    expr = self.block(sp, expr.into_iter().collect(), render)?.into_trees().collect();
-                    break;
-                }
-            },
-            [ref tt, ..] => {
-                self.shift(1);
-                expr.push(tt.clone());
-            },
-        }}
-        body.push(TokenTree::Delimited(sp, Delimited {
-            delim: DelimToken::Brace,
-            tts: expr.into_iter().collect::<TokenStream>().into(),
-        }));
-        Ok(body)
+    fn match_body(&mut self, render: &mut Renderer) -> ParseResult<Vec<TokenTree>> {
+        self.error("unimplemented")
     }
 
     /// Parses and renders a `@let` expression.
     ///
     /// The leading `@let` should already be consumed.
-    fn let_expr(&mut self, sp: Span, render: &mut Renderer) -> ParseResult<()> {
-        let mut pattern = vec![];
-        loop { match *self.input {
-            [eq!(), ..] => {
-                self.shift(1);
-                break;
-            },
-            [ref tt, ..] => {
-                self.shift(1);
-                pattern.push(tt.clone());
-            },
-            _ => return self.error(sp, "invalid @let"),
-        }}
-        let mut rhs = vec![];
-        let body;
-        loop { match *self.input {
-            [TokenTree::Delimited(sp, ref d), ..] if d.delim == DelimToken::Brace => {
-                self.shift(1);
-                body = self.block(sp, d.stream(), render)?;
-                break;
-            },
-            [ref tt, ..] => {
-                self.shift(1);
-                rhs.push(tt.clone());
-            },
-            _ => return self.error(sp, "invalid @let"),
-        }}
-        render.emit_let(pattern.into_iter().collect(), rhs.into_iter().collect(), body);
-        Ok(())
+    fn let_expr(&mut self, render: &mut Renderer) -> ParseResult<()> {
+        self.error("unimplemented")
     }
 
     /// Parses and renders an element node.
     ///
     /// The element name should already be consumed.
-    fn element(&mut self, sp: Span, name: &str, render: &mut Renderer) -> ParseResult<()> {
+    fn element(&mut self, name: &str, render: &mut Renderer) -> ParseResult<()> {
         if self.in_attr {
-            return self.error(sp, "unexpected element, you silly bumpkin");
+            return self.error("unexpected element, you silly bumpkin");
         }
         render.element_open_start(name);
         self.attrs(render)?;
         render.element_open_end();
-        if let [slash!(), ..] = *self.input {
-            self.shift(1);
-        } else {
-            self.markup(render)?;
-            render.element_close(name);
+        match self.peek() {
+            Some(TokenNode::Op('/', _)) => {
+                // Void element
+                self.advance();
+            },
+            _ => {
+                self.markup(render)?;
+                render.element_close(name);
+            },
         }
         Ok(())
     }
 
     /// Parses and renders the attributes of an element.
     fn attrs(&mut self, render: &mut Renderer) -> ParseResult<()> {
-        let mut classes_static = Vec::new();
-        let mut classes_toggled = Vec::new();
-        let mut ids = Vec::new();
+        let mut classes_static: Vec<String> = Vec::new();
+        let mut classes_toggled: Vec<(TokenStream, String)> = Vec::new();
+        let mut ids: Vec<String> = Vec::new();
         loop {
-            let old_input = self.input;
+            let start_position = self.input.save();
             let maybe_name = self.namespaced_name();
-            match (maybe_name, self.input) {
-                (Ok(name), &[eq!(), ..]) => {
-                    // Non-empty attribute
-                    self.shift(1);
+            let token_after = self.next();
+            match (maybe_name, token_after) {
+                // Non-empty attribute
+                (Ok(name), Some(TokenNode::Op('=', _))) => {
                     render.attribute_start(&name);
                     {
                         // Parse a value under an attribute context
-                        let mut in_attr = true;
-                        mem::swap(&mut self.in_attr, &mut in_attr);
+                        let in_attr = mem::replace(&mut self.in_attr, true);
                         self.markup(render)?;
-                        mem::swap(&mut self.in_attr, &mut in_attr);
+                        self.in_attr = in_attr;
                     }
                     render.attribute_end();
                 },
-                (Ok(name), &[question!(), ..]) => {
-                    // Empty attribute
-                    self.shift(1);
-                    match *self.input {
-                        [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Bracket => {
-                            // Toggle the attribute based on a boolean expression
-                            self.shift(1);
-                            let cond = d.stream();
-                            let body = {
-                                let mut render = render.fork();
-                                render.attribute_empty(&name);
-                                render.into_stmts()
-                            };
-                            render.emit_if(cond, body, None);
-                        },
-                        _ => {
-                            // Write the attribute unconditionally
+                // Empty attribute
+                (Ok(name), Some(TokenNode::Op('?', _))) => match self.peek() {
+                    // Toggle the attribute based on a boolean expression
+                    Some(TokenNode::Group(Delimiter::Bracket, cond)) => {
+                        self.advance();
+                        let body = {
+                            let mut render = render.fork();
                             render.attribute_empty(&name);
-                        },
-                    }
+                            render.into_stmts()
+                        };
+                        render.emit_if(cond, body, None);
+                    },
+                    // Write the attribute unconditionally
+                    _ => render.attribute_empty(&name),
                 },
-                (Err(_), &[dot!(), ident!(_, _), ..]) => {
-                    // Class shorthand
-                    self.shift(1);
-                    let class_name = self.name().unwrap();
-                    match *self.input {
-                        [TokenTree::Delimited(_, ref d), ..] if d.delim == DelimToken::Bracket => {
-                            // Toggle the class based on a boolean expression
-                            self.shift(1);
-                            let cond = d.stream();
+                // Class shorthand
+                (Err(_), Some(TokenNode::Op('.', _))) => {
+                    let class_name = self.name()?;
+                    match self.peek() {
+                        // Toggle the class based on a boolean expression
+                        Some(TokenNode::Group(Delimiter::Bracket, cond)) => {
+                            self.advance();
                             classes_toggled.push((cond, class_name));
                         },
                         // Emit the class unconditionally
                         _ => classes_static.push(class_name),
                     }
                 },
-                (Err(_), &[pound!(), ident!(_, _), ..]) => {
-                    // ID shorthand
-                    self.shift(1);
-                    ids.push(self.name().unwrap());
+                // ID shorthand
+                (Err(_), Some(TokenNode::Op('#', _))) => {
+                    ids.push(self.name()?);
                 },
+                // If it's not a valid attribute, backtrack and bail out
                 _ => {
-                    self.input = old_input;
+                    self.input.restore(start_position);
                     break;
                 },
             }
@@ -511,24 +273,23 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
 
     /// Parses an identifier, without dealing with namespaces.
     fn name(&mut self) -> ParseResult<String> {
-        let mut s = match *self.input {
-            [ident!(_, name), ..] => {
-                self.shift(1);
-                String::from(&name.name.as_str() as &str)
-            },
-            _ => return Err(()),
+        let mut s = if let Some(TokenNode::Term(term)) = self.peek() {
+            self.advance();
+            String::from(term.as_str())
+        } else {
+            return self.error("expected identifier");
         };
         let mut expect_ident = false;
         loop {
-            expect_ident = match *self.input {
-                [minus!(), ..] => {
-                    self.shift(1);
+            expect_ident = match self.peek() {
+                Some(TokenNode::Op('-', _)) => {
+                    self.advance();
                     s.push('-');
                     true
                 },
-                [ident!(_, name), ..] if expect_ident => {
-                    self.shift(1);
-                    s.push_str(&name.name.as_str());
+                Some(TokenNode::Term(term)) if expect_ident => {
+                    self.advance();
+                    s.push_str(term.as_str());
                     false
                 },
                 _ => break,
@@ -541,24 +302,68 @@ impl<'cx, 'a, 'i> Parser<'cx, 'a, 'i> {
     /// if necessary.
     fn namespaced_name(&mut self) -> ParseResult<String> {
         let mut s = self.name()?;
-        if let [colon!(), ident!(_, _), ..] = *self.input {
-            self.shift(1);
+        if let Some(TokenNode::Op(':', _)) = self.peek() {
+            self.advance();
             s.push(':');
-            s.push_str(&self.name().unwrap());
+            s.push_str(&self.name()?);
         }
         Ok(s)
     }
 
     /// Parses the given token tree, returning a vector of statements.
-    fn block(&mut self, sp: Span, tts: TokenStream, render: &mut Renderer) -> ParseResult<TokenStream> {
+    fn block(&mut self, body: TokenStream, render: &mut Renderer) -> ParseResult<TokenStream> {
         let mut render = render.fork();
         let mut parse = Parser {
-            cx: self.cx,
             in_attr: self.in_attr,
-            input: &tts.into_trees().collect::<Vec<_>>(),
-            span: sp,
+            input: Lookahead::new(body),
         };
         parse.markups(&mut render)?;
         Ok(render.into_stmts())
     }
+}
+
+struct Lookahead<T> {
+    buffer: Vec<T>,
+    index: usize,
+}
+
+impl<T> Lookahead<T> {
+    fn new<I: IntoIterator<Item=T>>(items: I) -> Self {
+        Lookahead {
+            buffer: items.into_iter().collect(),
+            index: 0,
+        }
+    }
+
+    fn save(&self) -> Position {
+        Position { index: self.index }
+    }
+
+    fn restore(&mut self, Position { index }: Position) {
+        self.index = index;
+    }
+}
+
+impl<T> Lookahead<T> where T: Clone {
+    fn peek(&mut self) -> Option<T> {
+        let position = self.save();
+        let result = self.next();
+        self.restore(position);
+        result
+    }
+}
+
+impl<T> Iterator for Lookahead<T> where T: Clone {
+    type Item = T;
+    fn next(&mut self) -> Option<T> {
+        let result = self.buffer.get(self.index).cloned();
+        if result.is_some() {
+            self.index += 1;
+        }
+        result
+    }
+}
+
+struct Position {
+    index: usize,
 }

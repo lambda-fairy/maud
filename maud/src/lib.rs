@@ -1,3 +1,4 @@
+#![feature(proc_macro)]
 #![feature(specialization)]
 
 //! A macro for writing HTML templates.
@@ -12,7 +13,11 @@
 #[cfg(feature = "iron")] extern crate iron;
 #[cfg(feature = "rocket")] extern crate rocket;
 
+extern crate maud_macros;
+
 use std::fmt::{self, Write};
+
+pub use maud_macros::{html, html_debug};
 
 /// Represents a type that can be rendered as HTML.
 ///

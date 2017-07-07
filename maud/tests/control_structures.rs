@@ -1,7 +1,8 @@
-#![feature(conservative_impl_trait, plugin)]
-#![plugin(maud_macros)]
+#![feature(conservative_impl_trait, proc_macro)]
 
 extern crate maud;
+
+use maud::html;
 
 #[test]
 fn if_expr() {

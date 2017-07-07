@@ -1,38 +1,28 @@
-use syntax::ast::Ident;
-use syntax::ext::base::ExtCtxt;
-use syntax::symbol::Symbol;
-use syntax::tokenstream::{TokenStream, TokenTree};
+use proc_macro::{Literal, Term, TokenNode, TokenStream};
+use proc_macro::quote;
+use std::fmt;
 
-use maud::Escaper;
-
-// FIXME(rust-lang/rust#40939):
-// * Use `TokenStreamBuilder` instead of `Vec<TokenStream>`
-// * Use `quote!()` instead of `quote_tokens!()`
-
-pub struct Renderer<'cx, 'a: 'cx> {
-    cx: &'cx ExtCtxt<'a>,
-    writer: Ident,
+pub struct Renderer {
+    output: TokenNode,
     stmts: Vec<TokenStream>,
     tail: String,
 }
 
-impl<'cx, 'a> Renderer<'cx, 'a> {
-    /// Creates a new `Renderer` using the given extension context.
-    pub fn new(cx: &'cx ExtCtxt<'a>) -> Renderer<'cx, 'a> {
-        let writer = Ident::with_empty_ctxt(Symbol::gensym("__maud_output"));
+impl Renderer {
+    /// Creates a new `Renderer`.
+    pub fn new() -> Renderer {
+        let output = TokenNode::Term(Term::intern("__maud_output"));
         Renderer {
-            cx: cx,
-            writer: writer,
+            output: output,
             stmts: Vec::new(),
             tail: String::new(),
         }
     }
 
     /// Creates a new `Renderer` under the same context as `self`.
-    pub fn fork(&self) -> Renderer<'cx, 'a> {
+    pub fn fork(&self) -> Renderer {
         Renderer {
-            cx: self.cx,
-            writer: self.writer,
+            output: self.output.clone(),
             stmts: Vec::new(),
             tail: String::new(),
         }
@@ -42,36 +32,38 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
     fn flush(&mut self) {
         if !self.tail.is_empty() {
             let expr = {
-                let w = self.writer;
-                let s = &*self.tail;
-                quote_tokens!(self.cx, $w.push_str($s);)
+                let output = self.output.clone();
+                let string = TokenNode::Literal(Literal::string(&self.tail));
+                quote!($output.push_str($string);)
             };
-            self.stmts.push(expr.into_iter().collect());
+            self.stmts.push(expr);
             self.tail.clear();
         }
     }
 
     /// Reifies the `Renderer` into a block of markup.
     pub fn into_expr(mut self, size_hint: usize) -> TokenStream {
-        let Renderer { cx, writer, stmts, .. } = { self.flush(); self };
-        let stmts: Vec<TokenTree> = TokenStream::concat(stmts).into_trees().collect();
-        quote_tokens!(cx, {
-            let mut $writer = ::std::string::String::with_capacity($size_hint);
+        let Renderer { output, stmts, .. } = { self.flush(); self };
+        let size_hint = TokenNode::Literal(Literal::u64(size_hint as u64));
+        let stmts = stmts.into_iter().collect::<TokenStream>();
+        quote!({
+            extern crate maud;
+            let mut $output = String::with_capacity($size_hint as usize);
             $stmts
-            ::maud::PreEscaped($writer)
-        }).into_iter().collect()
+            maud::PreEscaped($output)
+        })
     }
 
     /// Reifies the `Renderer` into a raw list of statements.
     pub fn into_stmts(mut self) -> TokenStream {
         let Renderer { stmts, .. } = { self.flush(); self };
-        TokenStream::concat(stmts)
+        stmts.into_iter().collect()
     }
 
     /// Pushes a statement, flushing the tail buffer in the process.
-    fn push<T>(&mut self, stmt: T) where T: IntoIterator<Item=TokenTree> {
+    fn push<T>(&mut self, stmt: T) where T: Into<TokenStream> {
         self.flush();
-        self.stmts.push(stmt.into_iter().collect())
+        self.stmts.push(stmt.into())
     }
 
     /// Pushes a literal string to the tail buffer.
@@ -86,12 +78,17 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
 
     /// Appends the result of an expression.
     pub fn splice(&mut self, expr: TokenStream) {
-        let w = self.writer;
-        let expr: Vec<TokenTree> = expr.into_trees().collect();
-        self.push(quote_tokens!(self.cx, {
-            #[allow(unused_imports)]
-            use ::maud::Render as __maud_Render;
-            $expr.render_to(&mut $w);
+        let output = self.output.clone();
+        self.push(quote!({
+            extern crate maud;
+            // Create a local trait alias so that autoref works
+            trait Render: maud::Render {
+                fn render_to(&self, output: &mut String) {
+                    maud::Render::render_to(self, output);
+                }
+            }
+            impl<T: maud::Render> Render for T {}
+            $expr.render_to(&mut $output);
         }));
     }
 
@@ -131,14 +128,9 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
     /// need to special-case `if let`.
     pub fn emit_if(&mut self, if_cond: TokenStream, if_body: TokenStream,
                    else_body: Option<TokenStream>) {
-        let if_cond: Vec<TokenTree> = if_cond.into_trees().collect();
-        let if_body: Vec<TokenTree> = if_body.into_trees().collect();
         let stmt = match else_body {
-            None => quote_tokens!(self.cx, if $if_cond { $if_body }),
-            Some(else_body) => {
-                let else_body: Vec<TokenTree> = else_body.into_trees().collect();
-                quote_tokens!(self.cx, if $if_cond { $if_body } else { $else_body })
-            },
+            None => quote!(if $if_cond { $if_body }),
+            Some(else_body) => quote!(if $if_cond { $if_body } else { $else_body }),
         };
         self.push(stmt);
     }
@@ -148,32 +140,22 @@ impl<'cx, 'a> Renderer<'cx, 'a> {
     /// The condition is a token tree (not an expression) so we don't
     /// need to special-case `while let`.
     pub fn emit_while(&mut self, cond: TokenStream, body: TokenStream) {
-        let cond: Vec<TokenTree> = cond.into_trees().collect();
-        let body: Vec<TokenTree> = body.into_trees().collect();
-        let stmt = quote_tokens!(self.cx, while $cond { $body });
+        let stmt = quote!(while $cond { $body });
         self.push(stmt);
     }
 
     pub fn emit_for(&mut self, pattern: TokenStream, iterable: TokenStream, body: TokenStream) {
-        let pattern: Vec<TokenTree> = pattern.into_trees().collect();
-        let iterable: Vec<TokenTree> = iterable.into_trees().collect();
-        let body: Vec<TokenTree> = body.into_trees().collect();
-        let stmt = quote_tokens!(self.cx, for $pattern in $iterable { $body });
+        let stmt = quote!(for $pattern in $iterable { $body });
         self.push(stmt);
     }
 
     pub fn emit_match(&mut self, match_var: TokenStream, match_body: TokenStream) {
-        let match_var: Vec<TokenTree> = match_var.into_trees().collect();
-        let match_body: Vec<TokenTree> = match_body.into_trees().collect();
-        let stmt = quote_tokens!(self.cx, match $match_var { $match_body });
+        let stmt = quote!(match $match_var { $match_body });
         self.push(stmt);
     }
 
     pub fn emit_let(&mut self, pattern: TokenStream, rhs: TokenStream, body: TokenStream) {
-        let pattern: Vec<TokenTree> = pattern.into_trees().collect();
-        let rhs: Vec<TokenTree> = rhs.into_trees().collect();
-        let body: Vec<TokenTree> = body.into_trees().collect();
-        let stmt = quote_tokens!(self.cx, { let $pattern = $rhs; $body });
+        let stmt = quote!({ let $pattern = $rhs; $body });
         self.push(stmt);
     }
 }
@@ -183,4 +165,29 @@ fn html_escape(s: &str) -> String {
     let mut buffer = String::new();
     Escaper::new(&mut buffer).write_str(s).unwrap();
     buffer
+}
+
+// TODO move this into a common `maud_htmlescape` crate
+struct Escaper<'a>(&'a mut String);
+
+impl<'a> Escaper<'a> {
+    /// Creates an `Escaper` from a `String`.
+    pub fn new(buffer: &'a mut String) -> Escaper<'a> {
+        Escaper(buffer)
+    }
+}
+
+impl<'a> fmt::Write for Escaper<'a> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        for b in s.bytes() {
+            match b {
+                b'&' => self.0.push_str("&amp;"),
+                b'<' => self.0.push_str("&lt;"),
+                b'>' => self.0.push_str("&gt;"),
+                b'"' => self.0.push_str("&quot;"),
+                _ => unsafe { self.0.as_mut_vec().push(b) },
+            }
+        }
+        Ok(())
+    }
 }
