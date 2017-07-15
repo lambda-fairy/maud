@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased] - 2017-07-14
+
+- [Changed] Update to Rocket 0.3
+
 ## [0.16.3] - 2017-04-22
 
 - [Fixed] Update to rustc 1.18.0-nightly (1785bca51 2017-04-21)
@@ -127,7 +131,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.16.2...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.16.3...HEAD
+[0.16.3]: https://github.com/lfairy/maud/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/lfairy/maud/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/lfairy/maud/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/lfairy/maud/compare/v0.15.0...v0.16.0

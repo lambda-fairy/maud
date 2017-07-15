@@ -214,12 +214,13 @@ mod iron_support {
 #[cfg(feature = "rocket")]
 mod rocket_support {
     use rocket::http::{ContentType, Status};
+    use rocket::request::Request;
     use rocket::response::{Responder, Response};
     use std::io::Cursor;
     use PreEscaped;
 
     impl Responder<'static> for PreEscaped<String> {
-        fn respond(self) -> Result<Response<'static>, Status> {
+        fn respond_to(self, _: &Request) -> Result<Response<'static>, Status> {
             Response::build()
                 .header(ContentType::HTML)
                 .sized_body(Cursor::new(self.0))
