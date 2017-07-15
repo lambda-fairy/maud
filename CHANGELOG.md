@@ -3,6 +3,7 @@
 ## [Unreleased] - 2017-07-14
 
 - [Changed] Update to Rocket 0.3
+  [#94](https://github.com/lfairy/maud/pull/94)
 
 ## [0.16.3] - 2017-04-22
 
