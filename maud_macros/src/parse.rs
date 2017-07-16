@@ -159,7 +159,28 @@ impl Parser {
     ///
     /// The leading `@let` should already be consumed.
     fn let_expr(&mut self, render: &mut Renderer) -> ParseResult<()> {
-        self.error("unimplemented")
+        let mut pat = Vec::new();
+        loop {
+            match self.next() {
+                Some(TokenTree { kind: TokenNode::Op('=', _), .. }) => break,
+                Some(token) => pat.push(token),
+                None => return self.error("unexpected end of @let expression"),
+            }
+        }
+        let mut expr = Vec::new();
+        let body;
+        loop {
+            match self.next() {
+                Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), .. }) => {
+                    body = self.block(block, render)?;
+                    break;
+                },
+                Some(token) => expr.push(token),
+                None => return self.error("unexpected end of @let expression"),
+            }
+        }
+        render.emit_let(pat.into_iter().collect(), expr.into_iter().collect(), body);
+        Ok(())
     }
 
     /// Parses and renders an element node.
@@ -187,9 +208,9 @@ impl Parser {
 
     /// Parses and renders the attributes of an element.
     fn attrs(&mut self, render: &mut Renderer) -> ParseResult<()> {
-        let mut classes_static: Vec<String> = Vec::new();
-        let mut classes_toggled: Vec<(TokenStream, String)> = Vec::new();
-        let mut ids: Vec<String> = Vec::new();
+        let mut classes_static = Vec::new();
+        let mut classes_toggled = Vec::new();
+        let mut ids = Vec::new();
         loop {
             let start_position = self.input.save();
             let maybe_name = self.namespaced_name();
