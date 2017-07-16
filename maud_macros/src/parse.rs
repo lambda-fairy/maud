@@ -30,12 +30,12 @@ struct Parser {
 }
 
 impl Parser {
-    fn next(&mut self) -> Option<TokenNode> {
-        self.input.next().map(|tt| tt.kind)
+    fn next(&mut self) -> Option<TokenTree> {
+        self.input.next()
     }
 
-    fn peek(&mut self) -> Option<TokenNode> {
-        self.input.peek().map(|tt| tt.kind)
+    fn peek(&mut self) -> Option<TokenTree> {
+        self.input.peek()
     }
 
     fn advance(&mut self) {
@@ -52,7 +52,7 @@ impl Parser {
         loop {
             match self.peek() {
                 None => return Ok(()),
-                Some(TokenNode::Op(';', _)) => self.advance(),
+                Some(TokenTree { kind: TokenNode::Op(';', _), .. }) => self.advance(),
                 _ => self.markup(render)?,
             }
         }
@@ -66,15 +66,15 @@ impl Parser {
         };
         match token {
             // Literal
-            TokenNode::Literal(lit) => {
+            TokenTree { kind: TokenNode::Literal(lit), .. } => {
                 self.advance();
                 self.literal(lit, render)?;
             },
             // Special form
-            TokenNode::Op('@', _) => {
+            TokenTree { kind: TokenNode::Op('@', _), .. } => {
                 self.advance();
                 match self.next() {
-                    Some(TokenNode::Term(term)) => match term.as_str() {
+                    Some(TokenTree { kind: TokenNode::Term(term), .. }) => match term.as_str() {
                         "if" => self.if_expr(render)?,
                         "while" => self.while_expr(render)?,
                         "for" => self.for_expr(render)?,
@@ -86,17 +86,17 @@ impl Parser {
                 }
             }
             // Element
-            TokenNode::Term(_) => {
+            TokenTree { kind: TokenNode::Term(_), .. } => {
                 let name = self.namespaced_name()?;
                 self.element(&name, render)?;
             },
             // Splice
-            TokenNode::Group(Delimiter::Parenthesis, expr) => {
+            TokenTree { kind: TokenNode::Group(Delimiter::Parenthesis, expr), .. } => {
                 self.advance();
                 render.splice(expr);
             }
             // Block
-            TokenNode::Group(Delimiter::Brace, block) => {
+            TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), .. } => {
                 self.advance();
                 Parser {
                     in_attr: self.in_attr,
@@ -173,7 +173,7 @@ impl Parser {
         self.attrs(render)?;
         render.element_open_end();
         match self.peek() {
-            Some(TokenNode::Op('/', _)) => {
+            Some(TokenTree { kind: TokenNode::Op('/', _), .. }) => {
                 // Void element
                 self.advance();
             },
@@ -196,7 +196,7 @@ impl Parser {
             let token_after = self.next();
             match (maybe_name, token_after) {
                 // Non-empty attribute
-                (Ok(name), Some(TokenNode::Op('=', _))) => {
+                (Ok(name), Some(TokenTree { kind: TokenNode::Op('=', _), .. })) => {
                     render.attribute_start(&name);
                     {
                         // Parse a value under an attribute context
@@ -207,9 +207,9 @@ impl Parser {
                     render.attribute_end();
                 },
                 // Empty attribute
-                (Ok(name), Some(TokenNode::Op('?', _))) => match self.peek() {
+                (Ok(name), Some(TokenTree { kind: TokenNode::Op('?', _), .. })) => match self.peek() {
                     // Toggle the attribute based on a boolean expression
-                    Some(TokenNode::Group(Delimiter::Bracket, cond)) => {
+                    Some(TokenTree { kind: TokenNode::Group(Delimiter::Bracket, cond), .. }) => {
                         self.advance();
                         let body = {
                             let mut render = render.fork();
@@ -222,11 +222,11 @@ impl Parser {
                     _ => render.attribute_empty(&name),
                 },
                 // Class shorthand
-                (Err(_), Some(TokenNode::Op('.', _))) => {
+                (Err(_), Some(TokenTree { kind: TokenNode::Op('.', _), .. })) => {
                     let class_name = self.name()?;
                     match self.peek() {
                         // Toggle the class based on a boolean expression
-                        Some(TokenNode::Group(Delimiter::Bracket, cond)) => {
+                        Some(TokenTree { kind: TokenNode::Group(Delimiter::Bracket, cond), .. }) => {
                             self.advance();
                             classes_toggled.push((cond, class_name));
                         },
@@ -235,7 +235,7 @@ impl Parser {
                     }
                 },
                 // ID shorthand
-                (Err(_), Some(TokenNode::Op('#', _))) => {
+                (Err(_), Some(TokenTree { kind: TokenNode::Op('#', _), .. })) => {
                     ids.push(self.name()?);
                 },
                 // If it's not a valid attribute, backtrack and bail out
@@ -273,7 +273,7 @@ impl Parser {
 
     /// Parses an identifier, without dealing with namespaces.
     fn name(&mut self) -> ParseResult<String> {
-        let mut s = if let Some(TokenNode::Term(term)) = self.peek() {
+        let mut s = if let Some(TokenTree { kind: TokenNode::Term(term), .. }) = self.peek() {
             self.advance();
             String::from(term.as_str())
         } else {
@@ -282,12 +282,12 @@ impl Parser {
         let mut expect_ident = false;
         loop {
             expect_ident = match self.peek() {
-                Some(TokenNode::Op('-', _)) => {
+                Some(TokenTree { kind: TokenNode::Op('-', _), .. }) => {
                     self.advance();
                     s.push('-');
                     true
                 },
-                Some(TokenNode::Term(term)) if expect_ident => {
+                Some(TokenTree { kind: TokenNode::Term(term), .. }) if expect_ident => {
                     self.advance();
                     s.push_str(term.as_str());
                     false
@@ -302,7 +302,7 @@ impl Parser {
     /// if necessary.
     fn namespaced_name(&mut self) -> ParseResult<String> {
         let mut s = self.name()?;
-        if let Some(TokenNode::Op(':', _)) = self.peek() {
+        if let Some(TokenTree { kind: TokenNode::Op(':', _), .. }) = self.peek() {
             self.advance();
             s.push(':');
             s.push_str(&self.name()?);
