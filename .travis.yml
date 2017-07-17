@@ -15,7 +15,6 @@ script:
   - ( cd maud && cargo test --all-features )
   - if command -v cargo-clippy > /dev/null; then ( cd maud && cargo clippy -- -D warnings ); fi
   - ( cd maud_macros && cargo test --all-features )
-  # Silence `collapsible_if` warnings for now -- see https://github.com/lfairy/maud/issues/93
-  - if command -v cargo-clippy > /dev/null; then ( cd maud_macros && cargo clippy -- -D warnings -A collapsible_if ); fi
+  - if command -v cargo-clippy > /dev/null; then ( cd maud_macros && cargo clippy -- -D warnings ); fi
   - ( cd maud_extras && cargo test --all-features )
   - if command -v cargo-clippy > /dev/null; then ( cd maud_extras && cargo clippy -- -D warnings ); fi
