@@ -206,7 +206,26 @@ impl Parser {
     ///
     /// The leading `@for` should already be consumed.
     fn for_expr(&mut self, render: &mut Renderer) -> ParseResult<()> {
-        self.error("unimplemented")
+        let mut pat = Vec::new();
+        loop {
+            match self.next() {
+                Some(TokenTree { kind: TokenNode::Term(in_keyword), .. }) if in_keyword.as_str() == "in" => break,
+                Some(token) => pat.push(token),
+                None => return self.error("unexpected end of @for expression"),
+            }
+        }
+        let mut expr = Vec::new();
+        let body = loop {
+            match self.next() {
+                Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), .. }) => {
+                    break self.block(block, render)?;
+                },
+                Some(token) => expr.push(token),
+                None => return self.error("unexpected end of @for expression"),
+            }
+        };
+        render.emit_for(pat.into_iter().collect(), expr.into_iter().collect(), body);
+        Ok(())
     }
 
     /// Parses and renders a `@match` expression.
