@@ -10,12 +10,14 @@ pub fn parse(input: TokenStream) -> ParseResult<TokenStream> {
     let mut render = Renderer::new();
     let _ = Parser {
         in_attr: false,
-        input: Lookahead::new(input.clone()),
+        input: input.clone().into_iter().collect(),
+        index: 0,
     }.markups(&mut render);
     /*
     Parser {
         in_attr: false,
-        input: Lookahead::new(input.clone()),
+        input: input.clone().into_iter().collect(),
+        index: 0,
     }.markups(&mut render)?;
     */
     // Heuristic: the size of the resulting markup tends to correlate with the
@@ -24,22 +26,33 @@ pub fn parse(input: TokenStream) -> ParseResult<TokenStream> {
     Ok(render.into_expr(size_hint))
 }
 
+#[derive(Clone)]
 struct Parser {
     in_attr: bool,
-    input: Lookahead<TokenTree>,
+    // FIXME(rust-lang/rust#43280) use TokenTreeIter instead of tracking indices manually
+    input: Vec<TokenTree>,
+    index: usize,
 }
 
 impl Parser {
     fn next(&mut self) -> Option<TokenTree> {
-        self.input.next()
+        let result = self.input.get(self.index).cloned();
+        if result.is_some() {
+            self.index += 1;
+        }
+        result
     }
 
     fn peek(&mut self) -> Option<TokenTree> {
-        self.input.peek()
+        self.input.get(self.index).cloned()
     }
 
     fn advance(&mut self) {
         self.next();
+    }
+
+    fn commit(&mut self, attempt: Parser) {
+        *self = attempt;
     }
 
     /// Attaches an error message to the span and returns `Err`.
@@ -100,7 +113,8 @@ impl Parser {
                 self.advance();
                 Parser {
                     in_attr: self.in_attr,
-                    input: Lookahead::new(block),
+                    input: block.into_iter().collect(),
+                    index: 0,
                 }.markups(render)?;
             },
             // ???
@@ -210,12 +224,13 @@ impl Parser {
         let mut classes_toggled = Vec::new();
         let mut ids = Vec::new();
         loop {
-            let start_position = self.input.save();
-            let maybe_name = self.namespaced_name();
-            let token_after = self.next();
+            let mut attempt = self.clone();
+            let maybe_name = attempt.namespaced_name();
+            let token_after = attempt.next();
             match (maybe_name, token_after) {
                 // Non-empty attribute
                 (Ok(name), Some(TokenTree { kind: TokenNode::Op('=', _), .. })) => {
+                    self.commit(attempt);
                     render.attribute_start(&name);
                     {
                         // Parse a value under an attribute context
@@ -226,22 +241,26 @@ impl Parser {
                     render.attribute_end();
                 },
                 // Empty attribute
-                (Ok(name), Some(TokenTree { kind: TokenNode::Op('?', _), .. })) => match self.peek() {
-                    // Toggle the attribute based on a boolean expression
-                    Some(TokenTree { kind: TokenNode::Group(Delimiter::Bracket, cond), .. }) => {
-                        self.advance();
-                        let body = {
-                            let mut render = render.fork();
-                            render.attribute_empty(&name);
-                            render.into_stmts()
-                        };
-                        render.emit_if(cond, body, None);
-                    },
-                    // Write the attribute unconditionally
-                    _ => render.attribute_empty(&name),
+                (Ok(name), Some(TokenTree { kind: TokenNode::Op('?', _), .. })) => {
+                    self.commit(attempt);
+                    match self.peek() {
+                        // Toggle the attribute based on a boolean expression
+                        Some(TokenTree { kind: TokenNode::Group(Delimiter::Bracket, cond), .. }) => {
+                            self.advance();
+                            let body = {
+                                let mut render = render.fork();
+                                render.attribute_empty(&name);
+                                render.into_stmts()
+                            };
+                            render.emit_if(cond, body, None);
+                        },
+                        // Write the attribute unconditionally
+                        _ => render.attribute_empty(&name),
+                    }
                 },
                 // Class shorthand
                 (Err(_), Some(TokenTree { kind: TokenNode::Op('.', _), .. })) => {
+                    self.commit(attempt);
                     let class_name = self.name()?;
                     match self.peek() {
                         // Toggle the class based on a boolean expression
@@ -255,13 +274,11 @@ impl Parser {
                 },
                 // ID shorthand
                 (Err(_), Some(TokenTree { kind: TokenNode::Op('#', _), .. })) => {
+                    self.commit(attempt);
                     ids.push(self.name()?);
                 },
                 // If it's not a valid attribute, backtrack and bail out
-                _ => {
-                    self.input.restore(start_position);
-                    break;
-                },
+                _ => break,
             }
         }
         if !classes_static.is_empty() || !classes_toggled.is_empty() {
@@ -334,56 +351,10 @@ impl Parser {
         let mut render = render.fork();
         let mut parse = Parser {
             in_attr: self.in_attr,
-            input: Lookahead::new(body),
+            input: body.into_iter().collect(),
+            index: 0,
         };
         parse.markups(&mut render)?;
         Ok(render.into_stmts())
     }
-}
-
-// TODO use rust-lang/rust#43280 instead
-struct Lookahead<T> {
-    buffer: Vec<T>,
-    index: usize,
-}
-
-impl<T> Lookahead<T> {
-    fn new<I: IntoIterator<Item=T>>(items: I) -> Self {
-        Lookahead {
-            buffer: items.into_iter().collect(),
-            index: 0,
-        }
-    }
-
-    fn save(&self) -> Position {
-        Position { index: self.index }
-    }
-
-    fn restore(&mut self, Position { index }: Position) {
-        self.index = index;
-    }
-}
-
-impl<T> Lookahead<T> where T: Clone {
-    fn peek(&mut self) -> Option<T> {
-        let position = self.save();
-        let result = self.next();
-        self.restore(position);
-        result
-    }
-}
-
-impl<T> Iterator for Lookahead<T> where T: Clone {
-    type Item = T;
-    fn next(&mut self) -> Option<T> {
-        let result = self.buffer.get(self.index).cloned();
-        if result.is_some() {
-            self.index += 1;
-        }
-        result
-    }
-}
-
-struct Position {
-    index: usize,
 }
