@@ -188,7 +188,18 @@ impl Parser {
     ///
     /// The leading `@while` should already be consumed.
     fn while_expr(&mut self, render: &mut Renderer) -> ParseResult<()> {
-        self.error("unimplemented")
+        let mut cond = Vec::new();
+        let body = loop {
+            match self.next() {
+                Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), .. }) => {
+                    break self.block(block, render)?;
+                },
+                Some(token) => cond.push(token),
+                None => return self.error("unexpected end of @while expression"),
+            }
+        };
+        render.emit_while(cond.into_iter().collect(), body);
+        Ok(())
     }
 
     /// Parses and renders a `@for` expression.
