@@ -168,17 +168,15 @@ impl Parser {
             }
         }
         let mut expr = Vec::new();
-        let body;
-        loop {
+        let body = loop {
             match self.next() {
                 Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), .. }) => {
-                    body = self.block(block, render)?;
-                    break;
+                    break self.block(block, render)?;
                 },
                 Some(token) => expr.push(token),
                 None => return self.error("unexpected end of @let expression"),
             }
-        }
+        };
         render.emit_let(pat.into_iter().collect(), expr.into_iter().collect(), body);
         Ok(())
     }
@@ -343,6 +341,7 @@ impl Parser {
     }
 }
 
+// TODO use rust-lang/rust#43280 instead
 struct Lookahead<T> {
     buffer: Vec<T>,
     index: usize,
