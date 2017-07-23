@@ -137,7 +137,51 @@ impl Parser {
     ///
     /// The leading `@if` should already be consumed.
     fn if_expr(&mut self, render: &mut Renderer) -> ParseResult<()> {
-        self.error("unimplemented")
+        let mut if_cond = Vec::new();
+        let if_body = loop {
+            match self.next() {
+                Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), .. }) => {
+                    break self.block(block, render)?;
+                },
+                Some(token) => if_cond.push(token),
+                None => return self.error("unexpected end of @if expression"),
+            }
+        };
+        let mut attempt = self.clone();
+        let else_body = if_chain! {
+            // Try to match an `@else` after this
+            if let Some(TokenTree { kind: TokenNode::Op('@', _), .. }) = attempt.next();
+            if let Some(TokenTree { kind: TokenNode::Term(else_keyword), .. }) = attempt.next();
+            if else_keyword.as_str() == "else";
+            then {
+                self.commit(attempt);
+                if_chain! {
+                    // `@else if`
+                    if let Some(TokenTree { kind: TokenNode::Term(if_keyword), .. }) = self.peek();
+                    if if_keyword.as_str() == "if";
+                    then {
+                        self.advance();
+                        let mut render = render.fork();
+                        self.if_expr(&mut render)?;
+                        Some(render.into_stmts())
+                    }
+                    // Just an `@else`
+                    else {
+                        if let Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), .. }) = self.next() {
+                            Some(self.block(block, render)?)
+                        } else {
+                            return self.error("expected body for @else");
+                        }
+                    }
+                }
+            }
+            else {
+                // We didn't find an `@else`; backtrack
+                None
+            }
+        };
+        render.emit_if(if_cond.into_iter().collect(), if_body, else_body);
+        Ok(())
     }
 
     /// Parses and renders an `@while` expression.
