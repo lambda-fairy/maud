@@ -12,11 +12,12 @@ script:
       printf 'Checking for tabs in %s\n' "$TRAVIS_COMMIT_RANGE"
       ! git diff --name-only --diff-filter=ACMR "$TRAVIS_COMMIT_RANGE" | xargs grep $'\t'
     fi
-  - ( cd maud_htmlescape && cargo test --all-features )
-  - if command -v cargo-clippy > /dev/null; then ( cd maud_htmlescape && cargo clippy -- -D warnings ); fi
-  - ( cd maud && cargo test --all-features )
-  - if command -v cargo-clippy > /dev/null; then ( cd maud && cargo clippy -- -D warnings ); fi
-  - ( cd maud_macros && cargo test --all-features )
-  - if command -v cargo-clippy > /dev/null; then ( cd maud_macros && cargo clippy -- -D warnings ); fi
-  - ( cd maud_extras && cargo test --all-features )
-  - if command -v cargo-clippy > /dev/null; then ( cd maud_extras && cargo clippy -- -D warnings ); fi
+  - cargo test --all --all-features
+  - |
+    if command -v cargo-clippy > /dev/null; then
+      CLIPPY_STATUS=0
+      for package in maud_htmlescape maud_macros maud maud_extras; do
+        cargo clippy --manifest-path $package/Cargo.toml -- -D warnings || CLIPPY_STATUS=$?
+      done
+      (exit $CLIPPY_STATUS)
+    fi
