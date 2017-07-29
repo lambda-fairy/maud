@@ -1,4 +1,4 @@
-use proc_macro::{Delimiter, Literal, TokenNode, TokenStream, TokenTree, TokenTreeIter};
+use proc_macro::{Delimiter, Literal, Spacing, TokenNode, TokenStream, TokenTree, TokenTreeIter, quote};
 use std::mem;
 
 use literalext::LiteralExt;
@@ -11,13 +11,7 @@ pub fn parse(input: TokenStream) -> ParseResult<TokenStream> {
     let _ = Parser {
         in_attr: false,
         input: input.clone().into_iter(),
-    }.markups(&mut render);
-    /*
-    Parser {
-        in_attr: false,
-        input: input.clone().into_iter(),
     }.markups(&mut render)?;
-    */
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
     let size_hint = input.to_string().len();
@@ -57,7 +51,7 @@ impl Parser {
         *self = attempt;
     }
 
-    /// Attaches an error message to the span and returns `Err`.
+    /// Returns an `Err` with the given message.
     fn error<T, E: Into<String>>(&self, message: E) -> ParseResult<T> {
         Err(message.into())
     }
@@ -231,15 +225,92 @@ impl Parser {
     ///
     /// The leading `@match` should already be consumed.
     fn match_expr(&mut self, render: &mut Renderer) -> ParseResult<()> {
-        self.error("unimplemented")
+        let mut head = Vec::new();
+        let body = loop {
+            match self.next() {
+                Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, body), .. }) => {
+                    let mut parse = Parser {
+                        in_attr: self.in_attr,
+                        input: body.into_iter(),
+                    };
+                    break parse.match_arms(render)?;
+                },
+                Some(token) => head.push(token),
+                None => return self.error("unexpected end of @match expression"),
+            }
+        };
+        render.emit_match(head.into_iter().collect(), body);
+        Ok(())
     }
 
-    fn match_bodies(&mut self, render: &mut Renderer) -> ParseResult<Vec<TokenTree>> {
-        self.error("unimplemented")
+    fn match_arms(&mut self, render: &mut Renderer) -> ParseResult<TokenStream> {
+        let mut arms = Vec::new();
+        while let Some(arm) = self.match_arm(render)? {
+            arms.push(arm);
+        }
+        Ok(arms.into_iter().collect())
     }
 
-    fn match_body(&mut self, render: &mut Renderer) -> ParseResult<Vec<TokenTree>> {
-        self.error("unimplemented")
+    fn match_arm(&mut self, render: &mut Renderer) -> ParseResult<Option<TokenStream>> {
+        let mut pat = Vec::new();
+        loop {
+            match self.peek2() {
+                Some((
+                    eq @ TokenTree { kind: TokenNode::Op('=', Spacing::Joint), .. },
+                    Some(gt @ TokenTree { kind: TokenNode::Op('>', _), .. }),
+                )) => {
+                    self.advance2();
+                    pat.push(eq);
+                    pat.push(gt);
+                    break;
+                },
+                Some((token, _)) => {
+                    self.advance();
+                    pat.push(token);
+                },
+                None =>
+                    if pat.is_empty() {
+                        return Ok(None);
+                    } else {
+                        return self.error("unexpected end of @match pattern");
+                    },
+            }
+        }
+        let body = match self.next() {
+            // $pat => { $stmts }
+            Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, body), span }) => {
+                let body = self.block(body, render)?;
+                // Trailing commas are optional if the match arm is a braced block
+                if let Some(TokenTree { kind: TokenNode::Op(',', _), .. }) = self.peek() {
+                    self.advance();
+                }
+                // Re-use the span from the original block
+                TokenTree {
+                    kind: TokenNode::Group(Delimiter::Brace, body),
+                    span,
+                }.into()
+            },
+            // $pat => $expr
+            Some(first_token) => {
+                let mut body = vec![first_token];
+                loop {
+                    match self.next() {
+                        Some(TokenTree { kind: TokenNode::Op(',', _), .. }) => break,
+                        Some(token) => {
+                            body.push(token);
+                        },
+                        None => return self.error("unexpected end of @match arm"),
+                    }
+                }
+                let body = self.block(body.into_iter().collect(), render)?;
+                // The generated code may have multiple statements, unlike the
+                // original expression. So wrap the whole thing in a block just
+                // in case.
+                quote!({ $body })
+            },
+            None => return self.error("unexpected end of @match arm"),
+        };
+        Ok(Some(pat.into_iter().chain(body.into_iter()).collect()))
     }
 
     /// Parses and renders a `@let` expression.
