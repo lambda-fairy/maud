@@ -7,11 +7,6 @@ before_script:
   - export PATH=$HOME/.cargo/bin:$PATH
 
 script:
-  - |
-    if [ -n "$TRAVIS_COMMIT_RANGE" ]; then
-      printf 'Checking for tabs in %s\n' "$TRAVIS_COMMIT_RANGE"
-      ! git diff --name-only --diff-filter=ACMR "$TRAVIS_COMMIT_RANGE" | xargs grep $'\t'
-    fi
   - ( cd maud && cargo test --all-features )
   - if command -v cargo-clippy > /dev/null; then ( cd maud && cargo clippy -- -D warnings ); fi
   - ( cd maud_macros && cargo test --all-features )
