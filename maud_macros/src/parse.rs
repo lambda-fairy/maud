@@ -7,14 +7,14 @@ use super::render::Renderer;
 use super::ParseResult;
 
 pub fn parse(input: TokenStream) -> ParseResult<TokenStream> {
-    let mut render = Renderer::new();
-    let _ = Parser {
-        in_attr: false,
-        input: input.clone().into_iter(),
-    }.markups(&mut render)?;
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
     let size_hint = input.to_string().len();
+    let mut render = Renderer::new();
+    Parser {
+        in_attr: false,
+        input: input.into_iter(),
+    }.markups(&mut render)?;
     Ok(render.into_expr(size_hint))
 }
 
@@ -24,11 +24,15 @@ struct Parser {
     input: TokenTreeIter,
 }
 
-impl Parser {
+impl Iterator for Parser {
+    type Item = TokenTree;
+
     fn next(&mut self) -> Option<TokenTree> {
         self.input.next()
     }
+}
 
+impl Parser {
     fn peek(&mut self) -> Option<TokenTree> {
         self.clone().next()
     }
