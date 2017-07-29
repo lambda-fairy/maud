@@ -4,6 +4,7 @@
 #![doc(html_root_url = "https://docs.rs/maud_macros/0.16.3")]
 
 extern crate literalext;
+extern crate maud_htmlescape;
 extern crate proc_macro;
 
 // TODO move lints into their own `maud_lints` crate

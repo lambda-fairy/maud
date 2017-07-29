@@ -1,6 +1,7 @@
 use proc_macro::{Literal, Term, TokenNode, TokenStream};
 use proc_macro::quote;
-use std::fmt;
+
+use maud_htmlescape::Escaper;
 
 pub struct Renderer {
     output: TokenNode,
@@ -165,29 +166,4 @@ fn html_escape(s: &str) -> String {
     let mut buffer = String::new();
     Escaper::new(&mut buffer).write_str(s).unwrap();
     buffer
-}
-
-// TODO move this into a common `maud_htmlescape` crate
-struct Escaper<'a>(&'a mut String);
-
-impl<'a> Escaper<'a> {
-    /// Creates an `Escaper` from a `String`.
-    pub fn new(buffer: &'a mut String) -> Escaper<'a> {
-        Escaper(buffer)
-    }
-}
-
-impl<'a> fmt::Write for Escaper<'a> {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        for b in s.bytes() {
-            match b {
-                b'&' => self.0.push_str("&amp;"),
-                b'<' => self.0.push_str("&lt;"),
-                b'>' => self.0.push_str("&gt;"),
-                b'"' => self.0.push_str("&quot;"),
-                _ => unsafe { self.0.as_mut_vec().push(b) },
-            }
-        }
-        Ok(())
-    }
 }

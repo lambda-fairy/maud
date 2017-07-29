@@ -13,6 +13,7 @@ description = "Compile-time HTML templates."
 
 [dependencies]
 literalext = { version = "0.1", default-features = false, features = ["proc-macro"] }
+maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
 
 [lib]
 name = "maud_macros"
