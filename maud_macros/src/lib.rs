@@ -3,8 +3,6 @@
 
 #![doc(html_root_url = "https://docs.rs/maud_macros/0.16.3")]
 
-#[macro_use]
-extern crate if_chain;
 extern crate literalext;
 extern crate proc_macro;
 

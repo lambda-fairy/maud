@@ -12,7 +12,6 @@ repository = "https://github.com/lfairy/maud"
 description = "Compile-time HTML templates."
 
 [dependencies]
-if_chain = "0.1"
 literalext = { version = "0.1", default-features = false, features = ["proc-macro"] }
 
 [lib]

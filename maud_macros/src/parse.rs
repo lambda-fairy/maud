@@ -10,14 +10,12 @@ pub fn parse(input: TokenStream) -> ParseResult<TokenStream> {
     let mut render = Renderer::new();
     let _ = Parser {
         in_attr: false,
-        input: input.clone().into_iter().collect(),
-        index: 0,
+        input: input.clone().into_iter(),
     }.markups(&mut render);
     /*
     Parser {
         in_attr: false,
-        input: input.clone().into_iter().collect(),
-        index: 0,
+        input: input.clone().into_iter(),
     }.markups(&mut render)?;
     */
     // Heuristic: the size of the resulting markup tends to correlate with the
@@ -29,25 +27,29 @@ pub fn parse(input: TokenStream) -> ParseResult<TokenStream> {
 #[derive(Clone)]
 struct Parser {
     in_attr: bool,
-    // FIXME(rust-lang/rust#43280) use TokenTreeIter instead of tracking indices manually
-    input: Vec<TokenTree>,
-    index: usize,
+    input: TokenTreeIter,
 }
 
 impl Parser {
     fn next(&mut self) -> Option<TokenTree> {
-        let result = self.input.get(self.index).cloned();
-        if result.is_some() {
-            self.index += 1;
-        }
-        result
+        self.input.next()
     }
 
     fn peek(&mut self) -> Option<TokenTree> {
-        self.input.get(self.index).cloned()
+        self.clone().next()
+    }
+
+    fn peek2(&mut self) -> Option<(TokenTree, Option<TokenTree>)> {
+        let mut clone = self.clone();
+        clone.next().map(|first| (first, clone.next()))
     }
 
     fn advance(&mut self) {
+        self.next();
+    }
+
+    fn advance2(&mut self) {
+        self.next();
         self.next();
     }
 
@@ -113,8 +115,7 @@ impl Parser {
                 self.advance();
                 Parser {
                     in_attr: self.in_attr,
-                    input: block.into_iter().collect(),
-                    index: 0,
+                    input: block.into_iter(),
                 }.markups(render)?;
             },
             // ???
@@ -147,38 +148,36 @@ impl Parser {
                 None => return self.error("unexpected end of @if expression"),
             }
         };
-        let mut attempt = self.clone();
-        let else_body = if_chain! {
+        let else_body = match self.peek2() {
             // Try to match an `@else` after this
-            if let Some(TokenTree { kind: TokenNode::Op('@', _), .. }) = attempt.next();
-            if let Some(TokenTree { kind: TokenNode::Term(else_keyword), .. }) = attempt.next();
-            if else_keyword.as_str() == "else";
-            then {
-                self.commit(attempt);
-                if_chain! {
+            Some((
+                TokenTree { kind: TokenNode::Op('@', _), .. },
+                Some(TokenTree { kind: TokenNode::Term(else_keyword), .. }),
+            )) if else_keyword.as_str() == "else" => {
+                self.advance2();
+                match self.peek() {
                     // `@else if`
-                    if let Some(TokenTree { kind: TokenNode::Term(if_keyword), .. }) = self.peek();
-                    if if_keyword.as_str() == "if";
-                    then {
+                    Some(TokenTree { kind: TokenNode::Term(if_keyword), .. })
+                    if if_keyword.as_str() == "if" => {
                         self.advance();
                         let mut render = render.fork();
                         self.if_expr(&mut render)?;
                         Some(render.into_stmts())
-                    }
+                    },
                     // Just an `@else`
-                    else {
+                    _ => {
                         if let Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), .. }) = self.next() {
                             Some(self.block(block, render)?)
                         } else {
                             return self.error("expected body for @else");
                         }
-                    }
+                    },
                 }
-            }
-            else {
+            },
+            _ => {
                 // We didn't find an `@else`; backtrack
                 None
-            }
+            },
         };
         render.emit_if(if_cond.into_iter().collect(), if_body, else_body);
         Ok(())
@@ -425,8 +424,7 @@ impl Parser {
         let mut render = render.fork();
         let mut parse = Parser {
             in_attr: self.in_attr,
-            input: body.into_iter().collect(),
-            index: 0,
+            input: body.into_iter(),
         };
         parse.markups(&mut render)?;
         Ok(render.into_stmts())
