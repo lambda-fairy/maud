@@ -4,18 +4,18 @@
 
 Maud is an HTML template engine for Rust. It's implemented as a macro, `html!`, which compiles your markup to specialized Rust code. This unique approach makes Maud templates blazing fast, super type-safe, and easy to deploy.
 
-Note that Maud depends on the unstable [syntax extension APIs][plugins], and so requires the Nightly version of Rust.
+Note that Maud depends on the unstable [procedural macro API][rustissue], and so requires the nightly version of Rust.
 
 For more info on Maud, see the [official book][book].
 
 [book]: https://maud.lambda.xyz/
 [booksrc]: https://github.com/lfairy/maud-book
-[apiref]: https://lambda.xyz/maud/maud/
+[apiref]: https://docs.rs/maud/
 [changelog]: https://github.com/lfairy/maud/blob/master/CHANGELOG.md
-[plugins]: https://doc.rust-lang.org/book/compiler-plugins.html
+[rustissue]: https://github.com/rust-lang/rust/issues/38356
 
 ## Stability
 
 As of version 0.11, I am satisfied with the core syntax and semantics of the library. Development at this stage is focused on adding features and fixing bugs.
 
-The underlying syntax extension API is still unstable though, so updating your compiler may break things. Please file an issue when this happens!
+The underlying procedural macro API is still unstable though, so updating your compiler may break things. Please file an issue when this happens!
