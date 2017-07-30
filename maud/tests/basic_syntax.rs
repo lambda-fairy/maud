@@ -54,14 +54,20 @@ fn nesting_elements() {
 
 #[test]
 fn empty_elements() {
-    let s = html!("pinkie" br/ "pie").into_string();
+    let s = html!("pinkie" br; "pie").into_string();
+    assert_eq!(s, "pinkie<br>pie");
+}
+
+#[test]
+fn empty_elements_slash() {
+    let s = html!("pinkie" br / "pie").into_string();
     assert_eq!(s, "pinkie<br>pie");
 }
 
 #[test]
 fn simple_attributes() {
     let s = html! {
-        link rel="stylesheet" href="styles.css"/
+        link rel="stylesheet" href="styles.css";
         section id="midriff" {
             p class="hotpink" "Hello!"
         }
@@ -73,7 +79,7 @@ fn simple_attributes() {
 
 #[test]
 fn empty_attributes() {
-    let s = html!(div readonly? input type="checkbox" checked? /).into_string();
+    let s = html!(div readonly? input type="checkbox" checked?;).into_string();
     assert_eq!(s, r#"<div readonly><input type="checkbox" checked></div>"#);
 }
 
@@ -81,10 +87,10 @@ fn empty_attributes() {
 fn toggle_empty_attributes() {
     let rocks = true;
     let s = html!({
-        input checked?[true] /
-        input checked?[false] /
-        input checked?[rocks] /
-        input checked?[!rocks] /
+        input checked?[true];
+        input checked?[false];
+        input checked?[rocks];
+        input checked?[!rocks];
     }).into_string();
     assert_eq!(s, concat!(
             r#"<input checked>"#,

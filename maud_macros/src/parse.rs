@@ -378,6 +378,7 @@ impl Parser {
         self.attrs(render)?;
         render.element_open_end();
         match self.peek() {
+            Some(TokenTree { kind: TokenNode::Op(';', _), .. }) |
             Some(TokenTree { kind: TokenNode::Op('/', _), .. }) => {
                 // Void element
                 self.advance();

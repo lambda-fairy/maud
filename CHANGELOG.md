@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- [Added] Allow terminating void elements with semicolons (`;`)
+  [#96](https://github.com/lfairy/maud/pull/96)
 - [Changed] Update to Rocket 0.3
   [#94](https://github.com/lfairy/maud/pull/94)
 - [Changed] Port to new proc macro interface
