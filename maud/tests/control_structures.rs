@@ -160,8 +160,8 @@ fn let_lexical_scope() {
 #[test]
 fn let_type_ascription() {
     let s = html! {
-        @let x: u32 = 42 {
-            "I have " (x) " cupcakes!"
+        @let mut x: Box<Iterator<Item=u32>> = Box::new(vec![42].into_iter()) {
+            "I have " (x.next().unwrap()) " cupcakes!"
         }
     }.into_string();
     assert_eq!(s, "I have 42 cupcakes!");
