@@ -156,3 +156,13 @@ fn let_lexical_scope() {
             "Twilight thought I had 99 cupcakes, ",
             "but I only had 42."));
 }
+
+#[test]
+fn let_type_ascription() {
+    let s = html! {
+        @let x: u32 = 42 {
+            "I have " (x) " cupcakes!"
+        }
+    }.into_string();
+    assert_eq!(s, "I have 42 cupcakes!");
+}
