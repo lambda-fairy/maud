@@ -13,6 +13,8 @@ description = "Compile-time HTML templates."
 categories = ["template-engine"]
 
 [dependencies]
+maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
+maud_macros = { version = "0.16.3", path = "../maud_macros" }
 iron = { version = "0.5.1", optional = true }
 rocket = { version = "0.3", optional = true }
 

@@ -1,19 +1,18 @@
-#![feature(plugin)]
-#![plugin(maud_macros)]
+#![feature(proc_macro)]
 
 extern crate maud;
 
-use maud::{Markup, Render};
+use maud::{Markup, Render, html};
 
 /// Links to an external stylesheet.
 ///
 /// # Example
 ///
 /// ```rust
-/// # #![feature(plugin)]
-/// # #![plugin(maud_macros)]
+/// # #![feature(proc_macro)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
+/// # use maud::html;
 /// # use maud_extras::*;
 /// # fn main() {
 /// let markup = html! { (Css("styles.css")) };
@@ -36,10 +35,10 @@ impl<T: AsRef<str>> Render for Css<T> {
 /// # Example
 ///
 /// ```rust
-/// # #![feature(plugin)]
-/// # #![plugin(maud_macros)]
+/// # #![feature(proc_macro)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
+/// # use maud::html;
 /// # use maud_extras::*;
 /// # fn main() {
 /// let markup = html! { (Js("app.js")) };
@@ -62,10 +61,10 @@ impl<T: AsRef<str>> Render for Js<T> {
 /// # Example
 ///
 /// ```rust
-/// # #![feature(plugin)]
-/// # #![plugin(maud_macros)]
+/// # #![feature(proc_macro)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
+/// # use maud::html;
 /// # use maud_extras::*;
 /// # fn main() {
 /// let markup = html! { (Meta("description", "test description")) };
@@ -88,10 +87,10 @@ impl<T: AsRef<str>, U: AsRef<str>> Render for Meta<T, U> {
 /// # Example
 ///
 /// ```rust
-/// # #![feature(plugin)]
-/// # #![plugin(maud_macros)]
+/// # #![feature(proc_macro)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
+/// # use maud::html;
 /// # use maud_extras::*;
 /// # fn main() {
 /// let markup = html! { (Title("Maud")) };
@@ -114,10 +113,10 @@ impl<T: AsRef<str>> Render for Title<T> {
 /// # Example
 ///
 /// ```rust
-/// # #![feature(plugin)]
-/// # #![plugin(maud_macros)]
+/// # #![feature(proc_macro)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
+/// # use maud::html;
 /// # use maud_extras::*;
 /// # fn main() {
 /// let markup = html! { (Charset("utf-8")) };
@@ -140,10 +139,10 @@ impl<T: AsRef<str>> Render for Charset<T> {
 /// # Example
 ///
 /// ```rust
-/// # #![feature(plugin)]
-/// # #![plugin(maud_macros)]
+/// # #![feature(proc_macro)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
+/// # use maud::html;
 /// # use maud_extras::*;
 /// # fn main() {
 /// let markup = html! { (MetaProperty("og:description", "test description")) };

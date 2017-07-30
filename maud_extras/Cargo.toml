@@ -10,7 +10,6 @@ description = "Extra bits and pieces for use in Maud templates."
 
 [dependencies]
 maud = { path = "../maud", features = ["iron"] }
-maud_macros = { path = "../maud_macros" }
 
 [lib]
 path = "lib.rs"

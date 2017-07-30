@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "maud",
+    "maud_htmlescape",
     "maud_macros",
+    "maud",
     "maud_extras",
 ]

@@ -1,53 +1,45 @@
-#![crate_type = "dylib"]
-#![feature(plugin_registrar, quote)]
-#![feature(slice_patterns)]
-#![feature(rustc_private)]
+#![feature(proc_macro)]
 #![recursion_limit = "1000"]  // if_chain
 
 #![doc(html_root_url = "https://docs.rs/maud_macros/0.16.3")]
 
-#[macro_use]
-extern crate if_chain;
-#[macro_use]
-extern crate rustc;
-extern crate rustc_plugin;
-extern crate syntax;
-extern crate maud;
+extern crate literalext;
+extern crate maud_htmlescape;
+extern crate proc_macro;
 
-use rustc_plugin::Registry;
-use syntax::codemap::Span;
-use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
-use syntax::print::pprust;
-use syntax::tokenstream::TokenTree;
-
-mod lints;
+// TODO move lints into their own `maud_lints` crate
+// mod lints;
 mod parse;
 mod render;
 
-type ParseResult<T> = Result<T, ()>;
+use proc_macro::TokenStream;
 
-fn expand_html<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree]) -> Box<MacResult + 'cx> {
-    match parse::parse(cx, sp, args) {
-        Ok(expr) => MacEager::expr(quote_expr!(cx, $expr)),
-        Err(..) => DummyResult::expr(sp),
+type ParseResult<T> = Result<T, String>;
+
+#[proc_macro]
+pub fn html(args: TokenStream) -> TokenStream {
+    match parse::parse(args) {
+        Ok(expr) => expr,
+        Err(e) => panic!(e),
     }
 }
 
-fn expand_html_debug<'cx>(cx: &'cx mut ExtCtxt, sp: Span, args: &[TokenTree]) -> Box<MacResult + 'cx> {
-    match parse::parse(cx, sp, args) {
+#[proc_macro]
+pub fn html_debug(args: TokenStream) -> TokenStream {
+    match parse::parse(args) {
         Ok(expr) => {
-            let expr = quote_expr!(cx, $expr);
-            cx.span_warn(sp, &format!("expansion:\n{}",
-                                      pprust::expr_to_string(&expr)));
-            MacEager::expr(expr)
+            println!("expansion:\n{}", expr);
+            expr
         },
-        Err(..) => DummyResult::expr(sp),
+        Err(e) => panic!(e),
     }
 }
 
+/*
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_macro("html", expand_html);
     reg.register_macro("html_debug", expand_html_debug);
     lints::register_lints(reg);
 }
+*/

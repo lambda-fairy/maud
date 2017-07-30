@@ -1,9 +1,8 @@
-#![feature(plugin)]
-#![plugin(maud_macros)]
+#![feature(proc_macro)]
 
 extern crate maud;
 
-use maud::Markup;
+use maud::{Markup, html};
 
 #[test]
 fn literals() {
