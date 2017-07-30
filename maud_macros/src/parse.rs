@@ -1,4 +1,14 @@
-use proc_macro::{Delimiter, Literal, Spacing, TokenNode, TokenStream, TokenTree, TokenTreeIter, quote};
+use proc_macro::{
+    Delimiter,
+    Literal,
+    Spacing,
+    Span,
+    TokenNode,
+    TokenStream,
+    TokenTree,
+    TokenTreeIter,
+};
+use std::iter;
 use std::mem;
 
 use literalext::LiteralExt;
@@ -292,7 +302,7 @@ impl Parser {
                 TokenTree {
                     kind: TokenNode::Group(Delimiter::Brace, body),
                     span,
-                }.into()
+                }
             },
             // $pat => $expr
             Some(first_token) => {
@@ -310,11 +320,14 @@ impl Parser {
                 // The generated code may have multiple statements, unlike the
                 // original expression. So wrap the whole thing in a block just
                 // in case.
-                quote!({ $body })
+                TokenTree {
+                    kind: TokenNode::Group(Delimiter::Brace, body),
+                    span: Span::default(),
+                }
             },
             None => return self.error("unexpected end of @match arm"),
         };
-        Ok(Some(pat.into_iter().chain(body.into_iter()).collect()))
+        Ok(Some(pat.into_iter().chain(iter::once(body)).collect()))
     }
 
     /// Parses and renders a `@let` expression.
