@@ -1,9 +1,11 @@
 # Change Log
 
-## [Unreleased] - 2017-07-14
+## [Unreleased]
 
 - [Changed] Update to Rocket 0.3
   [#94](https://github.com/lfairy/maud/pull/94)
+- [Changed] Port to new proc macro interface
+  [#95](https://github.com/lfairy/maud/pull/95)
 
 ## [0.16.3] - 2017-04-22
 
