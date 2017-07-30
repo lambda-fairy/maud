@@ -1,0 +1,22 @@
+[package]
+
+name = "maud_lints"
+# When releasing a new version, please update html_root_url in src/lib.rs
+version = "0.17.0"
+authors = ["Chris Wong <lambda.fairy@gmail.com>"]
+
+license = "MIT/Apache-2.0"
+documentation = "https://docs.rs/maud_lints/"
+homepage = "https://maud.lambda.xyz/"
+repository = "https://github.com/lfairy/maud"
+description = "Lint plugin for the Maud template engine."
+
+[dependencies]
+if_chain = "0.1"
+
+[lib]
+name = "maud_lints"
+plugin = true
+
+[badges]
+travis-ci = { repository = "lfairy/maud" }

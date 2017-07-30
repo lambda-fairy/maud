@@ -1,5 +1,4 @@
 #![feature(proc_macro)]
-#![recursion_limit = "1000"]  // if_chain
 
 #![doc(html_root_url = "https://docs.rs/maud_macros/0.16.3")]
 
@@ -7,8 +6,6 @@ extern crate literalext;
 extern crate maud_htmlescape;
 extern crate proc_macro;
 
-// TODO move lints into their own `maud_lints` crate
-// mod lints;
 mod parse;
 mod render;
 
@@ -34,12 +31,3 @@ pub fn html_debug(args: TokenStream) -> TokenStream {
         Err(e) => panic!(e),
     }
 }
-
-/*
-#[plugin_registrar]
-pub fn plugin_registrar(reg: &mut Registry) {
-    reg.register_macro("html", expand_html);
-    reg.register_macro("html_debug", expand_html_debug);
-    lints::register_lints(reg);
-}
-*/
