@@ -12,7 +12,7 @@ script:
     if command -v cargo-clippy > /dev/null; then
       CLIPPY_STATUS=0
       for package in maud_htmlescape maud_macros maud maud_lints maud_extras; do
-        cargo clippy --manifest-path $package/Cargo.toml -- -D warnings || CLIPPY_STATUS=$?
+        (cd $package && cargo clippy -- -D warnings) || CLIPPY_STATUS=$?
       done
       (exit $CLIPPY_STATUS)
     fi
