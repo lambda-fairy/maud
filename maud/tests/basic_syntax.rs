@@ -94,6 +94,13 @@ fn toggle_empty_attributes() {
 }
 
 #[test]
+fn toggle_empty_attributes_braces() {
+    let s = html!(input checked?[Maud { rocks: true }.rocks] /).into_string();
+    let foo = 42;
+    assert_eq!(s, r#"<input checked>"#);
+}
+
+#[test]
 fn colons_in_names() {
     let s = html!(pon-pon:controls-alpha a on:click="yay()" "Yay!").into_string();
     assert_eq!(s, concat!(

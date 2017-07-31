@@ -408,16 +408,28 @@ impl Parser {
                     self.commit(attempt);
                     match self.peek() {
                         // Toggle the attribute based on a boolean expression
-                        Some(TokenTree { kind: TokenNode::Group(Delimiter::Bracket, cond), span: delim_span }) => {
+                        Some(TokenTree {
+                            kind: TokenNode::Group(Delimiter::Bracket, cond),
+                            span: delim_span,
+                        }) => {
                             self.advance();
                             render.push(TokenTree {
                                 kind: TokenNode::Term(Term::intern("if")),
                                 span: question_span,
                             });
-                            render.push(TokenTree {
-                                kind: TokenNode::Group(Delimiter::None, cond),
-                                span: delim_span,
-                            });
+                            // If the condition contains an opening brace `{`,
+                            // wrap it in parentheses to avoid parse errors
+                            if cond.clone().into_iter().any(|token| match token.kind {
+                                TokenNode::Group(Delimiter::Brace, _) => true,
+                                _ => false,
+                            }) {
+                                render.push(TokenTree {
+                                    kind: TokenNode::Group(Delimiter::Parenthesis, cond),
+                                    span: delim_span,
+                                });
+                            } else {
+                                render.push(cond);
+                            }
                             let body = {
                                 let mut render = render.fork();
                                 render.attribute_empty(&name);
