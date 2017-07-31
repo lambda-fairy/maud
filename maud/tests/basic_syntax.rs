@@ -95,8 +95,8 @@ fn toggle_empty_attributes() {
 
 #[test]
 fn toggle_empty_attributes_braces() {
+    struct Maud { rocks: bool }
     let s = html!(input checked?[Maud { rocks: true }.rocks] /).into_string();
-    let foo = 42;
     assert_eq!(s, r#"<input checked>"#);
 }
 
