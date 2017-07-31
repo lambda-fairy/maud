@@ -62,7 +62,7 @@ impl Renderer {
     }
 
     /// Pushes a statement, flushing the tail buffer in the process.
-    fn push<T>(&mut self, stmt: T) where T: Into<TokenStream> {
+    pub fn push<T>(&mut self, stmt: T) where T: Into<TokenStream> {
         self.flush();
         self.stmts.push(stmt.into())
     }
@@ -133,30 +133,6 @@ impl Renderer {
             None => quote!(if $if_cond { $if_body }),
             Some(else_body) => quote!(if $if_cond { $if_body } else { $else_body }),
         };
-        self.push(stmt);
-    }
-
-    /// Emits an `while` expression.
-    ///
-    /// The condition is a token tree (not an expression) so we don't
-    /// need to special-case `while let`.
-    pub fn emit_while(&mut self, cond: TokenStream, body: TokenStream) {
-        let stmt = quote!(while $cond { $body });
-        self.push(stmt);
-    }
-
-    pub fn emit_for(&mut self, pattern: TokenStream, iterable: TokenStream, body: TokenStream) {
-        let stmt = quote!(for $pattern in $iterable { $body });
-        self.push(stmt);
-    }
-
-    pub fn emit_match(&mut self, match_var: TokenStream, match_body: TokenStream) {
-        let stmt = quote!(match $match_var { $match_body });
-        self.push(stmt);
-    }
-
-    pub fn emit_let(&mut self, pattern: TokenStream, rhs: TokenStream, body: TokenStream) {
-        let stmt = quote!({ let $pattern = $rhs; $body });
         self.push(stmt);
     }
 }

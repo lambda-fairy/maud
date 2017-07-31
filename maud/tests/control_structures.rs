@@ -136,9 +136,8 @@ fn match_in_attribute() {
 #[test]
 fn let_expr() {
     let s = html! {
-        @let x = 42 {
-            "I have " (x) " cupcakes!"
-        }
+        @let x = 42;
+        "I have " (x) " cupcakes!"
     }.into_string();
     assert_eq!(s, "I have 42 cupcakes!");
 }
@@ -147,7 +146,8 @@ fn let_expr() {
 fn let_lexical_scope() {
     let x = 42;
     let s = html! {
-        @let x = 99 {
+        {
+            @let x = 99;
             "Twilight thought I had " (x) " cupcakes, "
         }
         "but I only had " (x) "."
@@ -160,9 +160,8 @@ fn let_lexical_scope() {
 #[test]
 fn let_type_ascription() {
     let s = html! {
-        @let mut x: Box<Iterator<Item=u32>> = Box::new(vec![42].into_iter()) {
-            "I have " (x.next().unwrap()) " cupcakes!"
-        }
+        @let mut x: Box<Iterator<Item=u32>> = Box::new(vec![42].into_iter());
+        "I have " (x.next().unwrap()) " cupcakes!"
     }.into_string();
     assert_eq!(s, "I have 42 cupcakes!");
 }
