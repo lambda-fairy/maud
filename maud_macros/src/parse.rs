@@ -31,6 +31,7 @@ pub fn parse(input: TokenStream) -> ParseResult<TokenStream> {
 
 #[derive(Clone)]
 struct Parser {
+    /// Indicates whether we're inside an attribute node.
     in_attr: bool,
     input: TokenTreeIter,
 }
@@ -44,24 +45,29 @@ impl Iterator for Parser {
 }
 
 impl Parser {
+    /// Returns the next token in the stream without consuming it.
     fn peek(&mut self) -> Option<TokenTree> {
         self.clone().next()
     }
 
+    /// Returns the next two tokens in the stream without consuming them.
     fn peek2(&mut self) -> Option<(TokenTree, Option<TokenTree>)> {
         let mut clone = self.clone();
         clone.next().map(|first| (first, clone.next()))
     }
 
+    /// Advances the cursor by one step.
     fn advance(&mut self) {
         self.next();
     }
 
+    /// Advances the cursor by two steps.
     fn advance2(&mut self) {
         self.next();
         self.next();
     }
 
+    /// Overwrites the current parser state with the given parameter.
     fn commit(&mut self, attempt: Parser) {
         *self = attempt;
     }
@@ -163,6 +169,9 @@ impl Parser {
         self.else_if_expr(render)
     }
 
+    /// Parses and renders an optional `@else if` or `@else`.
+    ///
+    /// The leading `@else if` or `@else` should *not* already be consumed.
     fn else_if_expr(&mut self, render: &mut Renderer) -> ParseResult<()> {
         match self.peek2() {
             // Try to match an `@else` after this
@@ -532,7 +541,8 @@ impl Parser {
         Ok(s)
     }
 
-    /// Parses the given token tree, returning a vector of statements.
+    /// Parses the given token stream as a Maud expression, returning a block of
+    /// Rust code.
     fn block(&mut self, body: TokenStream, span: Span, render: &mut Renderer) -> ParseResult<TokenTree> {
         let mut render = render.fork();
         let mut parse = Parser {
