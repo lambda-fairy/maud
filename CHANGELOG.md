@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased]
+## [0.17.0] - 2017-08-04
 
 - [Added] Allow terminating void elements with semicolons (`;`)
   [#96](https://github.com/lfairy/maud/pull/96)
@@ -8,6 +8,7 @@
   [#94](https://github.com/lfairy/maud/pull/94)
 - [Changed] Port to new proc macro interface
   [#95](https://github.com/lfairy/maud/pull/95)
+- [Removed] Removed the lint plugin for now -- it'll be added back in a later version once some design issues are sorted out.
 
 ## [0.16.3] - 2017-04-22
 
@@ -136,7 +137,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.16.3...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/lfairy/maud/compare/v0.16.3...v0.17.0
 [0.16.3]: https://github.com/lfairy/maud/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/lfairy/maud/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/lfairy/maud/compare/v0.16.0...v0.16.1
