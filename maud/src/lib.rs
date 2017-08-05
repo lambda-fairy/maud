@@ -49,7 +49,7 @@ pub use maud_macros::{html, html_debug};
 /// impl Render for Stylesheet {
 ///     fn render(&self) -> Markup {
 ///         html! {
-///             link rel="stylesheet" type="text/css" href=(self.0) /
+///             link rel="stylesheet" type="text/css" href=(self.0);
 ///         }
 ///     }
 /// }
@@ -137,7 +137,7 @@ pub use maud_htmlescape::Escaper;
 ///     (DOCTYPE)
 ///     html {
 ///         head {
-///             meta charset="utf-8" /
+///             meta charset="utf-8";
 ///             title "Test page"
 ///         }
 ///         body {
