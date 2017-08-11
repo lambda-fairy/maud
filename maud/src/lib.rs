@@ -8,7 +8,7 @@
 //!
 //! [book]: https://maud.lambda.xyz/
 
-#![doc(html_root_url = "https://docs.rs/maud/0.17.0")]
+#![doc(html_root_url = "https://docs.rs/maud/0.17.1")]
 
 #[cfg(feature = "iron")] extern crate iron;
 #[cfg(feature = "rocket")] extern crate rocket;

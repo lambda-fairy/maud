@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased]
+## [0.17.1] - 2017-08-11
 
 - [Fixed] "Multiple applicable items in scope" error when using `Render` trait
   [#97](https://github.com/lfairy/maud/issues/97)
@@ -142,7 +142,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.17.1...HEAD
+[0.17.1]: https://github.com/lfairy/maud/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/lfairy/maud/compare/v0.16.3...v0.17.0
 [0.16.3]: https://github.com/lfairy/maud/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/lfairy/maud/compare/v0.16.1...v0.16.2
