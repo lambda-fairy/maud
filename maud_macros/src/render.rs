@@ -84,12 +84,12 @@ impl Renderer {
             extern crate maud;
             // Create a local trait alias so that autoref works
             trait Render: maud::Render {
-                fn render_to(&self, output: &mut String) {
+                fn __maud_render_to(&self, output: &mut String) {
                     maud::Render::render_to(self, output);
                 }
             }
             impl<T: maud::Render> Render for T {}
-            $expr.render_to(&mut $output);
+            $expr.__maud_render_to(&mut $output);
         }));
     }
 

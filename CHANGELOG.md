@@ -1,5 +1,10 @@
 # Change Log
 
+## [Unreleased]
+
+- [Fixed] "Multiple applicable items in scope" error when using `Render` trait
+  [#97](https://github.com/lfairy/maud/issues/97)
+
 ## [0.17.0] - 2017-08-04
 
 - [Added] Allow terminating void elements with semicolons (`;`)

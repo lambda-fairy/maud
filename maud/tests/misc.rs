@@ -67,3 +67,18 @@ fn render_impl() {
     assert_eq!(s1, "pinkie");
     assert_eq!(s2, "pinkie");
 }
+
+#[test]
+fn issue_97() {
+    use maud::Render;
+
+    struct Pinkie;
+    impl Render for Pinkie {
+        fn render(&self) -> maud::Markup {
+            let x = 42;
+            html! { (x) }
+        }
+    }
+
+    assert_eq!(html!((Pinkie)).into_string(), "42");
+}
