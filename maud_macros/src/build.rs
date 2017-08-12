@@ -58,7 +58,6 @@ impl Builder {
     pub fn splice(&mut self, expr: TokenStream) {
         let output_ident = self.output_ident.clone();
         self.push(quote!({
-            extern crate maud;
             // Create a local trait alias so that autoref works
             trait Render: maud::Render {
                 fn __maud_render_to(&self, output_ident: &mut String) {
