@@ -7,7 +7,7 @@ extern crate maud_htmlescape;
 extern crate proc_macro;
 
 mod parse;
-mod render;
+mod build;
 
 use proc_macro::{Literal, Span, Term, TokenNode, TokenStream, TokenTree};
 use proc_macro::quote;

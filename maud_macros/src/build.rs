@@ -3,16 +3,16 @@ use proc_macro::quote;
 
 use maud_htmlescape::Escaper;
 
-pub struct Renderer {
+pub struct Builder {
     output_ident: TokenTree,
     stmts: Vec<TokenStream>,
     tail: String,
 }
 
-impl Renderer {
-    /// Creates a new `Renderer`.
-    pub fn new(output_ident: TokenTree) -> Renderer {
-        Renderer {
+impl Builder {
+    /// Creates a new `Builder`.
+    pub fn new(output_ident: TokenTree) -> Builder {
+        Builder {
             output_ident,
             stmts: Vec::new(),
             tail: String::new(),
@@ -32,9 +32,9 @@ impl Renderer {
         }
     }
 
-    /// Reifies the `Renderer` into a raw list of statements.
+    /// Reifies the `Builder` into a raw list of statements.
     pub fn build(mut self) -> TokenStream {
-        let Renderer { stmts, .. } = { self.flush(); self };
+        let Builder { stmts, .. } = { self.flush(); self };
         stmts.into_iter().collect()
     }
 
