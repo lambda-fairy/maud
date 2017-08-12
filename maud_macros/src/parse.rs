@@ -3,7 +3,6 @@ use proc_macro::{
     Literal,
     Spacing,
     Span,
-    Term,
     TokenNode,
     TokenStream,
     TokenTree,
@@ -427,58 +426,31 @@ impl Parser {
                     render.attribute_end();
                 },
                 // Empty attribute
-                (Ok(name), Some(TokenTree { kind: TokenNode::Op('?', _), span: question_span })) => {
+                (Ok(name), Some(TokenTree { kind: TokenNode::Op('?', _), .. })) => {
                     self.commit(attempt);
-                    match self.peek() {
+                    if let Some((cond, cond_span)) = self.attr_toggler() {
                         // Toggle the attribute based on a boolean expression
-                        Some(TokenTree {
-                            kind: TokenNode::Group(Delimiter::Bracket, cond),
-                            span: delim_span,
-                        }) => {
-                            self.advance();
-                            render.push(TokenTree {
-                                kind: TokenNode::Term(Term::intern("if")),
-                                span: question_span,
-                            });
-                            // If the condition contains an opening brace `{`,
-                            // wrap it in parentheses to avoid parse errors
-                            if cond.clone().into_iter().any(|token| match token.kind {
-                                TokenNode::Group(Delimiter::Brace, _) => true,
-                                _ => false,
-                            }) {
-                                render.push(TokenTree {
-                                    kind: TokenNode::Group(Delimiter::Parenthesis, cond),
-                                    span: delim_span,
-                                });
-                            } else {
-                                render.push(cond);
-                            }
-                            let body = {
-                                let mut render = self.builder();
-                                render.attribute_empty(&name);
-                                render.build()
-                            };
-                            render.push(TokenTree {
-                                kind: TokenNode::Group(Delimiter::Brace, body),
-                                span: Span::default(),
-                            });
-                        },
+                        let body = {
+                            let mut render = self.builder();
+                            render.attribute_empty(&name);
+                            render.build()
+                        };
+                        render.emit_if(cond, cond_span, body);
+                    } else {
                         // Write the attribute unconditionally
-                        _ => render.attribute_empty(&name),
+                        render.attribute_empty(&name);
                     }
                 },
                 // Class shorthand
                 (Err(_), Some(TokenTree { kind: TokenNode::Op('.', _), .. })) => {
                     self.commit(attempt);
                     let class_name = self.name()?;
-                    match self.peek() {
+                    if let Some((cond, cond_span)) = self.attr_toggler() {
                         // Toggle the class based on a boolean expression
-                        Some(TokenTree { kind: TokenNode::Group(Delimiter::Bracket, cond), .. }) => {
-                            self.advance();
-                            classes_toggled.push((cond, class_name));
-                        },
+                        classes_toggled.push((cond, cond_span, class_name));
+                    } else {
                         // Emit the class unconditionally
-                        _ => classes_static.push(class_name),
+                        classes_static.push(class_name);
                     }
                 },
                 // ID shorthand
@@ -493,7 +465,7 @@ impl Parser {
         if !classes_static.is_empty() || !classes_toggled.is_empty() {
             render.attribute_start("class");
             render.string(&classes_static.join(" "));
-            for (i, (cond, mut class_name)) in classes_toggled.into_iter().enumerate() {
+            for (i, (cond, cond_span, mut class_name)) in classes_toggled.into_iter().enumerate() {
                 // If a class comes first in the list, then it shouldn't be
                 // prefixed by a space
                 if i > 0 || !classes_static.is_empty() {
@@ -504,7 +476,7 @@ impl Parser {
                     render.string(&class_name);
                     render.build()
                 };
-                render.emit_if(cond, body, None);
+                render.emit_if(cond, cond_span, body);
             }
             render.attribute_end();
         }
@@ -514,6 +486,19 @@ impl Parser {
             render.attribute_end();
         }
         Ok(())
+    }
+
+    /// Parses the `[cond]` syntax after an empty attribute or class shorthand.
+    fn attr_toggler(&mut self) -> Option<(TokenStream, Span)> {
+        if let Some(TokenTree {
+            kind: TokenNode::Group(Delimiter::Bracket, cond),
+            span: delim_span,
+        }) = self.peek() {
+            self.advance();
+            Some((cond, delim_span))
+        } else {
+            None
+        }
     }
 
     /// Parses an identifier, without dealing with namespaces.

@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased]
+
+- [Fixed] Allow braces in the boolean expression for a toggled class
+
 ## [0.17.1] - 2017-08-11
 
 - [Fixed] "Multiple applicable items in scope" error when using `Render` trait
@@ -14,6 +18,7 @@
 - [Changed] Port to new proc macro interface
   [#95](https://github.com/lfairy/maud/pull/95)
 - [Removed] Removed the lint plugin for now -- it'll be added back in a later version once some design issues are sorted out.
+- [Fixed] Allow braces in the boolean expression for an empty attribute
 
 ## [0.16.3] - 2017-04-22
 

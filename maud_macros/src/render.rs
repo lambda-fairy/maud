@@ -1,4 +1,4 @@
-use proc_macro::{Literal, TokenNode, TokenStream, TokenTree};
+use proc_macro::{Delimiter, Literal, Span, TokenNode, TokenStream, TokenTree};
 use proc_macro::quote;
 
 use maud_htmlescape::Escaper;
@@ -102,15 +102,26 @@ impl Renderer {
 
     /// Emits an `if` expression.
     ///
-    /// The condition is a token tree (not an expression) so we don't
+    /// The condition is a token stream (not an expression) so we don't
     /// need to special-case `if let`.
-    pub fn emit_if(&mut self, if_cond: TokenStream, if_body: TokenStream,
-                   else_body: Option<TokenStream>) {
-        let stmt = match else_body {
-            None => quote!(if $if_cond { $if_body }),
-            Some(else_body) => quote!(if $if_cond { $if_body } else { $else_body }),
-        };
-        self.push(stmt);
+    pub fn emit_if(
+        &mut self,
+        mut cond: TokenStream,
+        cond_span: Span,
+        body: TokenStream,
+    ) {
+        // If the condition contains an opening brace `{`,
+        // wrap it in parentheses to avoid parse errors
+        if cond.clone().into_iter().any(|token| match token.kind {
+            TokenNode::Group(Delimiter::Brace, _) => true,
+            _ => false,
+        }) {
+            cond = TokenStream::from(TokenTree {
+                kind: TokenNode::Group(Delimiter::Parenthesis, cond),
+                span: cond_span,
+            });
+        }
+        self.push(quote!(if $cond { $body }));
     }
 }
 

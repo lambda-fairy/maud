@@ -163,6 +163,13 @@ fn toggle_classes() {
 }
 
 #[test]
+fn toggle_classes_braces() {
+    struct Maud { rocks: bool }
+    let s = html!(p.rocks[Maud { rocks: true }.rocks] "Awesome!").into_string();
+    assert_eq!(s, r#"<p class="rocks">Awesome!</p>"#);
+}
+
+#[test]
 fn mixed_classes() {
     fn test(is_muffin: bool) -> Markup {
         html!(p.cupcake.muffin[is_muffin].lamington "Testing!")
