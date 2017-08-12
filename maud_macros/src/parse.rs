@@ -17,20 +17,16 @@ use literalext::LiteralExt;
 use super::render::Renderer;
 use super::ParseResult;
 
-pub fn parse(input: TokenStream) -> ParseResult<TokenStream> {
-    // Heuristic: the size of the resulting markup tends to correlate with the
-    // code size of the template itself
-    let size_hint = input.to_string().len();
-    let mut render = Renderer::new();
-    Parser {
-        in_attr: false,
-        input: input.into_iter(),
-    }.markups(&mut render)?;
-    Ok(render.into_expr(size_hint))
+pub fn parse(input: TokenStream, output_ident: TokenTree) -> ParseResult<TokenStream> {
+    let mut parse = Parser::new(input, output_ident);
+    let mut render = parse.builder();
+    parse.markups(&mut render)?;
+    Ok(render.build())
 }
 
 #[derive(Clone)]
 struct Parser {
+    output_ident: TokenTree,
     /// Indicates whether we're inside an attribute node.
     in_attr: bool,
     input: TokenTreeIter,
@@ -45,6 +41,26 @@ impl Iterator for Parser {
 }
 
 impl Parser {
+    fn new(input: TokenStream, output_ident: TokenTree) -> Parser {
+        Parser {
+            output_ident,
+            in_attr: false,
+            input: input.into_iter(),
+        }
+    }
+
+    fn with_input(&self, input: TokenStream) -> Parser {
+        Parser {
+            output_ident: self.output_ident.clone(),
+            in_attr: self.in_attr,
+            input: input.into_iter(),
+        }
+    }
+
+    fn builder(&self) -> Renderer {
+        Renderer::new(self.output_ident.clone())
+    }
+
     /// Returns the next token in the stream without consuming it.
     fn peek(&mut self) -> Option<TokenTree> {
         self.clone().next()
@@ -132,7 +148,7 @@ impl Parser {
             // Block
             TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), span } => {
                 self.advance();
-                let block = self.block(block, span, render)?;
+                let block = self.block(block, span)?;
                 render.push(block);
             },
             // ???
@@ -158,7 +174,7 @@ impl Parser {
         loop {
             match self.next() {
                 Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), span }) => {
-                    let block = self.block(block, span, render)?;
+                    let block = self.block(block, span)?;
                     render.push(block);
                     break;
                 },
@@ -194,7 +210,7 @@ impl Parser {
                     // Just an `@else`
                     _ => {
                         if let Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), span }) = self.next() {
-                            let block = self.block(block, span, render)?;
+                            let block = self.block(block, span)?;
                             render.push(block);
                         } else {
                             return self.error("expected body for @else");
@@ -215,7 +231,7 @@ impl Parser {
         loop {
             match self.next() {
                 Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), span }) => {
-                    let block = self.block(block, span, render)?;
+                    let block = self.block(block, span)?;
                     render.push(block);
                     break;
                 },
@@ -243,7 +259,7 @@ impl Parser {
         loop {
             match self.next() {
                 Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), span }) => {
-                    let block = self.block(block, span, render)?;
+                    let block = self.block(block, span)?;
                     render.push(block);
                     break;
                 },
@@ -261,10 +277,7 @@ impl Parser {
         loop {
             match self.next() {
                 Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, body), span }) => {
-                    let body = Parser {
-                        in_attr: self.in_attr,
-                        input: body.into_iter(),
-                    }.match_arms(render)?;
+                    let body = self.with_input(body).match_arms()?;
                     render.push(TokenTree {
                         kind: TokenNode::Group(Delimiter::Brace, body),
                         span,
@@ -278,15 +291,15 @@ impl Parser {
         Ok(())
     }
 
-    fn match_arms(&mut self, render: &mut Renderer) -> ParseResult<TokenStream> {
+    fn match_arms(&mut self) -> ParseResult<TokenStream> {
         let mut arms = Vec::new();
-        while let Some(arm) = self.match_arm(render)? {
+        while let Some(arm) = self.match_arm()? {
             arms.push(arm);
         }
         Ok(arms.into_iter().collect())
     }
 
-    fn match_arm(&mut self, render: &mut Renderer) -> ParseResult<Option<TokenStream>> {
+    fn match_arm(&mut self) -> ParseResult<Option<TokenStream>> {
         let mut pat = Vec::new();
         loop {
             match self.peek2() {
@@ -314,7 +327,7 @@ impl Parser {
         let body = match self.next() {
             // $pat => { $stmts }
             Some(TokenTree { kind: TokenNode::Group(Delimiter::Brace, body), span }) => {
-                let body = self.block(body, span, render)?;
+                let body = self.block(body, span)?;
                 // Trailing commas are optional if the match arm is a braced block
                 if let Some(TokenTree { kind: TokenNode::Op(',', _), .. }) = self.peek() {
                     self.advance();
@@ -333,7 +346,7 @@ impl Parser {
                         None => return self.error("unexpected end of @match arm"),
                     }
                 }
-                self.block(body.into_iter().collect(), Span::default(), render)?
+                self.block(body.into_iter().collect(), Span::default())?
             },
             None => return self.error("unexpected end of @match arm"),
         };
@@ -441,9 +454,9 @@ impl Parser {
                                 render.push(cond);
                             }
                             let body = {
-                                let mut render = render.fork();
+                                let mut render = self.builder();
                                 render.attribute_empty(&name);
-                                render.into_stmts()
+                                render.build()
                             };
                             render.push(TokenTree {
                                 kind: TokenNode::Group(Delimiter::Brace, body),
@@ -487,9 +500,9 @@ impl Parser {
                     class_name = format!(" {}", class_name);
                 }
                 let body = {
-                    let mut render = render.fork();
+                    let mut render = self.builder();
                     render.string(&class_name);
-                    render.into_stmts()
+                    render.build()
                 };
                 render.emit_if(cond, body, None);
             }
@@ -544,15 +557,11 @@ impl Parser {
 
     /// Parses the given token stream as a Maud expression, returning a block of
     /// Rust code.
-    fn block(&mut self, body: TokenStream, span: Span, render: &mut Renderer) -> ParseResult<TokenTree> {
-        let mut render = render.fork();
-        let mut parse = Parser {
-            in_attr: self.in_attr,
-            input: body.into_iter(),
-        };
-        parse.markups(&mut render)?;
+    fn block(&mut self, body: TokenStream, span: Span) -> ParseResult<TokenTree> {
+        let mut render = self.builder();
+        self.with_input(body).markups(&mut render)?;
         Ok(TokenTree {
-            kind: TokenNode::Group(Delimiter::Brace, render.into_stmts()),
+            kind: TokenNode::Group(Delimiter::Brace, render.build()),
             span,
         })
     }
