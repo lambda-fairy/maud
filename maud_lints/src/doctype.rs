@@ -30,7 +30,7 @@ impl<'a, 'tcx> LateLintPass<'a, 'tcx> for Doctype {
             if s.as_str().eq_ignore_ascii_case("<!doctype html>");
             // ... and the callee is `maud::PreEscaped`
             if let ExprPath(ref qpath) = path_expr.node;
-            let def_id = cx.tables.qpath_def(qpath, path_expr.id).def_id();
+            let def_id = cx.tables.qpath_def(qpath, path_expr.hir_id).def_id();
             if match_def_path(cx, def_id, &["maud", "PreEscaped", "{{constructor}}"]);
             then {
                 cx.struct_span_lint(MAUD_DOCTYPE, expr.span,

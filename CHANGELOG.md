@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 - [Fixed] Allow braces in the boolean expression for a toggled class
+- [Fixed] Update to rustc 1.21.0-nightly (f25c2283b 2017-08-15)
+  [#99](https://github.com/lfairy/maud/issues/99)
 
 ## [0.17.1] - 2017-08-11
 
