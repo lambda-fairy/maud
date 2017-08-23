@@ -159,3 +159,34 @@ impl<T: AsRef<str>, U: AsRef<str>> Render for MetaProperty<T, U> {
         }
     }
 }
+
+/// Generate a `<meta robots>` element.
+///
+/// # Example
+///
+/// ```rust
+/// # #![feature(proc_macro)]
+/// # extern crate maud;
+/// # extern crate maud_extras;
+/// # use maud::html;
+/// # use maud_extras::*;
+/// # fn main() {
+/// let markup = html! { (MetaRobots { index: true, follow: false }) };
+/// assert_eq!(markup.into_string(),
+///            r#"<meta name="robots" content="index,nofollow">"#);
+/// # }
+/// ```
+pub struct MetaRobots {
+    pub index: bool,
+    pub follow: bool,
+}
+
+impl Render for MetaRobots {
+    fn render(&self) -> Markup {
+        let index = if self.index { "index" } else { "noindex" };
+        let follow = if self.follow { "follow" } else { "nofollow" };
+        html! {
+            meta name="robots" content={ (index) "," (follow) } /
+        }
+    }
+}
