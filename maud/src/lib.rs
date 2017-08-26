@@ -95,7 +95,7 @@ impl Render for str {
 }
 
 /// A wrapper that renders the inner value without escaping.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct PreEscaped<T: AsRef<str>>(pub T);
 
 impl<T: AsRef<str>> Render for PreEscaped<T> {
