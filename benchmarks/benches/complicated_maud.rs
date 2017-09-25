@@ -1,10 +1,9 @@
-#![feature(plugin, test)]
-#![plugin(maud_macros)]
+#![feature(plugin, proc_macro, test)]
 
 extern crate maud;
 extern crate test;
 
-use maud::Markup;
+use maud::{Markup, html};
 
 #[derive(Debug)]
 struct Entry {
@@ -13,11 +12,12 @@ struct Entry {
 }
 
 mod btn {
-    use maud::{Markup, Render};
+    use maud::{Markup, Render, html};
 
     #[derive(Copy, Clone)]
     pub enum RequestMethod {
-        Get, Post
+        Get,
+        Post
     }
 
     #[derive(Copy, Clone)]

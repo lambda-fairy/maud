@@ -1,7 +1,10 @@
 #![feature(plugin, test)]
-#![plugin(maud_macros)]
+#![feature(proc_macro)]
 
 extern crate maud;
+
+use maud::html;
+
 extern crate test;
 
 #[derive(Debug)]

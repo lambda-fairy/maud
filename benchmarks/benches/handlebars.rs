@@ -3,13 +3,11 @@
 #![feature(test)]
 
 extern crate handlebars;
-extern crate rustc_serialize as serialize;
 extern crate test;
+extern crate serde_json;
 
-use std::collections::BTreeMap;
-
-use handlebars::Handlebars;
-use serialize::json::{Json, ToJson};
+use serde_json::value::{Map, Value as Json};
+use handlebars::{to_json, Handlebars};
 
 static SOURCE: &'static str = "<html>
   <head>
@@ -27,10 +25,10 @@ static SOURCE: &'static str = "<html>
   </body>
 </html>";
 
-fn make_data() -> BTreeMap<String, Json> {
-    let mut data = BTreeMap::new();
+fn make_data() -> Map<String, Json> {
+    let mut data = Map::new();
 
-    data.insert("year".to_string(), "2015".to_json());
+    data.insert("year".to_string(), to_json(&"2015"));
 
     let mut teams = Vec::new();
 
@@ -41,14 +39,14 @@ fn make_data() -> BTreeMap<String, Json> {
             ("Guangzhou", 22u16),
             ("Shandong", 12u16),
         ]
-    {
-        let mut t = BTreeMap::new();
-        t.insert("name".to_string(), name.to_json());
-        t.insert("score".to_string(), score.to_json());
-        teams.push(t)
-    }
+        {
+            let mut t = Map::new();
+            t.insert("name".to_string(), to_json(&name));
+            t.insert("score".to_string(), to_json(&score));
+            teams.push(t)
+        }
 
-    data.insert("teams".to_string(), teams.to_json());
+    data.insert("teams".to_string(), to_json(&teams));
     data
 }
 
@@ -56,7 +54,7 @@ fn make_data() -> BTreeMap<String, Json> {
 fn render_template(b: &mut test::Bencher) {
     let mut handlebars = Handlebars::new();
     handlebars.register_template_string("table", SOURCE.to_string())
-              .expect("Invalid template format");
+        .expect("Invalid template format");
 
     let data = make_data();
     b.iter(|| handlebars.render("table", &data).ok().unwrap())
