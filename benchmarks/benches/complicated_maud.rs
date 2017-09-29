@@ -1,4 +1,4 @@
-#![feature(plugin, proc_macro, test)]
+#![feature(proc_macro, test)]
 
 extern crate maud;
 extern crate test;
