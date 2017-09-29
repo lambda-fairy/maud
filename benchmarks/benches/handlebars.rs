@@ -39,12 +39,12 @@ fn make_data() -> Map<String, Json> {
             ("Guangzhou", 22u16),
             ("Shandong", 12u16),
         ]
-        {
-            let mut t = Map::new();
-            t.insert("name".to_string(), to_json(&name));
-            t.insert("score".to_string(), to_json(&score));
-            teams.push(t)
-        }
+    {
+        let mut t = Map::new();
+        t.insert("name".to_string(), to_json(&name));
+        t.insert("score".to_string(), to_json(&score));
+        teams.push(t)
+    }
 
     data.insert("teams".to_string(), to_json(&teams));
     data
