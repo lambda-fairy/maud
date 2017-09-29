@@ -32,7 +32,7 @@ static SOURCE: &'static str = "<html>
 #[bench]
 fn render_template(b: &mut test::Bencher) {
     let mut tera = test::black_box(Tera::default());
-    tera.add_raw_template("table", SOURCE);
+    tera.add_raw_template("table", SOURCE).unwrap();
 
     let context = test::black_box({
         let mut context = Context::new();
