@@ -130,9 +130,9 @@ impl Parser {
         };
         match token {
             // Literal
-            TokenTree { kind: TokenNode::Literal(lit), .. } => {
+            TokenTree { kind: TokenNode::Literal(lit), span } => {
                 self.advance();
-                self.literal(lit, builder)?;
+                self.literal(lit, span, builder)?;
             },
             // Special form
             TokenTree { kind: TokenNode::Op('@', _), .. } => {
@@ -156,7 +156,7 @@ impl Parser {
             // Element
             TokenTree { kind: TokenNode::Term(_), .. } => {
                 let name = self.namespaced_name()?;
-                self.element(&name, builder)?;
+                self.element(name, builder)?;
             },
             // Splice
             TokenTree { kind: TokenNode::Group(Delimiter::Parenthesis, expr), .. } => {
@@ -175,9 +175,9 @@ impl Parser {
     }
 
     /// Parses and renders a literal string.
-    fn literal(&mut self, lit: Literal, builder: &mut Builder) -> ParseResult<()> {
+    fn literal(&mut self, lit: Literal, span: Span, builder: &mut Builder) -> ParseResult<()> {
         if let Some(s) = lit.parse_string() {
-            builder.string(&s);
+            builder.string(&s, span);
             Ok(())
         } else {
             self.error("expected string")
@@ -404,11 +404,11 @@ impl Parser {
     /// Parses and renders an element node.
     ///
     /// The element name should already be consumed.
-    fn element(&mut self, name: &str, builder: &mut Builder) -> ParseResult<()> {
+    fn element(&mut self, name: TokenStream, builder: &mut Builder) -> ParseResult<()> {
         if self.in_attr {
             return self.error("unexpected element, you silly bumpkin");
         }
-        builder.element_open_start(name);
+        builder.element_open_start(name.clone());
         self.attrs(builder)?;
         builder.element_open_end();
         match self.peek() {
@@ -430,6 +430,8 @@ impl Parser {
         let mut classes_static = Vec::new();
         let mut classes_toggled = Vec::new();
         let mut ids = Vec::new();
+        let mut class_span = None;
+        let mut id_span = None;
         loop {
             let mut attempt = self.clone();
             let maybe_name = attempt.namespaced_name();
@@ -438,7 +440,7 @@ impl Parser {
                 // Non-empty attribute
                 (Ok(name), Some(TokenTree { kind: TokenNode::Op('=', _), .. })) => {
                     self.commit(attempt);
-                    builder.attribute_start(&name);
+                    builder.attribute_start(name);
                     {
                         // Parse a value under an attribute context
                         let in_attr = mem::replace(&mut self.in_attr, true);
@@ -454,18 +456,19 @@ impl Parser {
                         // Toggle the attribute based on a boolean expression
                         let body = {
                             let mut builder = self.builder();
-                            builder.attribute_empty(&name);
+                            builder.attribute_empty(name);
                             builder.build()
                         };
                         builder.emit_if(cond, cond_span, body);
                     } else {
                         // Write the attribute unconditionally
-                        builder.attribute_empty(&name);
+                        builder.attribute_empty(name);
                     }
                 },
                 // Class shorthand
-                (Err(_), Some(TokenTree { kind: TokenNode::Op('.', _), .. })) => {
+                (Err(_), Some(TokenTree { kind: TokenNode::Op('.', _), span })) => {
                     self.commit(attempt);
+                    class_span = Some(span);
                     let class_name = self.name()?;
                     if let Some((cond, cond_span)) = self.attr_toggler() {
                         // Toggle the class based on a boolean expression
@@ -476,8 +479,9 @@ impl Parser {
                     }
                 },
                 // ID shorthand
-                (Err(_), Some(TokenTree { kind: TokenNode::Op('#', _), .. })) => {
+                (Err(_), Some(TokenTree { kind: TokenNode::Op('#', _), span })) => {
                     self.commit(attempt);
+                    id_span = Some(span);
                     ids.push(self.name()?);
                 },
                 // If it's not a valid attribute, backtrack and bail out
@@ -485,17 +489,17 @@ impl Parser {
             }
         }
         if !classes_static.is_empty() || !classes_toggled.is_empty() {
-            builder.attribute_start("class");
-            builder.string(&classes_static.join(" "));
-            for (i, (cond, cond_span, mut class_name)) in classes_toggled.into_iter().enumerate() {
-                // If a class comes first in the list, then it shouldn't be
-                // prefixed by a space
-                if i > 0 || !classes_static.is_empty() {
-                    class_name = format!(" {}", class_name);
-                }
+            builder.attribute_start_str("class", class_span.unwrap());
+            let mut leading_space = false;
+            for class_name in classes_static {
+                builder.class_or_id(class_name, leading_space);
+                leading_space = true;
+            }
+            for (cond, cond_span, class_name) in classes_toggled {
                 let body = {
                     let mut builder = self.builder();
-                    builder.string(&class_name);
+                    builder.class_or_id(class_name, leading_space);
+                    leading_space = true;
                     builder.build()
                 };
                 builder.emit_if(cond, cond_span, body);
@@ -503,8 +507,10 @@ impl Parser {
             builder.attribute_end();
         }
         if !ids.is_empty() {
-            builder.attribute_start("id");
-            builder.string(&ids.join(" "));
+            builder.attribute_start_str("id", id_span.unwrap());
+            for (i, id_name) in ids.into_iter().enumerate() {
+                builder.class_or_id(id_name, i > 0);
+            }
             builder.attribute_end();
         }
         Ok(())
@@ -524,42 +530,44 @@ impl Parser {
     }
 
     /// Parses an identifier, without dealing with namespaces.
-    fn name(&mut self) -> ParseResult<String> {
-        let mut s = if let Some(TokenTree { kind: TokenNode::Term(term), .. }) = self.peek() {
+    fn name(&mut self) -> ParseResult<TokenStream> {
+        let mut result = Vec::new();
+        if let Some(token @ TokenTree { kind: TokenNode::Term(_), .. }) = self.peek() {
             self.advance();
-            String::from(term.as_str())
+            result.push(token);
         } else {
             return self.error("expected identifier");
-        };
+        }
         let mut expect_ident = false;
         loop {
             expect_ident = match self.peek() {
-                Some(TokenTree { kind: TokenNode::Op('-', _), .. }) => {
+                Some(token @ TokenTree { kind: TokenNode::Op('-', _), .. }) => {
                     self.advance();
-                    s.push('-');
+                    result.push(token);
                     true
                 },
-                Some(TokenTree { kind: TokenNode::Term(term), .. }) if expect_ident => {
+                Some(TokenTree { kind: TokenNode::Term(term), span }) if expect_ident => {
+                    let token = TokenTree { kind: TokenNode::Term(term), span };
                     self.advance();
-                    s.push_str(term.as_str());
+                    result.push(token);
                     false
                 },
                 _ => break,
             };
         }
-        Ok(s)
+        Ok(result.into_iter().collect())
     }
 
     /// Parses a HTML element or attribute name, along with a namespace
     /// if necessary.
-    fn namespaced_name(&mut self) -> ParseResult<String> {
-        let mut s = self.name()?;
-        if let Some(TokenTree { kind: TokenNode::Op(':', _), .. }) = self.peek() {
+    fn namespaced_name(&mut self) -> ParseResult<TokenStream> {
+        let mut result = vec![self.name()?];
+        if let Some(token @ TokenTree { kind: TokenNode::Op(':', _), .. }) = self.peek() {
             self.advance();
-            s.push(':');
-            s.push_str(&self.name()?);
+            result.push(TokenStream::from(token));
+            result.push(self.name()?);
         }
-        Ok(s)
+        Ok(result.into_iter().collect())
     }
 
     /// Parses the given token stream as a Maud expression, returning a block of

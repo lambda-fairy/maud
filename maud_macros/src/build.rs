@@ -1,4 +1,4 @@
-use proc_macro::{Delimiter, Literal, Span, TokenNode, TokenStream, TokenTree};
+use proc_macro::{Delimiter, Literal, Spacing, Span, Term, TokenNode, TokenStream, TokenTree};
 use proc_macro::quote;
 
 use maud_htmlescape::Escaper;
@@ -44,14 +44,49 @@ impl Builder {
         self.stmts.push(stmt.into())
     }
 
+    fn push_marker(&mut self, stmt: TokenStream) {
+        self.stmts.push(stmt);
+    }
+
     /// Pushes a literal string to the tail buffer.
     fn push_str(&mut self, s: &str) {
         self.tail.push_str(s);
     }
 
     /// Appends a literal string.
-    pub fn string(&mut self, s: &str) {
+    pub fn string(&mut self, s: &str, span: Span) {
+        let marker = TokenTree {
+            kind: TokenNode::Literal(Literal::string(s)),
+            span,
+        };
         self.push_str(&html_escape(s));
+        self.push_marker(quote!(maud::marker::literal(&[$marker]);));
+    }
+
+    /// Appends a class or ID name, with an optional space before it.
+    pub fn class_or_id(&mut self, name: TokenStream, leading_space: bool) {
+        if leading_space {
+            self.push_str(" ");
+        }
+        self.name_with_marker(name, quote!(maud::marker::literal));
+    }
+
+    fn name_with_marker(&mut self, name: TokenStream, marker_method: TokenStream) {
+        let mut markers = Vec::new();
+        for token in name {
+            let s = token.to_string();
+            markers.push(TokenTree {
+                kind: TokenNode::Literal(Literal::string(&s)),
+                span: token.span,
+            });
+            self.push_str(&html_escape(&s));
+            markers.push(TokenTree {
+                kind: TokenNode::Op(',', Spacing::Alone),
+                span: token.span,
+            });
+        }
+        let markers = markers.into_iter().collect::<TokenStream>();
+        self.push_marker(quote!($marker_method(&[$markers]);));
     }
 
     /// Appends the result of an expression.
@@ -69,34 +104,46 @@ impl Builder {
         }));
     }
 
-    pub fn element_open_start(&mut self, name: &str) {
+    pub fn element_open_start(&mut self, name: TokenStream) {
         self.push_str("<");
-        self.push_str(name);
+        self.name_with_marker(name, quote!(maud::marker::element_open_start));
     }
 
-    pub fn attribute_start(&mut self, name: &str) {
+    pub fn attribute_start(&mut self, name: TokenStream) {
         self.push_str(" ");
-        self.push_str(name);
+        self.name_with_marker(name, quote!(maud::marker::attribute_start));
         self.push_str("=\"");
     }
 
-    pub fn attribute_empty(&mut self, name: &str) {
+    pub fn attribute_start_str(&mut self, name: &str, span: Span) {
+        let name = TokenTree {
+            kind: TokenNode::Term(Term::intern(name)),
+            span,
+        };
+        self.attribute_start(TokenStream::from(name));
+    }
+
+    pub fn attribute_empty(&mut self, name: TokenStream) {
         self.push_str(" ");
-        self.push_str(name);
+        self.name_with_marker(name, quote!(maud::marker::attribute_empty));
     }
 
     pub fn attribute_end(&mut self) {
         self.push_str("\"");
+        self.push_marker(quote!(maud::marker::attribute_end();));
     }
 
     pub fn element_open_end(&mut self) {
         self.push_str(">");
+        self.push_marker(quote!(maud::marker::element_open_end();));
     }
 
-    pub fn element_close(&mut self, name: &str) {
+    pub fn element_close(&mut self, name: TokenStream) {
+        let name = name.into_iter().map(|token| token.to_string()).collect::<String>();
         self.push_str("</");
-        self.push_str(name);
+        self.push_str(&name);
         self.push_str(">");
+        self.push_marker(quote!(maud::marker::element_close();));
     }
 
     /// Emits an `if` expression.
