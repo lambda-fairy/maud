@@ -6,3 +6,6 @@ members = [
     "maud_lints",
     "maud_extras",
 ]
+exclude = [
+    "benchmarks",
+]
