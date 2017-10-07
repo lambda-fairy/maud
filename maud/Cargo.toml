@@ -18,6 +18,9 @@ maud_macros = { version = "0.17.1", path = "../maud_macros" }
 iron = { version = "0.5.1", optional = true }
 rocket = { version = "0.3", optional = true }
 
+[dev-dependencies]
+maud_lints = { path = "../maud_lints" }
+
 [badges]
 travis-ci = { repository = "lfairy/maud" }
 

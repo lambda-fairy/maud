@@ -1,4 +1,8 @@
-#![feature(conservative_impl_trait, proc_macro)]
+#![feature(conservative_impl_trait)]
+#![feature(plugin)]
+#![feature(proc_macro)]
+
+#![plugin(maud_lints)]
 
 extern crate maud;
 

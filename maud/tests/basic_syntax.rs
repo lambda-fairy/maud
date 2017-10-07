@@ -1,4 +1,7 @@
+#![feature(plugin)]
 #![feature(proc_macro)]
+
+#![plugin(maud_lints)]
 
 extern crate maud;
 
