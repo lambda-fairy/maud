@@ -95,9 +95,28 @@ impl Parser {
     /// Parses and renders multiple blocks of markup.
     fn markups(&mut self, builder: &mut Builder) -> ParseResult<()> {
         loop {
-            match self.peek() {
+            match self.peek2() {
                 None => return Ok(()),
-                Some(TokenTree { kind: TokenNode::Op(';', _), .. }) => self.advance(),
+                Some((TokenTree { kind: TokenNode::Op(';', _), .. }, _)) => self.advance(),
+                Some((
+                    TokenTree { kind: TokenNode::Op('@', _), .. },
+                    Some(TokenTree { kind: TokenNode::Term(term), span }),
+                )) if term.as_str() == "let" => {
+                    // When emitting a `@let`, wrap the rest of the block in a
+                    // new block to avoid scoping issues
+                    let keyword = TokenTree { kind: TokenNode::Term(term), span };
+                    self.advance2();
+                    builder.push({
+                        let mut builder = self.builder();
+                        builder.push(keyword);
+                        self.let_expr(&mut builder)?;
+                        self.markups(&mut builder)?;
+                        TokenTree {
+                            kind: TokenNode::Group(Delimiter::Brace, builder.build()),
+                            span,
+                        }
+                    });
+                },
                 _ => self.markup(builder)?,
             }
         }
@@ -127,7 +146,7 @@ impl Parser {
                             "while" => self.while_expr(builder)?,
                             "for" => self.for_expr(builder)?,
                             "match" => self.match_expr(builder)?,
-                            "let" => self.let_expr(builder)?,
+                            "let" => return self.error(format!("@let only works inside a block")),
                             other => return self.error(format!("unknown keyword `@{}`", other)),
                         }
                     },
@@ -145,10 +164,9 @@ impl Parser {
                 builder.splice(expr);
             }
             // Block
-            TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), span } => {
+            TokenTree { kind: TokenNode::Group(Delimiter::Brace, block), .. } => {
                 self.advance();
-                let block = self.block(block, span)?;
-                builder.push(block);
+                self.with_input(block).markups(builder)?;
             },
             // ???
             _ => return self.error("invalid syntax"),
