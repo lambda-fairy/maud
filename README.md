@@ -1,4 +1,7 @@
-# <img align="right" src="maud.png" alt="HTML5 rocks." title="HTML5 rocks."> maud [![Build Status](https://img.shields.io/travis/lfairy/maud.svg)](http://travis-ci.org/lfairy/maud) [![Cargo](https://img.shields.io/crates/v/maud.svg)](https://crates.io/crates/maud)
+# <img align="right" src="maud.png" alt="HTML5 rocks." title="HTML5 rocks."> maud 
+[![Build Status](https://img.shields.io/travis/lfairy/maud.svg)](http://travis-ci.org/lfairy/maud) 
+[![Cargo](https://img.shields.io/crates/v/maud.svg)](https://crates.io/crates/maud) 
+[![API reference](https://docs.rs/maud/badge.svg)](https://docs.rs/maud/)
 
 [Documentation][book] ([source][booksrc]) • [API reference][apiref] • [Change log][changelog]
 
