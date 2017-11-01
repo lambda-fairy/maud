@@ -1,5 +1,6 @@
 #![feature(plugin_registrar)]
 #![feature(rustc_private)]
+#![feature(macro_vis_matcher)]
 #![recursion_limit = "1000"]  // if_chain
 
 #![doc(html_root_url = "https://docs.rs/maud_lints/0.17.0")]
