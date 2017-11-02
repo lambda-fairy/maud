@@ -20,8 +20,7 @@ pub fn match_def_path(cx: &LateContext, def_id: DefId, path: &[&str]) -> bool {
 
     impl ty::item_path::ItemPathBuffer for AbsolutePathBuffer {
         fn root_mode(&self) -> &ty::item_path::RootMode {
-            const ABSOLUTE: &'static ty::item_path::RootMode = &ty::item_path::RootMode::Absolute;
-            ABSOLUTE
+            &ty::item_path::RootMode::Absolute
         }
 
         fn push(&mut self, text: &str) {
