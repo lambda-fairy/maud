@@ -9,7 +9,6 @@ Great to see that you want to help out! Here are some tips for getting started:
 * Most contributions should include tests – see the [existing test code] for how to write these.
 
 * Documentation on the proc macro interface can be found on [docs.rust-lang.org][proc_macro].
-    - As for lints: [Manishearth's site] may be of some help, though (as of this writing) it hasn't been updated since April.
 
 Have fun! ☺️
 
@@ -17,4 +16,3 @@ Have fun! ☺️
 [existing test code]: https://github.com/lfairy/maud/tree/master/maud/tests
 [proc_macro]: https://doc.rust-lang.org/nightly/proc_macro/
 [compiler source]: https://github.com/rust-lang/rust/tree/master/src
-[Manishearth's site]: https://manishearth.github.io/rust-internals-docs/rustc/
