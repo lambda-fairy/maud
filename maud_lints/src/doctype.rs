@@ -1,6 +1,5 @@
 use rustc::hir::{Expr, ExprCall, ExprLit, ExprPath};
 use rustc::lint::{LateContext, LateLintPass, LintArray, LintContext, LintPass};
-use std::ascii::AsciiExt;
 use super::util::match_def_path;
 use syntax::ast::LitKind;
 
