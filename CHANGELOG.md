@@ -5,8 +5,7 @@
 - [Added] Iron 0.6 support
   [#107](https://github.com/lfairy/maud/pull/107)
 - [Fixed] Allow braces in the boolean expression for a toggled class
-- [Fixed] Update to rustc 1.21.0-nightly (f25c2283b 2017-08-15)
-  [#99](https://github.com/lfairy/maud/issues/99)
+- [Fixed] Update to rustc 1.23.0-nightly (6160040d8 2017-11-18)
 
 ## [0.17.1] - 2017-08-11
 

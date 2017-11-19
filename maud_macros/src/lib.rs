@@ -29,7 +29,7 @@ pub fn html_debug(input: TokenStream) -> TokenStream {
 fn expand(input: TokenStream) -> TokenStream {
     let output_ident = TokenTree {
         kind: TokenNode::Term(Term::intern("__maud_output")),
-        span: Span::default(),
+        span: Span::def_site(),
     };
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself

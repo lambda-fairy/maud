@@ -353,17 +353,21 @@ impl Parser {
             },
             // $pat => $expr
             Some(first_token) => {
+                let mut span = first_token.span;
                 let mut body = vec![first_token];
                 loop {
                     match self.next() {
                         Some(TokenTree { kind: TokenNode::Op(',', _), .. }) => break,
                         Some(token) => {
+                            if let Some(bigger_span) = span.join(token.span) {
+                                span = bigger_span;
+                            }
                             body.push(token);
                         },
                         None => return self.error("unexpected end of @match arm"),
                     }
                 }
-                self.block(body.into_iter().collect(), Span::default())?
+                self.block(body.into_iter().collect(), span)?
             },
             None => return self.error("unexpected end of @match arm"),
         };
