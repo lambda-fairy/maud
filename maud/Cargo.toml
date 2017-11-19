@@ -2,7 +2,7 @@
 
 name = "maud"
 # When releasing a new version, please update html_root_url in src/lib.rs
-version = "0.17.1"
+version = "0.17.2"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 
 license = "MIT/Apache-2.0"
@@ -14,12 +14,12 @@ categories = ["template-engine"]
 
 [dependencies]
 maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
-maud_macros = { version = "0.17.1", path = "../maud_macros" }
+maud_macros = { version = "0.17.2", path = "../maud_macros" }
 iron = { version = ">= 0.5.1, < 0.7.0", optional = true }
 rocket = { version = "0.3", optional = true }
 
 [dev-dependencies]
-maud_lints = { path = "../maud_lints" }
+maud_lints = { version = "0.17.0", path = "../maud_lints" }
 
 [badges]
 travis-ci = { repository = "lfairy/maud" }

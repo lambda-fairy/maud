@@ -9,7 +9,7 @@ Great to see that you want to help out! Here are some tips for getting started:
 * Most contributions should include tests – see the [existing test code] for how to write these.
 
 * Documentation on the proc macro interface can be found on [docs.rust-lang.org][proc_macro].
-    - As for lints: [Manishearth's site] may be of some help, though (as of this writing) it hasn't been updated since April.
+    - As for lints: [Manishearth's site] provides documentation for compiler internals.
 
 Have fun! ☺️
 

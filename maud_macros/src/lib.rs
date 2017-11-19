@@ -1,6 +1,6 @@
 #![feature(proc_macro)]
 
-#![doc(html_root_url = "https://docs.rs/maud_macros/0.17.1")]
+#![doc(html_root_url = "https://docs.rs/maud_macros/0.17.2")]
 
 extern crate literalext;
 extern crate maud_htmlescape;

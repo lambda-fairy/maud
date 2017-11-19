@@ -4,6 +4,8 @@
 
 - [Added] Iron 0.6 support
   [#107](https://github.com/lfairy/maud/pull/107)
+- [Added] Implement `Clone` and `Copy` for `PreEscaped`
+  [#101](https://github.com/lfairy/maud/pull/101)
 - [Fixed] Allow braces in the boolean expression for a toggled class
 - [Fixed] Update to rustc 1.23.0-nightly (6160040d8 2017-11-18)
 
