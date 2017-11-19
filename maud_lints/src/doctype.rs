@@ -1,7 +1,8 @@
 use rustc::hir::{Expr, ExprCall, ExprLit, ExprPath};
 use rustc::lint::{LateContext, LateLintPass, LintArray, LintContext, LintPass};
-use super::util::match_def_path;
 use syntax::ast::LitKind;
+
+use util::match_def_path;
 
 declare_lint! {
     pub MAUD_DOCTYPE,
