@@ -1,6 +1,6 @@
 [package]
 name = "benchmarks"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 
 [dependencies]
@@ -13,3 +13,4 @@ serde = "*"
 serde_derive = "*"
 serde_json = "*"
 tera = "*"
+askama = "*"
