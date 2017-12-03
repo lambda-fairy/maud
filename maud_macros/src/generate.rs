@@ -1,26 +1,27 @@
-use proc_macro::{Span, TokenStream, TokenTree};
+use proc_macro::{Span, TokenStream};
 
 use ast::*;
 use build::Builder;
+use parse::{OutputBuffer};
 
-pub fn generate(markups: Vec<Markup>, output_ident: TokenTree) -> TokenStream {
-    let generator = Generator::new(output_ident);
+pub fn generate(markups: Vec<Markup>, output_buffer: OutputBuffer) -> TokenStream {
+    let generator = Generator::new(output_buffer);
     let mut builder = generator.builder();
     generator.markups(markups, &mut builder);
     builder.build()
 }
 
 struct Generator {
-    output_ident: TokenTree,
+    output_buffer: OutputBuffer,
 }
 
 impl Generator {
-    fn new(output_ident: TokenTree) -> Generator {
-        Generator { output_ident }
+    fn new(output_buffer: OutputBuffer) -> Generator {
+        Generator { output_buffer }
     }
 
     fn builder(&self) -> Builder {
-        Builder::new(self.output_ident.clone())
+        Builder::new(self.output_buffer.clone())
     }
 
     fn markups(&self, markups: Vec<Markup>, builder: &mut Builder) {

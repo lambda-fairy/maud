@@ -5,190 +5,198 @@
 
 extern crate maud;
 
-use maud::{Markup, html};
+use maud::{html, html_to};
+
+#[macro_use]
+mod html_test;
 
 #[test]
 fn literals() {
-    let s = html!("du\tcks" "-23" "3.14\n" "geese").into_string();
-    assert_eq!(s, "du\tcks-233.14\ngeese");
+    html_test!(assert_eq: "du\tcks-233.14\ngeese",
+               markup: "du\tcks" "-23" "3.14\n" "geese");
 }
 
 #[test]
 fn escaping() {
-    let s = html!("<flim&flam>").into_string();
-    assert_eq!(s, "&lt;flim&amp;flam&gt;");
+    html_test!(assert_eq: "&lt;flim&amp;flam&gt;",
+               markup: "<flim&flam>");
 }
 
 #[test]
 fn semicolons() {
-    let s = html! {
-        "one";
-        "two";
-        "three";
-        ;;;;;;;;;;;;;;;;;;;;;;;;
-        "four";
-    }.into_string();
-    assert_eq!(s, "onetwothreefour");
+    html_test!(assert_eq: "onetwothreefour",
+               markup:
+               "one";
+               "two";
+               "three";
+               ;;;;;;;;;;;;;;;;;;;;;;;;
+               "four";);
 }
 
 #[test]
 fn blocks() {
-    let s = html! {
-        "hello"
-        {
-            " ducks" " geese"
-        }
-        " swans"
-    }.into_string();
-    assert_eq!(s, "hello ducks geese swans");
+    html_test!(assert_eq: "hello ducks geese swans",
+               markup:
+               "hello"
+               {
+                   " ducks" " geese"
+               }
+               " swans"
+    );
 }
 
 #[test]
 fn simple_elements() {
-    let s = html!(p { b { "pickle" } "barrel" i { "kumquat" } }).into_string();
-    assert_eq!(s, "<p><b>pickle</b>barrel<i>kumquat</i></p>");
+    html_test!(assert_eq: "<p><b>pickle</b>barrel<i>kumquat</i></p>",
+               markup: p { b { "pickle" } "barrel" i { "kumquat" } });
 }
 
 #[test]
 fn nesting_elements() {
-    let s = html!(html body div p sup "butts").into_string();
-    assert_eq!(s, "<html><body><div><p><sup>butts</sup></p></div></body></html>");
+    html_test!(assert_eq: "<html><body><div><p><sup>butts</sup></p></div></body></html>",
+               markup: html body div p sup "butts");
 }
 
 #[test]
 fn empty_elements() {
-    let s = html!("pinkie" br; "pie").into_string();
-    assert_eq!(s, "pinkie<br>pie");
+    html_test!(assert_eq: "pinkie<br>pie",
+               markup: "pinkie" br; "pie");
 }
 
 #[test]
 fn empty_elements_slash() {
-    let s = html!("pinkie" br / "pie").into_string();
-    assert_eq!(s, "pinkie<br>pie");
+    html_test!(assert_eq: "pinkie<br>pie",
+               markup: "pinkie" br / "pie");
 }
 
 #[test]
 fn simple_attributes() {
-    let s = html! {
-        link rel="stylesheet" href="styles.css";
-        section id="midriff" {
-            p class="hotpink" "Hello!"
-        }
-    }.into_string();
-    assert_eq!(s, concat!(
-            r#"<link rel="stylesheet" href="styles.css">"#,
-            r#"<section id="midriff"><p class="hotpink">Hello!</p></section>"#));
+    html_test!(assert_eq:
+               concat!(r#"<link rel="stylesheet" href="styles.css">"#,
+                       r#"<section id="midriff"><p class="hotpink">Hello!</p></section>"#),
+               markup:
+               link rel="stylesheet" href="styles.css";
+               section id="midriff" {
+                   p class="hotpink" "Hello!"
+               });
 }
 
 #[test]
 fn empty_attributes() {
-    let s = html!(div readonly? input type="checkbox" checked?;).into_string();
-    assert_eq!(s, r#"<div readonly><input type="checkbox" checked></div>"#);
+    html_test!(assert_eq: r#"<div readonly><input type="checkbox" checked></div>"#,
+               markup: div readonly? input type="checkbox" checked?;);
 }
 
 #[test]
 fn toggle_empty_attributes() {
-    let rocks = true;
-    let s = html!({
-        input checked?[true];
-        input checked?[false];
-        input checked?[rocks];
-        input checked?[!rocks];
-    }).into_string();
-    assert_eq!(s, concat!(
-            r#"<input checked>"#,
-            r#"<input>"#,
-            r#"<input checked>"#,
-            r#"<input>"#));
+    html_test!(bootstrap: { let rocks = true; },
+               assert_eq:
+               concat!(r#"<input checked>"#,
+                       r#"<input>"#,
+                       r#"<input checked>"#,
+                       r#"<input>"#),
+               markup:
+               input checked?[true];
+               input checked?[false];
+               input checked?[rocks];
+               input checked?[!rocks];
+    );
 }
 
 #[test]
 fn toggle_empty_attributes_braces() {
-    struct Maud { rocks: bool }
-    let s = html!(input checked?[Maud { rocks: true }.rocks] /).into_string();
-    assert_eq!(s, r#"<input checked>"#);
+    html_test!(bootstrap: { struct Maud { rocks: bool } },
+               assert_eq: r#"<input checked>"#,
+               markup: input checked?[Maud { rocks: true }.rocks] /);
 }
 
 #[test]
 fn colons_in_names() {
-    let s = html!(pon-pon:controls-alpha a on:click="yay()" "Yay!").into_string();
-    assert_eq!(s, concat!(
-            r#"<pon-pon:controls-alpha>"#,
-            r#"<a on:click="yay()">Yay!</a>"#,
-            r#"</pon-pon:controls-alpha>"#));
+    html_test!(assert_eq: concat!(r#"<pon-pon:controls-alpha>"#,
+                                  r#"<a on:click="yay()">Yay!</a>"#,
+                                  r#"</pon-pon:controls-alpha>"#),
+               markup: pon-pon:controls-alpha a on:click="yay()" "Yay!");
 }
 
 #[test]
 fn hyphens_in_element_names() {
-    let s = html!(custom-element {}).into_string();
-    assert_eq!(s, "<custom-element></custom-element>");
+    html_test!(assert_eq: "<custom-element></custom-element>",
+               markup: custom-element {});
 }
 
 #[test]
 fn hyphens_in_attribute_names() {
-    let s = html!(this sentence-is="false" of-course? {}).into_string();
-    assert_eq!(s, r#"<this sentence-is="false" of-course></this>"#);
+    html_test!(assert_eq: r#"<this sentence-is="false" of-course></this>"#,
+               markup: this sentence-is="false" of-course? {});
 }
 
 #[test]
 fn class_shorthand() {
-    let s = html!(p { "Hi, " span.name { "Lyra" } "!" }).into_string();
-    assert_eq!(s, r#"<p>Hi, <span class="name">Lyra</span>!</p>"#);
+    html_test!(assert_eq: r#"<p>Hi, <span class="name">Lyra</span>!</p>"#,
+               markup: p { "Hi, " span.name { "Lyra" } "!" });
 }
 
 #[test]
 fn class_shorthand_with_space() {
-    let s = html!(p { "Hi, " span .name { "Lyra" } "!" }).into_string();
-    assert_eq!(s, r#"<p>Hi, <span class="name">Lyra</span>!</p>"#);
+    html_test!(assert_eq: r#"<p>Hi, <span class="name">Lyra</span>!</p>"#,
+               markup: p { "Hi, " span .name { "Lyra" } "!" });
 }
 
 #[test]
 fn classes_shorthand() {
-    let s = html!(p { "Hi, " span.name.here { "Lyra" } "!" }).into_string();
-    assert_eq!(s, r#"<p>Hi, <span class="name here">Lyra</span>!</p>"#);
+    html_test!(assert_eq: r#"<p>Hi, <span class="name here">Lyra</span>!</p>"#,
+               markup: p { "Hi, " span.name.here { "Lyra" } "!" });
 }
 
 #[test]
 fn hyphens_in_class_names() {
-    let s = html!(p.rocks-these.are--my--rocks "yes").into_string();
-    assert_eq!(s, r#"<p class="rocks-these are--my--rocks">yes</p>"#);
+    html_test!(assert_eq: r#"<p class="rocks-these are--my--rocks">yes</p>"#,
+               markup: p.rocks-these.are--my--rocks "yes");
 }
 
 #[test]
 fn toggle_classes() {
-    fn test(is_cupcake: bool, is_muffin: bool) -> Markup {
-        html!(p.cupcake[is_cupcake].muffin[is_muffin] "Testing!")
+    macro_rules! toggle_classes {
+        ($is_cupcake:expr, $is_muffin:expr, $a_eq:expr) => {
+            html_test!(bootstrap: { let is_cupcake = $is_cupcake; let is_muffin = $is_muffin; },
+                       assert_eq: $a_eq,
+                       markup: p.cupcake[is_cupcake].muffin[is_muffin] "Testing!");
+        }
     }
-    assert_eq!(test(true, true).into_string(), r#"<p class="cupcake muffin">Testing!</p>"#);
-    assert_eq!(test(false, true).into_string(), r#"<p class=" muffin">Testing!</p>"#);
-    assert_eq!(test(true, false).into_string(), r#"<p class="cupcake">Testing!</p>"#);
-    assert_eq!(test(false, false).into_string(), r#"<p class="">Testing!</p>"#);
+    toggle_classes!(true, true, r#"<p class="cupcake muffin">Testing!</p>"#);
+    toggle_classes!(false, true, r#"<p class=" muffin">Testing!</p>"#);
+    toggle_classes!(true, false, r#"<p class="cupcake">Testing!</p>"#);
+    toggle_classes!(false, false, r#"<p class="">Testing!</p>"#);
 }
 
 #[test]
 fn toggle_classes_braces() {
-    struct Maud { rocks: bool }
-    let s = html!(p.rocks[Maud { rocks: true }.rocks] "Awesome!").into_string();
-    assert_eq!(s, r#"<p class="rocks">Awesome!</p>"#);
+    html_test!(bootstrap: { struct Maud { rocks: bool } },
+               assert_eq: r#"<p class="rocks">Awesome!</p>"#,
+               markup: p.rocks[Maud { rocks: true }.rocks] "Awesome!");
 }
 
 #[test]
 fn mixed_classes() {
-    fn test(is_muffin: bool) -> Markup {
-        html!(p.cupcake.muffin[is_muffin].lamington "Testing!")
+    macro_rules! mixed_classes{
+        ($is_muffin:expr, $a_eq:expr) => {
+            html_test!(bootstrap: { let is_muffin = $is_muffin; },
+                       assert_eq: $a_eq,
+                       markup:p.cupcake.muffin[is_muffin].lamington "Testing!");
+        }
     }
-    assert_eq!(test(true).into_string(), r#"<p class="cupcake lamington muffin">Testing!</p>"#);
-    assert_eq!(test(false).into_string(), r#"<p class="cupcake lamington">Testing!</p>"#);
+    mixed_classes!(true, r#"<p class="cupcake lamington muffin">Testing!</p>"#);
+    mixed_classes!(false, r#"<p class="cupcake lamington">Testing!</p>"#);
 }
 
 #[test]
 fn ids_shorthand() {
-    let s = html!(p { "Hi, " span#thing { "Lyra" } "!" }).into_string();
-    assert_eq!(s, r#"<p>Hi, <span id="thing">Lyra</span>!</p>"#);
+    html_test!(assert_eq: r#"<p>Hi, <span id="thing">Lyra</span>!</p>"#,
+               markup: p { "Hi, " span#thing { "Lyra" } "!" });
 }
 
 #[test]
 fn classes_attrs_ids_mixed_up() {
-    let s = html!(p { "Hi, " span.name.here lang="en" #thing { "Lyra" } "!" }).into_string();
-    assert_eq!(s, r#"<p>Hi, <span class="name here" id="thing" lang="en">Lyra</span>!</p>"#);
+    html_test!(assert_eq: r#"<p>Hi, <span class="name here" id="thing" lang="en">Lyra</span>!</p>"#,
+               markup: p { "Hi, " span.name.here lang="en" #thing { "Lyra" } "!" });
 }

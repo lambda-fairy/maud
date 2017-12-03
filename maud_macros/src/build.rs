@@ -1,19 +1,22 @@
 use proc_macro::{Delimiter, Literal, Spacing, Span, Term, TokenNode, TokenStream, TokenTree};
 use proc_macro::quote;
 
+use std::str::FromStr;
 use maud_htmlescape::Escaper;
 
+use parse::{BufferType, BufferBorrow, OutputBuffer};
+
 pub struct Builder {
-    output_ident: TokenTree,
+    output_buffer: OutputBuffer,
     stmts: Vec<TokenStream>,
     tail: String,
 }
 
 impl Builder {
     /// Creates a new `Builder`.
-    pub fn new(output_ident: TokenTree) -> Builder {
+    pub fn new(output_buffer: OutputBuffer) -> Builder {
         Builder {
-            output_ident,
+            output_buffer,
             stmts: Vec::new(),
             tail: String::new(),
         }
@@ -23,7 +26,7 @@ impl Builder {
     fn flush(&mut self) {
         if !self.tail.is_empty() {
             let expr = {
-                let output_ident = self.output_ident.clone();
+                let output_ident = self.output_buffer.ident();
                 let string = TokenNode::Literal(Literal::string(&self.tail));
                 quote!($output_ident.push_str($string);)
             };
@@ -99,7 +102,12 @@ impl Builder {
 
     /// Appends the result of an expression.
     pub fn splice(&mut self, expr: TokenStream) {
-        let output_ident = self.output_ident.clone();
+        let output_ident = self.output_buffer.ident();
+        let borrow_mut = match self.output_buffer.buffer_type() {
+            BufferType::Allocated | BufferType::Custom(BufferBorrow::NeedBorrow)
+                => TokenStream::from_str("&mut").unwrap(),
+            _ => TokenStream::empty()
+        };
         self.push(quote!({
             // Create a local trait alias so that autoref works
             trait Render: maud::Render {
@@ -108,7 +116,7 @@ impl Builder {
                 }
             }
             impl<T: maud::Render> Render for T {}
-            $expr.__maud_render_to(&mut $output_ident);
+            $expr.__maud_render_to($borrow_mut $output_ident);
         }));
     }
 

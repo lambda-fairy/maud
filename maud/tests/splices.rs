@@ -5,55 +5,58 @@
 
 extern crate maud;
 
-use maud::html;
+use maud::{html, html_to};
+
+#[macro_use]
+mod html_test;
 
 #[test]
 fn literals() {
-    let s = html!(("<pinkie>")).into_string();
-    assert_eq!(s, "&lt;pinkie&gt;");
+    html_test!(assert_eq: "&lt;pinkie&gt;",
+               markup: ("<pinkie>"));
 }
 
 #[test]
 fn raw_literals() {
-    use maud::PreEscaped;
-    let s = html!((PreEscaped("<pinkie>"))).into_string();
-    assert_eq!(s, "<pinkie>");
+    html_test!(bootstrap: { use maud::PreEscaped; },
+               assert_eq: "<pinkie>",
+               markup: (PreEscaped("<pinkie>")));
 }
 
 #[test]
 fn blocks() {
-    let s = html!({
-        ({
-            let mut result = 1i32;
-            for i in 2..11 {
-                result *= i;
-            }
-            result
-        })
-    }).into_string();
-    assert_eq!(s, "3628800");
+    html_test!(assert_eq: "3628800",
+               markup:
+               ({
+                   let mut result = 1i32;
+                   for i in 2..11 {
+                       result *= i;
+                   }
+                   result
+               })
+    );
 }
 
 #[test]
 fn attributes() {
-    let alt = "Pinkie Pie";
-    let s = html!(img src="pinkie.jpg" alt=(alt) /).into_string();
-    assert_eq!(s, r#"<img src="pinkie.jpg" alt="Pinkie Pie">"#);
+    html_test!(bootstrap: { let alt = "Pinkie Pie"; },
+               assert_eq: r#"<img src="pinkie.jpg" alt="Pinkie Pie">"#,
+               markup: img src="pinkie.jpg" alt=(alt) /);
 }
 
 static BEST_PONY: &'static str = "Pinkie Pie";
 
 #[test]
 fn statics() {
-    let s = html!((BEST_PONY)).into_string();
-    assert_eq!(s, "Pinkie Pie");
+    html_test!(assert_eq: "Pinkie Pie",
+               markup: (BEST_PONY));
 }
 
 #[test]
 fn locals() {
-    let best_pony = "Pinkie Pie";
-    let s = html!((best_pony)).into_string();
-    assert_eq!(s, "Pinkie Pie");
+    html_test!(bootstrap: { let best_pony = "Pinkie Pie"; },
+               assert_eq: "Pinkie Pie",
+               markup: (best_pony));
 }
 
 /// An example struct, for testing purposes only
@@ -73,37 +76,40 @@ impl Creature {
 
 #[test]
 fn structs() {
-    let pinkie = Creature {
-        name: "Pinkie Pie",
-        adorableness: 9,
-    };
-    let s = html!({
-        "Name: " (pinkie.name) ". Rating: " (pinkie.repugnance())
-    }).into_string();
-    assert_eq!(s, "Name: Pinkie Pie. Rating: 1");
+    html_test!(bootstrap: {
+                   let pinkie = Creature {
+                       name: "Pinkie Pie",
+                       adorableness: 9,
+                   };
+               },
+               assert_eq: "Name: Pinkie Pie. Rating: 1",
+               markup:
+               "Name: " (pinkie.name) ". Rating: " (pinkie.repugnance()));
 }
 
 #[test]
 fn tuple_accessors() {
-    let a = ("ducks", "geese");
-    let s = html!((a.0)).into_string();
-    assert_eq!(s, "ducks");
+    html_test!(bootstrap: { let a = ("ducks", "geese"); },
+               assert_eq: "ducks",
+               markup: (a.0));
 }
 
 #[test]
 fn splice_with_path() {
-    mod inner {
-        pub fn name() -> &'static str {
-            "Maud"
-        }
-    }
-    let s = html!((inner::name())).into_string();
-    assert_eq!(s, "Maud");
+    html_test!(bootstrap: {
+                   mod inner {
+                       pub fn name() -> &'static str {
+                           "Maud"
+                       }
+                   }
+               },
+               assert_eq: "Maud",
+               markup: (inner::name()));
 }
 
 #[test]
 fn nested_macro_invocation() {
-    let best_pony = "Pinkie Pie";
-    let s = html!((format!("{} is best pony", best_pony))).into_string();
-    assert_eq!(s, "Pinkie Pie is best pony");
+    html_test!(bootstrap: { let best_pony = "Pinkie Pie"; },
+               assert_eq: "Pinkie Pie is best pony",
+               markup: (format!("{} is best pony", best_pony)));
 }

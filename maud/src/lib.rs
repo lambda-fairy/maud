@@ -18,7 +18,7 @@ extern crate maud_macros;
 
 use std::fmt::{self, Write};
 
-pub use maud_macros::{html, html_debug};
+pub use maud_macros::{html, html_to, html_debug, html_to_debug};
 
 /// Represents a type that can be rendered as HTML.
 ///

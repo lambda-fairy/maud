@@ -9,11 +9,45 @@ use proc_macro::{
     TokenTreeIter,
 };
 use std::mem;
+use std::iter::FromIterator;
 
 use literalext::LiteralExt;
 
 use ast;
 use ParseResult;
+
+#[derive(Copy, Clone)]
+pub enum BufferBorrow {
+    NeedBorrow,
+    AlreadyBorrowed
+}
+
+#[derive(Copy, Clone)]
+pub enum BufferType {
+    Allocated,
+    Custom(BufferBorrow)
+}
+
+
+#[derive(Clone)]
+pub struct OutputBuffer {
+    ident: TokenTree,
+    buffer_type: BufferType
+}
+
+impl OutputBuffer {
+    pub fn new(ident: TokenTree, buffer_type: BufferType) -> OutputBuffer {
+        OutputBuffer { ident, buffer_type }
+    }
+
+    pub fn ident(&self) -> TokenTree {
+        self.ident.clone()
+    }
+
+    pub fn buffer_type(&self) -> BufferType {
+        self.buffer_type
+    }
+}
 
 pub fn parse(input: TokenStream) -> ParseResult<Vec<ast::Markup>> {
     Parser::new(input).markups()
@@ -50,12 +84,12 @@ impl Parser {
     }
 
     /// Returns the next token in the stream without consuming it.
-    fn peek(&mut self) -> Option<TokenTree> {
+    fn peek(&self) -> Option<TokenTree> {
         self.clone().next()
     }
 
     /// Returns the next two tokens in the stream without consuming them.
-    fn peek2(&mut self) -> Option<(TokenTree, Option<TokenTree>)> {
+    fn peek2(&self) -> Option<(TokenTree, Option<TokenTree>)> {
         let mut clone = self.clone();
         clone.next().map(|first| (first, clone.next()))
     }
@@ -523,3 +557,57 @@ impl Parser {
         Ok(ast::Block { markups, span })
     }
 }
+
+pub fn buffer_argument(input_stream: &mut TokenStream) -> ParseResult<OutputBuffer> {
+    let mut input = input_stream.clone().into_iter();
+    match peek3(&input) {
+        // Case html_to! { my_buffer, <Markup> }
+        Some((TokenTree { kind: TokenNode::Term(buffer), span },
+              Some(TokenTree { kind: TokenNode::Op(',', _), .. }),
+              _)) => {
+            // Advance over argument
+            advance2(&mut input);
+            input_stream.clone_from(&TokenStream::from_iter(input));
+            Ok(OutputBuffer {
+                ident: TokenTree { kind: TokenNode::Term(buffer.clone()), span: span.clone() },
+                buffer_type: BufferType::Custom(BufferBorrow::AlreadyBorrowed)
+            })
+        },
+        // Case html_to! { &mut my_buffer, <Markup> }
+        Some((TokenTree { kind: TokenNode::Op('&', _), .. },
+              Some(TokenTree { kind: TokenNode::Term(mutable), .. }),
+              Some(TokenTree { kind: TokenNode::Term(buffer),  span })))
+            if mutable.as_str() == "mut" => {
+                // Advance over argument
+                advance4(&mut input);
+                input_stream.clone_from(&TokenStream::from_iter(input));
+                Ok(OutputBuffer {
+                    ident: TokenTree { kind: TokenNode::Term(buffer.clone()), span: span.clone() },
+                    buffer_type: BufferType::Custom(BufferBorrow::NeedBorrow)
+                })
+            },
+        _ => { return Err("Error trying to parse the buffer name for html_to!".into()); }
+    }
+}
+
+/// Returns the next three tokens in the stream without consuming them.
+fn peek3(input: &TokenTreeIter) -> Option<(TokenTree, Option<TokenTree>, Option<TokenTree>)> {
+    let mut clone = input.clone();
+    clone.next().map(|first| {
+        let second = clone.next();
+        (first, second, clone.next())
+    })
+}
+
+/// Advances the cursor by two steps.
+fn advance2(input: &mut TokenTreeIter) {
+    input.next();
+    input.next();
+}
+
+/// Advances the cursor by four steps.
+fn advance4(input: &mut TokenTreeIter) {
+    advance2(input);
+    advance2(input);
+}
+
