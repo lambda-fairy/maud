@@ -44,6 +44,14 @@ impl Builder {
         self.stmts.push(stmt.into())
     }
 
+    /// Like `.push()`, but wraps its argument in a block.
+    pub fn push_block(&mut self, tokens: TokenStream, span: Span) {
+        self.push(TokenTree {
+            kind: TokenNode::Group(Delimiter::Brace, tokens),
+            span,
+        });
+    }
+
     fn push_marker(&mut self, stmt: TokenStream) {
         self.stmts.push(stmt);
     }
@@ -146,27 +154,13 @@ impl Builder {
         self.push_marker(quote!(maud::marker::element_close();));
     }
 
-    /// Emits an `if` expression.
-    ///
-    /// The condition is a token stream (not an expression) so we don't
-    /// need to special-case `if let`.
-    pub fn emit_if(
+    pub fn if_expr(
         &mut self,
         mut cond: TokenStream,
         cond_span: Span,
         body: TokenStream,
     ) {
-        // If the condition contains an opening brace `{`,
-        // wrap it in parentheses to avoid parse errors
-        if cond.clone().into_iter().any(|token| match token.kind {
-            TokenNode::Group(Delimiter::Brace, _) => true,
-            _ => false,
-        }) {
-            cond = TokenStream::from(TokenTree {
-                kind: TokenNode::Group(Delimiter::Parenthesis, cond),
-                span: cond_span,
-            });
-        }
+        cond = parenthesize(cond, Some(cond_span));
         self.push(quote!(if $cond { $body }));
     }
 }
@@ -176,4 +170,31 @@ fn html_escape(s: &str) -> String {
     let mut buffer = String::new();
     Escaper::new(&mut buffer).write_str(s).unwrap();
     buffer
+}
+
+fn parenthesize(moelarry: TokenStream, span: Option<Span>) -> TokenStream {
+    // If the expression contains an opening brace `{`,
+    // wrap it in parentheses to avoid parse errors
+    if moelarry.clone().into_iter().any(|token| match token.kind {
+        TokenNode::Group(Delimiter::Brace, _) => true,
+        _ => false,
+    }) {
+        let span = span.unwrap_or_else(|| span_tokens(moelarry.clone()));
+        TokenStream::from(TokenTree {
+            kind: TokenNode::Group(Delimiter::Parenthesis, moelarry),
+            span,
+        })
+    } else {
+        moelarry
+    }
+}
+
+fn span_tokens(tokens: TokenStream) -> Span {
+    tokens
+        .into_iter()
+        .fold(None, |span: Option<Span>, token| Some(match span {
+            None => token.span,
+            Some(span) => span.join(token.span).unwrap_or(span),
+        }))
+        .unwrap_or(Span::def_site())
 }
