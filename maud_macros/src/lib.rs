@@ -8,7 +8,6 @@ extern crate maud_htmlescape;
 extern crate proc_macro;
 
 mod ast;
-mod build;
 mod generate;
 mod parse;
 

@@ -1,13 +1,12 @@
-use proc_macro::{Span, TokenStream, TokenTree};
+use maud_htmlescape::Escaper;
+use proc_macro::{Delimiter, Literal, quote, Spacing, Span, TokenNode, TokenStream, TokenTree};
 
 use ast::*;
-use build::Builder;
 
 pub fn generate(markups: Vec<Markup>, output_ident: TokenTree) -> TokenStream {
-    let generator = Generator::new(output_ident);
-    let mut builder = generator.builder();
-    generator.markups(markups, &mut builder);
-    builder.build()
+    let mut tail = Tail::new(output_ident.clone());
+    let result = Generator::new(output_ident).markups(markups, &mut tail);
+    tail.finish(result)
 }
 
 struct Generator {
@@ -19,120 +18,173 @@ impl Generator {
         Generator { output_ident }
     }
 
-    fn builder(&self) -> Builder {
-        Builder::new(self.output_ident.clone())
+    fn markups(&self, markups: Vec<Markup>, tail: &mut Tail) -> TokenStream {
+        markups.into_iter().map(|markup| self.markup(markup, tail)).collect()
     }
 
-    fn markups(&self, markups: Vec<Markup>, builder: &mut Builder) {
-        for markup in markups {
-            self.markup(markup, builder);
-        }
-    }
-
-    fn markup(&self, markup: Markup, builder: &mut Builder) {
+    fn markup(&self, markup: Markup, tail: &mut Tail) -> TokenStream {
         match markup {
-            Markup::Block(Block { markups, span }) =>
+            Markup::Block(Block { markups, span }) => {
                 if markups.iter().any(|markup| matches!(*markup, Markup::Let { .. })) {
-                    self.block(Block { markups, span }, builder);
+                    self.block(Block { markups, span }, tail)
                 } else {
-                    self.markups(markups, builder);
-                },
-            Markup::Literal { content, span } => builder.string(&content, span),
-            Markup::Splice { expr } => builder.splice(expr),
-            Markup::Element { name, attrs, body } => {
-                builder.element_open_start(name.clone());
-                self.attrs(attrs, builder);
-                builder.element_open_end();  // TODO use a different marker for self-closing tags
-                if let Some(body) = body {
-                    self.markup(*body, builder);
-                    builder.element_close(name);
+                    self.markups(markups, tail)
                 }
             },
-            Markup::Let { tokens } => {
-                builder.push(tokens);
-            },
+            Markup::Literal { content, span } => self.literal(&content, span, tail),
+            Markup::Splice { expr } => self.splice(expr, tail),
+            Markup::Element { name, attrs, body } => self.element(name, attrs, body, tail),
+            Markup::Let { tokens } => tail.cut_then(|_| tokens),
             Markup::If { segments } => {
-                for segment in segments {
-                    self.special(segment, builder);
-                }
+                // TODO moelarry
+                segments.into_iter().map(|segment| self.special(segment, tail)).collect()
             },
-            Markup::Special(special) => {
-                self.special(special, builder);
-            },
-            Markup::Match { head, arms, arms_span } => {
-                builder.push(head);
-                let arms = {
-                    let mut builder = self.builder();
-                    for arm in arms {
-                        self.special(arm, &mut builder);
-                    }
-                    builder.build()
-                };
-                builder.push_block(arms, arms_span);
-            },
+            Markup::Special(special) => self.special(special, tail),
+            Markup::Match { .. } => TokenStream::empty(),  // TODO
         }
     }
 
-    fn block(&self, Block { markups, span }: Block, builder: &mut Builder) {
-        let stmts = {
-            let mut builder = self.builder();
-            self.markups(markups, &mut builder);
-            builder.build()
-        };
-        builder.push_block(stmts, span);
+    fn block(&self, Block { markups, span }: Block, tail: &mut Tail) -> TokenStream {
+        tail.cut_then(move |tail| {
+            let markups = self.markups(markups, tail);
+            TokenStream::from(TokenTree {
+                kind: TokenNode::Group(Delimiter::Brace, tail.finish(markups)),
+                span,
+            })
+        })
     }
 
-    fn attrs(&self, attrs: Attrs, builder: &mut Builder) {
+    fn literal(&self, content: &str, span: Span, tail: &mut Tail) -> TokenStream {
+        tail.push_escaped(content);
+        let marker = TokenTree {
+            kind: TokenNode::Literal(Literal::string(content)),
+            span,
+        };
+        quote!(maud::marker::literal(&[$marker]);)
+    }
+
+    fn splice(&self, expr: TokenStream, tail: &mut Tail) -> TokenStream {
+        let output_ident = self.output_ident.clone();
+        tail.cut_then(move |_| quote!({
+            // Create a local trait alias so that autoref works
+            trait Render: maud::Render {
+                fn __maud_render_to(&self, output_ident: &mut String) {
+                    maud::Render::render_to(self, output_ident);
+                }
+            }
+            impl<T: maud::Render> Render for T {}
+            $expr.__maud_render_to(&mut $output_ident);
+        }))
+    }
+
+    fn element(
+        &self,
+        name: TokenStream,
+        attrs: Attrs,
+        body: Option<Box<Markup>>,
+        tail: &mut Tail,
+    ) -> TokenStream {
+        tail.push_str("<");
+        let name_marker = self.name(name.clone(), tail);
+        let attrs_marker = self.attrs(attrs, tail);
+        tail.push_str(">");
+        let body_marker = if let Some(body) = body {
+            let body_marker = self.markup(*body, tail);
+            tail.push_str("</");
+            for token in name {
+                tail.push_str(&token.to_string());
+            }
+            tail.push_str(">");
+            body_marker
+        } else {
+            TokenStream::empty()
+        };
+        quote!(maud::marker::element($name_marker, { $attrs_marker }, { $body_marker });)
+    }
+
+    fn name(&self, name: TokenStream, tail: &mut Tail) -> TokenStream {
+        let mut markers = Vec::new();
+        for token in name {
+            let fragment = token.to_string();
+            markers.push(TokenTree {
+                kind: TokenNode::Literal(Literal::string(&fragment)),
+                span: token.span,
+            });
+            tail.push_escaped(&fragment);
+            markers.push(TokenTree {
+                kind: TokenNode::Op(',', Spacing::Alone),
+                span: token.span,
+            });
+        }
+        let markers = markers.into_iter().collect::<TokenStream>();
+        quote!(&[$markers])
+    }
+
+    fn attrs(&self, attrs: Attrs, tail: &mut Tail) -> TokenStream {
+        // let mut markers = Vec::new();
         let Attrs { classes_static, classes_toggled, ids, attrs } = attrs;
         if !classes_static.is_empty() || !classes_toggled.is_empty() {
-            builder.attribute_start_str("class", Span::def_site());  // TODO span
-            let mut leading_space = false;
-            for name in classes_static {
-                builder.class_or_id(name, leading_space);
-                leading_space = true;
-            }
-            for (name, Toggler { cond, cond_span }) in classes_toggled {
-                let body = {
-                    let mut builder = self.builder();
-                    builder.class_or_id(name, leading_space);
-                    leading_space = true;
-                    builder.build()
-                };
-                builder.if_expr(cond, cond_span, body);
-            }
-            builder.attribute_end();
+            // TODO
         }
-        if !ids.is_empty() {
-            builder.attribute_start_str("id", Span::def_site());  // TODO span
-            for (i, name) in ids.into_iter().enumerate() {
-                builder.class_or_id(name, i > 0);
-            }
-            builder.attribute_end();
-        }
-        for Attribute { name, attr_type } in attrs {
-            match attr_type {
-                AttrType::Normal { value } => {
-                    builder.attribute_start(name);
-                    self.markup(value, builder);
-                    builder.attribute_end();
-                },
-                AttrType::Empty { toggler: None } => {
-                    builder.attribute_empty(name);
-                },
-                AttrType::Empty { toggler: Some(Toggler { cond, cond_span }) } => {
-                    let body = {
-                        let mut builder = self.builder();
-                        builder.attribute_empty(name);
-                        builder.build()
-                    };
-                    builder.if_expr(cond, cond_span, body);
-                },
-            }
+        // TODO
+        TokenStream::empty()
+    }
+
+    fn special(&self, Special { head, body }: Special, tail: &mut Tail) -> TokenStream {
+        tail.cut_then(move |tail| {
+            let body = self.block(body, tail);
+            quote!($head $body)
+        })
+    }
+}
+
+////////////////////////////////////////////////////////
+
+struct Tail {
+    output_ident: TokenTree,
+    tail: String,
+}
+
+impl Tail {
+    fn new(output_ident: TokenTree) -> Tail {
+        Tail {
+            output_ident,
+            tail: String::new(),
         }
     }
 
-    fn special(&self, Special { head, body }: Special, builder: &mut Builder) {
-        builder.push(head);
-        self.block(body, builder);
+    fn push_str(&mut self, string: &str) {
+        self.tail.push_str(string);
+    }
+
+    fn push_escaped(&mut self, string: &str) {
+        use std::fmt::Write;
+        Escaper::new(&mut self.tail).write_str(string).unwrap();
+    }
+
+    fn cut(&mut self) -> TokenStream {
+        if self.tail.is_empty() {
+            return TokenStream::empty();
+        }
+        let push_str_expr = {
+            let output_ident = self.output_ident.clone();
+            let string = TokenNode::Literal(Literal::string(&self.tail));
+            quote!($output_ident.push_str($string);)
+        };
+        self.tail.clear();
+        push_str_expr
+    }
+
+    fn cut_then<F>(&mut self, callback: F) -> TokenStream where
+        F: FnOnce(&mut Tail) -> TokenStream,
+    {
+        let push_str_expr = self.cut();
+        let next_expr = callback(self);
+        quote!($push_str_expr $next_expr)
+    }
+
+    fn finish(&mut self, main_expr: TokenStream) -> TokenStream {
+        let push_str_expr = self.cut();
+        quote!($main_expr $push_str_expr)
     }
 }

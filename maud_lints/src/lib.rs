@@ -5,6 +5,9 @@
 
 #![doc(html_root_url = "https://docs.rs/maud_lints/0.17.0")]
 
+// TODO rewrite all of this
+#![allow(dead_code)]
+
 #[macro_use]
 extern crate if_chain;
 #[macro_use]
@@ -24,9 +27,9 @@ mod frob;
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_late_lint_pass(Box::new(doctype::Doctype));
-    reg.register_late_lint_pass(Box::new(maud_lint::UseMaudLintPass(frob::Frob)));
+    // reg.register_late_lint_pass(Box::new(maud_lint::UseMaudLintPass(frob::Frob)));
     reg.register_lint_group("maud", vec![
         doctype::MAUD_DOCTYPE,
-        frob::MAUD_FROB,
+        // frob::MAUD_FROB,
     ]);
 }
