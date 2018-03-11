@@ -26,7 +26,7 @@ impl Generator {
         match markup {
             Markup::Block(Block { markups, span }) => {
                 if markups.iter().any(|markup| matches!(*markup, Markup::Let { .. })) {
-                    self.block(Block { markups, span }, tail)
+                    tail.cut_then(move |tail| self.block(Block { markups, span }, tail))
                 } else {
                     self.markups(markups, tail)
                 }
@@ -44,13 +44,11 @@ impl Generator {
         }
     }
 
-    fn block(&self, Block { markups, span }: Block, tail: &mut Tail) -> TokenStream {
-        tail.cut_then(move |tail| {
-            let markups = self.markups(markups, tail);
-            TokenStream::from(TokenTree {
-                kind: TokenNode::Group(Delimiter::Brace, tail.finish(markups)),
-                span,
-            })
+    fn block(&self, Block { markups, span }: Block, mut tail: Tail) -> TokenStream {
+        let markups = self.markups(markups, &mut tail);
+        TokenStream::from(TokenTree {
+            kind: TokenNode::Group(Delimiter::Brace, tail.finish(markups)),
+            span,
         })
     }
 
@@ -144,9 +142,9 @@ impl Generator {
                 },
                 AttrType::Empty { toggler: Some(toggler) } => {
                     let head = desugar_toggler(toggler);
-                    tail.cut_then(move |tail| {
+                    tail.cut_then(move |mut tail| {
                         tail.push_str(" ");
-                        let name_marker = self.name(name, tail);
+                        let name_marker = self.name(name, &mut tail);
                         let attr_marker = quote!(maud::marker::attribute($name_marker, ()););
                         let body = tail.finish(attr_marker);
                         quote!($head { $body })
@@ -274,7 +272,7 @@ impl Tail {
         Escaper::new(&mut self.tail).write_str(string).unwrap();
     }
 
-    fn cut(&mut self) -> TokenStream {
+    fn _cut(&mut self) -> TokenStream {
         if self.tail.is_empty() {
             return TokenStream::empty();
         }
@@ -288,16 +286,15 @@ impl Tail {
     }
 
     fn cut_then<F>(&mut self, callback: F) -> TokenStream where
-        F: FnOnce(&mut Tail) -> TokenStream,
+        F: FnOnce(Tail) -> TokenStream,
     {
-        let push_str_expr = self.cut();
-        let next_expr = callback(self);
-        assert!(self.tail.is_empty());
+        let push_str_expr = self._cut();
+        let next_expr = callback(Tail::new(self.output_ident.clone()));
         quote!($push_str_expr $next_expr)
     }
 
-    fn finish(&mut self, main_expr: TokenStream) -> TokenStream {
-        let push_str_expr = self.cut();
+    fn finish(mut self, main_expr: TokenStream) -> TokenStream {
+        let push_str_expr = self._cut();
         quote!($main_expr $push_str_expr)
     }
 }
