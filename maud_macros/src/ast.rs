@@ -7,6 +7,9 @@ pub enum Markup {
         content: String,
         span: Span,
     },
+    Symbol {
+        symbol: TokenStream,
+    },
     Splice {
         expr: TokenStream,
     },
@@ -37,7 +40,7 @@ pub struct Attrs {
     pub attrs: Vec<Attribute>,
 }
 
-type ClassOrId = TokenStream;
+pub type ClassOrId = TokenStream;
 
 #[derive(Debug)]
 pub struct Block {

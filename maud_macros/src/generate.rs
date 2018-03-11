@@ -1,5 +1,5 @@
 use maud_htmlescape::Escaper;
-use proc_macro::{Delimiter, Literal, quote, Spacing, Span, TokenNode, TokenStream, TokenTree};
+use proc_macro::{Delimiter, Literal, quote, Spacing, Span, Term, TokenNode, TokenStream, TokenTree};
 
 use ast::*;
 
@@ -32,11 +32,11 @@ impl Generator {
                 }
             },
             Markup::Literal { content, span } => self.literal(&content, span, tail),
+            Markup::Symbol { symbol } => self.symbol(symbol, tail),
             Markup::Splice { expr } => self.splice(expr, tail),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, tail),
             Markup::Let { tokens } => tail.cut_then(|_| tokens),
             Markup::If { segments } => {
-                // TODO moelarry
                 segments.into_iter().map(|segment| self.special(segment, tail)).collect()
             },
             Markup::Special(special) => self.special(special, tail),
@@ -61,6 +61,11 @@ impl Generator {
             span,
         };
         quote!(maud::marker::literal(&[$marker]);)
+    }
+
+    fn symbol(&self, symbol: TokenStream, tail: &mut Tail) -> TokenStream {
+        let marker = self.name(symbol, tail);
+        quote!(maud::marker::literal($marker);)
     }
 
     fn splice(&self, expr: TokenStream, tail: &mut Tail) -> TokenStream {
@@ -121,13 +126,35 @@ impl Generator {
     }
 
     fn attrs(&self, attrs: Attrs, tail: &mut Tail) -> TokenStream {
-        // let mut markers = Vec::new();
-        let Attrs { classes_static, classes_toggled, ids, attrs } = attrs;
-        if !classes_static.is_empty() || !classes_toggled.is_empty() {
-            // TODO
+        let mut markers = Vec::new();
+        for Attribute { name, attr_type } in desugar_attrs(attrs) {
+            markers.push(match attr_type {
+                AttrType::Normal { value } => {
+                    tail.push_str(" ");
+                    let name_marker = self.name(name, tail);
+                    tail.push_str("=\"");
+                    let value_marker = self.markup(value, tail);
+                    tail.push_str("\"");
+                    quote!(maud::marker::attribute($name_marker, { $value_marker });)
+                },
+                AttrType::Empty { toggler: None } => {
+                    tail.push_str(" ");
+                    let name_marker = self.name(name, tail);
+                    quote!(maud::marker::attribute($name_marker, ());)
+                },
+                AttrType::Empty { toggler: Some(toggler) } => {
+                    let head = desugar_toggler(toggler);
+                    tail.cut_then(move |tail| {
+                        tail.push_str(" ");
+                        let name_marker = self.name(name, tail);
+                        let attr_marker = quote!(maud::marker::attribute($name_marker, ()););
+                        let body = tail.finish(attr_marker);
+                        quote!($head { $body })
+                    })
+                },
+            });
         }
-        // TODO
-        TokenStream::empty()
+        markers.into_iter().collect()
     }
 
     fn special(&self, Special { head, body }: Special, tail: &mut Tail) -> TokenStream {
@@ -136,6 +163,91 @@ impl Generator {
             quote!($head $body)
         })
     }
+}
+
+////////////////////////////////////////////////////////
+
+fn desugar_attrs(Attrs { classes_static, classes_toggled, ids, attrs }: Attrs) -> Vec<Attribute> {
+    let classes = desugar_classes_or_ids("class", classes_static, classes_toggled);
+    let ids = desugar_classes_or_ids("id", ids, vec![]);
+    classes.into_iter().chain(ids).chain(attrs).collect()
+}
+
+fn desugar_classes_or_ids(
+    attr_name: &'static str,
+    values_static: Vec<ClassOrId>,
+    values_toggled: Vec<(ClassOrId, Toggler)>,
+) -> Option<Attribute> {
+    if values_static.is_empty() && values_toggled.is_empty() {
+        return None;
+    }
+    let mut markups = Vec::new();
+    let mut leading_space = false;
+    for symbol in values_static {
+        markups.extend(prepend_leading_space(symbol, &mut leading_space));
+    }
+    for (symbol, toggler) in values_toggled {
+        let body = Block {
+            markups: prepend_leading_space(symbol, &mut leading_space),
+            span: toggler.cond_span,
+        };
+        let head = desugar_toggler(toggler);
+        markups.push(Markup::Special(Special { head, body }));
+    }
+    Some(Attribute {
+        name: TokenStream::from(TokenTree {
+            kind: TokenNode::Term(Term::intern(attr_name)),
+            span: Span::def_site(),  // TODO
+        }),
+        attr_type: AttrType::Normal {
+            value: Markup::Block(Block {
+                markups,
+                span: Span::def_site(),  // TODO
+            }),
+        },
+    })
+}
+
+fn prepend_leading_space(symbol: TokenStream, leading_space: &mut bool) -> Vec<Markup> {
+    let mut markups = Vec::new();
+    if *leading_space {
+        markups.push(Markup::Literal {
+            content: " ".to_owned(),
+            span: span_tokens(symbol.clone()),
+        });
+    }
+    *leading_space = true;
+    markups.push(Markup::Symbol { symbol });
+    markups
+}
+
+fn desugar_toggler(Toggler { mut cond, cond_span }: Toggler) -> TokenStream {
+    // If the expression contains an opening brace `{`,
+    // wrap it in parentheses to avoid parse errors
+    if cond.clone().into_iter().any(|token| match token.kind {
+        TokenNode::Group(Delimiter::Brace, _) => true,
+        _ => false,
+    }) {
+        cond = TokenStream::from(TokenTree {
+            kind: TokenNode::Group(Delimiter::Parenthesis, cond),
+            span: cond_span,
+        });
+    }
+    let if_keyword = TokenTree {
+        kind: TokenNode::Term(Term::intern("if")),
+        span: cond_span,
+    };
+    quote!($if_keyword $cond)
+}
+
+fn span_tokens<I: IntoIterator<Item=TokenTree>>(tokens: I) -> Span {
+    tokens
+        .into_iter()
+        .fold(None, |span: Option<Span>, token| Some(match span {
+            None => token.span,
+            Some(span) => span.join(token.span).unwrap_or(span),
+        }))
+        .unwrap_or(Span::def_site())
 }
 
 ////////////////////////////////////////////////////////
@@ -180,6 +292,7 @@ impl Tail {
     {
         let push_str_expr = self.cut();
         let next_expr = callback(self);
+        assert!(self.tail.is_empty());
         quote!($push_str_expr $next_expr)
     }
 
