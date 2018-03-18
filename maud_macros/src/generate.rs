@@ -246,11 +246,7 @@ fn desugar_toggler(Toggler { mut cond, cond_span }: Toggler) -> TokenStream {
             span: cond_span,
         });
     }
-    let if_keyword = TokenTree {
-        kind: TokenNode::Term(Term::intern("if")),
-        span: cond_span,
-    };
-    quote!($if_keyword $cond)
+    quote!(if $cond)
 }
 
 fn span_tokens<I: IntoIterator<Item=TokenTree>>(tokens: I) -> Span {
