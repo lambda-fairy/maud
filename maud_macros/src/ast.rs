@@ -29,7 +29,7 @@ pub enum Markup {
         head: TokenStream,
         arms: Vec<Special>,
         arms_span: Span,
-    }
+    },
 }
 
 #[derive(Debug)]

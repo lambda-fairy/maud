@@ -26,7 +26,7 @@ impl Generator {
         match markup {
             Markup::Block(Block { markups, span }) => {
                 if markups.iter().any(|markup| matches!(*markup, Markup::Let { .. })) {
-                    tail.cut_then(move |tail| self.block(Block { markups, span }, tail))
+                    tail.cut_once(move |tail| self.block(Block { markups, span }, tail))
                 } else {
                     self.markups(markups, tail)
                 }
@@ -35,12 +35,29 @@ impl Generator {
             Markup::Symbol { symbol } => self.symbol(symbol, tail),
             Markup::Splice { expr } => self.splice(expr, tail),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, tail),
-            Markup::Let { tokens } => tail.cut_then(|_| tokens),
+            Markup::Let { tokens } => tail.cut_once(|_| tokens),
             Markup::If { segments } => {
-                segments.into_iter().map(|segment| self.special(segment, tail)).collect()
+                tail.cut_many(move |kitsune| {
+                    segments
+                        .into_iter()
+                        .map(|segment| self.special(segment, kitsune.fork()))
+                        .collect()
+                })
             },
-            Markup::Special(special) => self.special(special, tail),
-            Markup::Match { .. } => TokenStream::empty(),  // TODO
+            Markup::Special(special) => tail.cut_once(move |tail| self.special(special, tail)),
+            Markup::Match { head, arms, arms_span } => {
+                tail.cut_many(move |kitsune| {
+                    let body = arms
+                        .into_iter()
+                        .map(|arm| self.special(arm, kitsune.fork()))
+                        .collect();
+                    let body = TokenTree {
+                        kind: TokenNode::Group(Delimiter::Brace, body),
+                        span: arms_span,
+                    };
+                    quote!($head $body)
+                })
+            },
         }
     }
 
@@ -68,7 +85,7 @@ impl Generator {
 
     fn splice(&self, expr: TokenStream, tail: &mut Tail) -> TokenStream {
         let output_ident = self.output_ident.clone();
-        tail.cut_then(move |_| quote!({
+        tail.cut_once(move |_| quote!({
             // Create a local trait alias so that autoref works
             trait Render: maud::Render {
                 fn __maud_render_to(&self, output_ident: &mut String) {
@@ -142,7 +159,7 @@ impl Generator {
                 },
                 AttrType::Empty { toggler: Some(toggler) } => {
                     let head = desugar_toggler(toggler);
-                    tail.cut_then(move |mut tail| {
+                    tail.cut_once(move |mut tail| {
                         tail.push_str(" ");
                         let name_marker = self.name(name, &mut tail);
                         let attr_marker = quote!(maud::marker::attribute($name_marker, ()););
@@ -155,11 +172,9 @@ impl Generator {
         markers.into_iter().collect()
     }
 
-    fn special(&self, Special { head, body }: Special, tail: &mut Tail) -> TokenStream {
-        tail.cut_then(move |tail| {
-            let body = self.block(body, tail);
-            quote!($head $body)
-        })
+    fn special(&self, Special { head, body }: Special, tail: Tail) -> TokenStream {
+        let body = self.block(body, tail);
+        quote!($head $body)
     }
 }
 
@@ -285,16 +300,36 @@ impl Tail {
         push_str_expr
     }
 
-    fn cut_then<F>(&mut self, callback: F) -> TokenStream where
+    fn cut_once<F>(&mut self, callback: F) -> TokenStream where
         F: FnOnce(Tail) -> TokenStream,
     {
+        self.cut_many(move |kitsune| callback(kitsune.fork()))
+    }
+
+    fn cut_many<F>(&mut self, callback: F) -> TokenStream where
+        F: FnOnce(Kitsune) -> TokenStream,
+    {
         let push_str_expr = self._cut();
-        let next_expr = callback(Tail::new(self.output_ident.clone()));
+        let next_expr = callback(Kitsune::new(self.output_ident.clone()));
         quote!($push_str_expr $next_expr)
     }
 
     fn finish(mut self, main_expr: TokenStream) -> TokenStream {
         let push_str_expr = self._cut();
         quote!($main_expr $push_str_expr)
+    }
+}
+
+struct Kitsune {
+    output_ident: TokenTree,
+}
+
+impl Kitsune {
+    fn new(output_ident: TokenTree) -> Kitsune {
+        Kitsune { output_ident }
+    }
+
+    fn fork(&self) -> Tail {
+        Tail::new(self.output_ident.clone())
     }
 }
