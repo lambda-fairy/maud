@@ -112,7 +112,7 @@ impl Parser {
             // Literal
             TokenTree { kind: TokenNode::Literal(lit), span } => {
                 self.advance();
-                self.literal(lit, span)?
+                self.literal(&lit, span)?
             },
             // Special form
             TokenTree { kind: TokenNode::Op('@', _), .. } => {
@@ -129,7 +129,7 @@ impl Parser {
                             "while" => self.while_expr(keyword)?,
                             "for" => self.for_expr(keyword)?,
                             "match" => self.match_expr(keyword)?,
-                            "let" => return self.error(format!("@let only works inside a block")),
+                            "let" => return self.error("@let only works inside a block"),
                             other => return self.error(format!("unknown keyword `@{}`", other)),
                         }
                     },
@@ -158,7 +158,7 @@ impl Parser {
     }
 
     /// Parses and renders a literal string.
-    fn literal(&mut self, lit: Literal, span: Span) -> ParseResult<ast::Markup> {
+    fn literal(&mut self, lit: &Literal, span: Span) -> ParseResult<ast::Markup> {
         if let Some(s) = lit.parse_string() {
             Ok(ast::Markup::Literal {
                 content: s.to_string(),
