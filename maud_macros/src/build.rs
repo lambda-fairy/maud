@@ -1,6 +1,5 @@
-use proc_macro::{Delimiter, Literal, Span, TokenNode, TokenStream, TokenTree};
+use proc_macro::{Delimiter, Group, Literal, Span, TokenStream, TokenTree};
 use proc_macro::quote;
-
 use maud_htmlescape::Escaper;
 
 pub struct Builder {
@@ -24,7 +23,7 @@ impl Builder {
         if !self.tail.is_empty() {
             let expr = {
                 let output_ident = self.output_ident.clone();
-                let string = TokenNode::Literal(Literal::string(&self.tail));
+                let string = TokenTree::Literal(Literal::string(&self.tail));
                 quote!($output_ident.push_str($string);)
             };
             self.stmts.push(expr);
@@ -35,7 +34,15 @@ impl Builder {
     /// Reifies the `Builder` into a raw list of statements.
     pub fn build(mut self) -> TokenStream {
         let Builder { stmts, .. } = { self.flush(); self };
-        stmts.into_iter().collect()
+
+        // use a Group here?
+        let mut tts: Vec<TokenTree> = Vec::new();
+        for s in stmts.into_iter() {
+            let i = s.into_iter();
+            tts.extend(i);
+        }
+
+        tts.into_iter().collect()
     }
 
     /// Pushes a statement, flushing the tail buffer in the process.
@@ -111,14 +118,20 @@ impl Builder {
     ) {
         // If the condition contains an opening brace `{`,
         // wrap it in parentheses to avoid parse errors
-        if cond.clone().into_iter().any(|token| match token.kind {
-            TokenNode::Group(Delimiter::Brace, _) => true,
+        if cond.clone().into_iter().any(|token| match token {
+            TokenTree::Group(grp) => { 
+                if grp.delimiter() == Delimiter::Brace {
+                    true
+                } else {
+                    false
+                }
+            },
             _ => false,
         }) {
-            cond = TokenStream::from(TokenTree {
-                kind: TokenNode::Group(Delimiter::Parenthesis, cond),
-                span: cond_span,
-            });
+            let mut g = Group::new(Delimiter::Parenthesis, cond);
+            // NOTE: Do we need to do this?
+            g.set_span(cond_span);
+            cond = TokenStream::from(TokenTree::Group(g));
         }
         self.push(quote!(if $cond { $body }));
     }
