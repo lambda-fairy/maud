@@ -10,7 +10,7 @@ extern crate proc_macro;
 mod parse;
 mod build;
 
-use proc_macro::{Span, Term, TokenStream, TokenTree};
+use proc_macro::{Literal, Span, Term, TokenStream, TokenTree};
 use proc_macro::quote;
 
 type ParseResult<T> = Result<T, String>;
@@ -32,17 +32,15 @@ fn expand(input: TokenStream) -> TokenStream {
     let output_ident = TokenTree::Term(Term::new("__maud_output", Span::def_site()));
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
-    //
-    // NOTE: can't get this to compile inside quote!
-    //let size_hint = Literal::u64_unsuffixed(size_hint as u64);
+    let size_hint = input.to_string().len();
+    let size_hint = TokenTree::Literal(Literal::u64_unsuffixed(size_hint as u64));
     let stmts = match parse::parse(input, output_ident.clone()) {
         Ok(stmts) => stmts,
         Err(e) => panic!(e),
     };
     quote!({
         extern crate maud;
-        //let mut $output_ident = String::with_capacity($size_hint as usize);
-        let mut $output_ident = String::new();
+        let mut $output_ident = String::with_capacity($size_hint as usize);
         $stmts
         maud::PreEscaped($output_ident)
     })
