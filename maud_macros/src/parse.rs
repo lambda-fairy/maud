@@ -10,6 +10,7 @@ use proc_macro::{
 };
 
 use proc_macro::token_stream;
+use std::iter;
 use std::mem;
 
 use literalext::LiteralExt;
@@ -302,14 +303,14 @@ impl Parser {
     }
 
     fn match_arms(&mut self) -> ParseResult<TokenStream> {
-        let mut arms: Vec<TokenTree> = Vec::new();
+        let mut arms = Vec::new();
         while let Some(arm) = self.match_arm()? {
-            arms.extend(arm);
+            arms.push(arm);
         }
         Ok(arms.into_iter().collect())
     }
 
-    fn match_arm(&mut self) -> ParseResult<Option<Vec<TokenTree>>> {
+    fn match_arm(&mut self) -> ParseResult<Option<TokenStream>> {
         let mut pat: Vec<TokenTree> = Vec::new();
         loop {
             match self.peek2() {
@@ -364,8 +365,7 @@ impl Parser {
             },
             None => return self.error("unexpected end of @match arm"),
         };
-        pat.push(body);
-        Ok(Some(pat))
+        Ok(Some(pat.into_iter().chain(iter::once(body)).collect()))
     }
 
     /// Parses and renders a `@let` expression.

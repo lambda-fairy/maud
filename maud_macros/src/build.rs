@@ -34,15 +34,7 @@ impl Builder {
     /// Reifies the `Builder` into a raw list of statements.
     pub fn build(mut self) -> TokenStream {
         let Builder { stmts, .. } = { self.flush(); self };
-
-        // use a Group here?
-        let mut tts: Vec<TokenTree> = Vec::new();
-        for s in stmts.into_iter() {
-            let i = s.into_iter();
-            tts.extend(i);
-        }
-
-        tts.into_iter().collect()
+        stmts.into_iter().collect()
     }
 
     /// Pushes a statement, flushing the tail buffer in the process.
