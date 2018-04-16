@@ -1,5 +1,6 @@
 use proc_macro::{Delimiter, Group, Literal, Span, TokenStream, TokenTree};
 use proc_macro::quote;
+
 use maud_htmlescape::Escaper;
 
 pub struct Builder {
@@ -111,19 +112,13 @@ impl Builder {
         // If the condition contains an opening brace `{`,
         // wrap it in parentheses to avoid parse errors
         if cond.clone().into_iter().any(|token| match token {
-            TokenTree::Group(grp) => { 
-                if grp.delimiter() == Delimiter::Brace {
-                    true
-                } else {
-                    false
-                }
-            },
+            TokenTree::Group(group) => group.delimiter() == Delimiter::Brace,
             _ => false,
         }) {
-            let mut g = Group::new(Delimiter::Parenthesis, cond);
+            let mut group = Group::new(Delimiter::Parenthesis, cond);
             // NOTE: Do we need to do this?
-            g.set_span(cond_span);
-            cond = TokenStream::from(TokenTree::Group(g));
+            group.set_span(cond_span);
+            cond = TokenStream::from(TokenTree::Group(group));
         }
         self.push(quote!(if $cond { $body }));
     }

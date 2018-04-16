@@ -1,7 +1,10 @@
 #![feature(proc_macro)]
-#![feature(pattern_parentheses)]
 
 #![doc(html_root_url = "https://docs.rs/maud_macros/0.17.2")]
+
+// TokenStream values are reference counted, and the mental overhead of tracking
+// lifetimes outweighs the marginal gains from explicit borrowing
+#![cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
 
 extern crate literalext;
 extern crate maud_htmlescape;
@@ -28,7 +31,6 @@ pub fn html_debug(input: TokenStream) -> TokenStream {
 }
 
 fn expand(input: TokenStream) -> TokenStream {
- 
     let output_ident = TokenTree::Term(Term::new("__maud_output", Span::def_site()));
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
@@ -40,7 +42,7 @@ fn expand(input: TokenStream) -> TokenStream {
     };
     quote!({
         extern crate maud;
-        let mut $output_ident = String::with_capacity($size_hint as usize);
+        let mut $output_ident = String::with_capacity($size_hint);
         $stmts
         maud::PreEscaped($output_ident)
     })
