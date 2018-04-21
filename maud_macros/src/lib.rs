@@ -1,6 +1,6 @@
 #![feature(proc_macro)]
 
-#![doc(html_root_url = "https://docs.rs/maud_macros/0.17.2")]
+#![doc(html_root_url = "https://docs.rs/maud_macros/0.17.3")]
 
 // TokenStream values are reference counted, and the mental overhead of tracking
 // lifetimes outweighs the marginal gains from explicit borrowing
