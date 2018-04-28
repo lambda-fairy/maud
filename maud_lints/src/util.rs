@@ -5,7 +5,7 @@
 use rustc::hir::def_id::DefId;
 use rustc::lint::LateContext;
 use rustc::ty;
-use syntax::symbol::{InternedString, Symbol};
+use syntax::symbol::{LocalInternedString, Symbol};
 
 /// Check if a `DefId`'s path matches the given absolute type path usage.
 ///
@@ -15,7 +15,7 @@ use syntax::symbol::{InternedString, Symbol};
 /// ```
 pub fn match_def_path(cx: &LateContext, def_id: DefId, path: &[&str]) -> bool {
     struct AbsolutePathBuffer {
-        names: Vec<InternedString>,
+        names: Vec<LocalInternedString>,
     }
 
     impl ty::item_path::ItemPathBuffer for AbsolutePathBuffer {
