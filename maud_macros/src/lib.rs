@@ -1,4 +1,5 @@
 #![feature(proc_macro)]
+#![feature(proc_macro_non_items)]
 
 #![doc(html_root_url = "https://docs.rs/maud_macros/0.17.3")]
 
