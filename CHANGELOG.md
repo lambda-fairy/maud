@@ -1,5 +1,15 @@
 # Change Log
 
+## [Unreleased]
+
+## [0.17.4] - 2018-05-02
+
+- [Fixed] Update to rustc 1.27.0-nightly (686d0ae13 2018-04-27)
+  [#123](https://github.com/lfairy/maud/issues/123)
+  [#124](https://github.com/lfairy/maud/pull/124)
+  [#125](https://github.com/lfairy/maud/issues/125)
+  [#126](https://github.com/lfairy/maud/pull/126)
+
 ## [0.17.3] - 2018-04-21
 
 - [Fixed] Update to rustc 1.27.0-nightly (ac3c2288f 2018-04-18)
@@ -158,7 +168,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.17.3...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.17.4...HEAD
+[0.17.4]: https://github.com/lfairy/maud/compare/v0.17.3...v0.17.4
 [0.17.3]: https://github.com/lfairy/maud/compare/v0.17.2...v0.17.3
 [0.17.2]: https://github.com/lfairy/maud/compare/v0.17.1...v0.17.2
 [0.17.1]: https://github.com/lfairy/maud/compare/v0.17.0...v0.17.1
