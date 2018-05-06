@@ -1,5 +1,6 @@
 #![feature(plugin)]
 #![feature(proc_macro)]
+#![feature(proc_macro_non_items)]
 
 #![plugin(maud_lints)]
 

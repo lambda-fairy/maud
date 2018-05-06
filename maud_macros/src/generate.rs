@@ -1,5 +1,16 @@
 use maud_htmlescape::Escaper;
-use proc_macro::{Delimiter, Literal, quote, Spacing, Span, Term, TokenNode, TokenStream, TokenTree};
+use proc_macro::{
+    Delimiter,
+    Group,
+    Literal,
+    Op,
+    quote,
+    Spacing,
+    Span,
+    Term,
+    TokenStream,
+    TokenTree,
+};
 
 use ast::*;
 
@@ -51,10 +62,8 @@ impl Generator {
                         .into_iter()
                         .map(|arm| self.special(arm, kitsune.fork()))
                         .collect();
-                    let body = TokenTree {
-                        kind: TokenNode::Group(Delimiter::Brace, body),
-                        span: arms_span,
-                    };
+                    let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
+                    body.set_span(arms_span);
                     quote!($head $body)
                 })
             },
@@ -63,18 +72,15 @@ impl Generator {
 
     fn block(&self, Block { markups, span }: Block, mut tail: Tail) -> TokenStream {
         let markups = self.markups(markups, &mut tail);
-        TokenStream::from(TokenTree {
-            kind: TokenNode::Group(Delimiter::Brace, tail.finish(markups)),
-            span,
-        })
+        let mut block = TokenTree::Group(Group::new(Delimiter::Brace, tail.finish(markups)));
+        block.set_span(span);
+        TokenStream::from(block)
     }
 
     fn literal(&self, content: &str, span: Span, tail: &mut Tail) -> TokenStream {
         tail.push_escaped(content);
-        let marker = TokenTree {
-            kind: TokenNode::Literal(Literal::string(content)),
-            span,
-        };
+        let mut marker = TokenTree::Literal(Literal::string(content));
+        marker.set_span(span);
         quote!(maud::marker::literal(&[$marker]);)
     }
 
@@ -126,15 +132,13 @@ impl Generator {
         let mut markers = Vec::new();
         for token in name {
             let fragment = token.to_string();
-            markers.push(TokenTree {
-                kind: TokenNode::Literal(Literal::string(&fragment)),
-                span: token.span,
+            markers.push({
+                let mut marker = TokenTree::Literal(Literal::string(&fragment));
+                marker.set_span(token.span());
+                marker
             });
             tail.push_escaped(&fragment);
-            markers.push(TokenTree {
-                kind: TokenNode::Op(',', Spacing::Alone),
-                span: token.span,
-            });
+            markers.push(TokenTree::Op(Op::new(',', Spacing::Alone)));
         }
         let markers = markers.into_iter().collect::<TokenStream>();
         quote!(&[$markers])
@@ -208,10 +212,7 @@ fn desugar_classes_or_ids(
         markups.push(Markup::Special(Special { head, body }));
     }
     Some(Attribute {
-        name: TokenStream::from(TokenTree {
-            kind: TokenNode::Term(Term::intern(attr_name)),
-            span: Span::def_site(),  // TODO
-        }),
+        name: TokenStream::from(TokenTree::Term(Term::new(attr_name, Span::def_site()))),  // TODO
         attr_type: AttrType::Normal {
             value: Markup::Block(Block {
                 markups,
@@ -237,14 +238,13 @@ fn prepend_leading_space(symbol: TokenStream, leading_space: &mut bool) -> Vec<M
 fn desugar_toggler(Toggler { mut cond, cond_span }: Toggler) -> TokenStream {
     // If the expression contains an opening brace `{`,
     // wrap it in parentheses to avoid parse errors
-    if cond.clone().into_iter().any(|token| match token.kind {
-        TokenNode::Group(Delimiter::Brace, _) => true,
+    if cond.clone().into_iter().any(|token| match token {
+        TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace => true,
         _ => false,
     }) {
-        cond = TokenStream::from(TokenTree {
-            kind: TokenNode::Group(Delimiter::Parenthesis, cond),
-            span: cond_span,
-        });
+        let mut wrapped_cond = TokenTree::Group(Group::new(Delimiter::Parenthesis, cond));
+        wrapped_cond.set_span(cond_span);
+        cond = TokenStream::from(wrapped_cond);
     }
     quote!(if $cond)
 }
@@ -253,8 +253,8 @@ fn span_tokens<I: IntoIterator<Item=TokenTree>>(tokens: I) -> Span {
     tokens
         .into_iter()
         .fold(None, |span: Option<Span>, token| Some(match span {
-            None => token.span,
-            Some(span) => span.join(token.span).unwrap_or(span),
+            None => token.span(),
+            Some(span) => span.join(token.span()).unwrap_or(span),
         }))
         .unwrap_or_else(Span::def_site)
 }
@@ -289,7 +289,7 @@ impl Tail {
         }
         let push_str_expr = {
             let output_ident = self.output_ident.clone();
-            let string = TokenNode::Literal(Literal::string(&self.tail));
+            let string = TokenTree::Literal(Literal::string(&self.tail));
             quote!($output_ident.push_str($string);)
         };
         self.tail.clear();

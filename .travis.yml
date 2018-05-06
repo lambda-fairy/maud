@@ -11,7 +11,9 @@ script:
   - |
     if command -v cargo-clippy > /dev/null; then
       CLIPPY_STATUS=0
-      for package in maud_htmlescape maud_macros maud maud_lints maud_extras; do
+      # TODO add `maud_extras` back in when Clippy issue is fixed
+      # https://github.com/rust-lang-nursery/rust-clippy/issues/2594
+      for package in maud_htmlescape maud_macros maud maud_lints; do
         (cd $package && cargo clippy -- -D warnings) || CLIPPY_STATUS=$?
       done
       (exit $CLIPPY_STATUS)

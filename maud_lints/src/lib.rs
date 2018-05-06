@@ -3,7 +3,7 @@
 #![feature(macro_vis_matcher)]
 #![recursion_limit = "1000"]  // if_chain
 
-#![doc(html_root_url = "https://docs.rs/maud_lints/0.17.0")]
+#![doc(html_root_url = "https://docs.rs/maud_lints/0.17.4")]
 
 // TODO rewrite all of this
 #![allow(dead_code)]
