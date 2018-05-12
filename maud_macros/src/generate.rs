@@ -3,9 +3,7 @@ use proc_macro::{
     Delimiter,
     Group,
     Literal,
-    Op,
     quote,
-    Spacing,
     Span,
     Term,
     TokenStream,
@@ -81,7 +79,7 @@ impl Generator {
         tail.push_escaped(content);
         let mut marker = TokenTree::Literal(Literal::string(content));
         marker.set_span(span);
-        quote!(maud::marker::literal(&[$marker]);)
+        quote!(maud::marker::literal($marker);)
     }
 
     fn symbol(&self, symbol: TokenStream, tail: &mut Tail) -> TokenStream {
@@ -129,19 +127,11 @@ impl Generator {
     }
 
     fn name(&self, name: TokenStream, tail: &mut Tail) -> TokenStream {
-        let mut markers = Vec::new();
-        for token in name {
-            let fragment = token.to_string();
-            markers.push({
-                let mut marker = TokenTree::Literal(Literal::string(&fragment));
-                marker.set_span(token.span());
-                marker
-            });
-            tail.push_escaped(&fragment);
-            markers.push(TokenTree::Op(Op::new(',', Spacing::Alone)));
-        }
-        let markers = markers.into_iter().collect::<TokenStream>();
-        quote!(&[$markers])
+        let string = name.clone().into_iter().map(|token| token.to_string()).collect::<String>();
+        tail.push_escaped(&string);
+        let mut marker = TokenTree::Literal(Literal::string(&string));
+        marker.set_span(span_tokens(name));
+        TokenStream::from(marker)
     }
 
     fn attrs(&self, attrs: Attrs, tail: &mut Tail) -> TokenStream {

@@ -4,21 +4,18 @@
 
 use rustc::hir::{
     Expr,
-    ExprAddrOf,
-    ExprArray,
     ExprBlock,
     ExprCall,
     ExprLit,
     ExprPath,
-    MutImmutable,
     StmtSemi,
 };
 use rustc::hir::def_id::DefId;
 use rustc::lint::LateContext;
 use rustc::ty;
 use syntax::ast::{LitKind, StrStyle};
-use syntax::symbol::{LocalInternedString, Symbol};
 use syntax_pos::Span;
+use syntax_pos::symbol::{LocalInternedString, Symbol};
 
 pub fn match_marker_type<'a, 'tcx>(
     cx: &LateContext<'a, 'tcx>,
@@ -64,41 +61,22 @@ pub fn match_def_path(cx: &LateContext, def_id: DefId, path: &[&str]) -> bool {
     apb.names.len() == path.len() && apb.names.iter().zip(path.iter()).all(|(a, &b)| &**a == b)
 }
 
-pub fn extract_strings(expr: &Expr) -> Option<(String, Span)> {
-    let args = if_chain! {
-        if let ExprAddrOf(MutImmutable, ref expr) = expr.node;
-        if let ExprArray(ref args) = expr.node;
+pub fn match_string(expr: &Expr) -> Option<(Symbol, Span)> {
+    if_chain! {
+        if let ExprLit(ref lit) = expr.node;
+        if let LitKind::Str(s, StrStyle::Cooked) = lit.node;
         then {
-            args
+            Some((s, lit.span))
         } else {
-            return None;
-        }
-    };
-    let mut content = String::new();
-    let mut span: Option<Span> = None;
-    for expr in args {
-        if_chain! {
-            if let ExprLit(ref lit) = expr.node;
-            if let LitKind::Str(s, StrStyle::Cooked) = lit.node;
-            then {
-                content.push_str(&s.as_str());
-                if let Some(ref mut span) = span {
-                    *span = span.to(lit.span);
-                } else {
-                    span = Some(lit.span);
-                }
-            } else {
-                return None;
-            }
+            None
         }
     }
-    span.map(|span| (content, span))
 }
 
 pub fn extract_attrs<'a, 'tcx>(
     cx: &LateContext<'a, 'tcx>,
     expr: &'tcx Expr,
-) -> Option<Vec<(String, Span)>> {
+) -> Option<Vec<(Symbol, Span)>> {
     let block = if let ExprBlock(ref block) = expr.node {
         block
     } else {
@@ -108,7 +86,7 @@ pub fn extract_attrs<'a, 'tcx>(
         if let StmtSemi(ref expr, _) = stmt.node;
         if let Some(args) = match_marker_type(cx, expr, "attribute");
         then {
-            args.get(0).and_then(extract_strings)
+            args.get(0).and_then(match_string)
         } else {
             None
         }

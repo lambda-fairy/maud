@@ -150,9 +150,9 @@ pub const DOCTYPE: PreEscaped<&'static str> = PreEscaped("<!DOCTYPE html>");
 
 #[doc(hidden)]
 pub mod marker {
-    #[inline(always)] pub fn literal(_content: &'static [&'static str]) {}
-    #[inline(always)] pub fn element(_name: &'static [&'static str], _attrs: (), _body: ()) {}
-    #[inline(always)] pub fn attribute(_name: &'static [&'static str], _value: ()) {}
+    #[inline(always)] pub fn literal(_content: &'static str) {}
+    #[inline(always)] pub fn element(_name: &'static str, _attrs: (), _body: ()) {}
+    #[inline(always)] pub fn attribute(_name: &'static str, _value: ()) {}
 }
 
 #[cfg(feature = "iron")]
