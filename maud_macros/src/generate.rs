@@ -300,7 +300,6 @@ impl Tail {
         quote!($push_str_expr $next_expr)
     }
 
-    #[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
     fn finish(mut self, main_expr: TokenStream) -> TokenStream {
         let push_str_expr = self._cut();
         quote!($main_expr $push_str_expr)
