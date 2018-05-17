@@ -19,14 +19,11 @@ use rustc_plugin::Registry;
 mod util;
 
 mod doctype;
-mod noopener;
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_late_lint_pass(Box::new(doctype::Doctype));
-    reg.register_late_lint_pass(Box::new(noopener::Noopener));
     reg.register_lint_group("maud", vec![
         doctype::MAUD_DOCTYPE,
-        noopener::MAUD_NOOPENER,
     ]);
 }

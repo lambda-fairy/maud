@@ -13,9 +13,9 @@ use proc_macro::{
 use ast::*;
 
 pub fn generate(markups: Vec<Markup>, output_ident: TokenTree) -> TokenStream {
-    let mut tail = Tail::new(output_ident.clone());
-    let result = Generator::new(output_ident).markups(markups, &mut tail);
-    tail.finish(result)
+    let mut build = Builder::new(output_ident.clone());
+    Generator::new(output_ident).markups(markups, &mut build);
+    build.finish()
 }
 
 struct Generator {
@@ -27,69 +27,61 @@ impl Generator {
         Generator { output_ident }
     }
 
-    fn markups(&self, markups: Vec<Markup>, tail: &mut Tail) -> TokenStream {
-        markups.into_iter().map(|markup| self.markup(markup, tail)).collect()
+    fn builder(&self) -> Builder {
+        Builder::new(self.output_ident.clone())
     }
 
-    fn markup(&self, markup: Markup, tail: &mut Tail) -> TokenStream {
+    fn markups(&self, markups: Vec<Markup>, build: &mut Builder) {
+        for markup in markups {
+            self.markup(markup, build);
+        }
+    }
+
+    fn markup(&self, markup: Markup, build: &mut Builder) {
         match markup {
             Markup::Block(Block { markups, span }) => {
                 if markups.iter().any(|markup| matches!(*markup, Markup::Let { .. })) {
-                    tail.cut_once(move |tail| self.block(Block { markups, span }, tail))
+                    build.push_tokens(self.block(Block { markups, span }));
                 } else {
-                    self.markups(markups, tail)
+                    self.markups(markups, build);
                 }
             },
-            Markup::Literal { content, span } => self.literal(&content, span, tail),
-            Markup::Symbol { symbol } => self.symbol(symbol, tail),
-            Markup::Splice { expr } => self.splice(expr, tail),
-            Markup::Element { name, attrs, body } => self.element(name, attrs, body, tail),
-            Markup::Let { tokens } => tail.cut_once(|_| tokens),
+            Markup::Literal { content, .. } => build.push_escaped(&content),
+            Markup::Symbol { symbol } => self.name(symbol, build),
+            Markup::Splice { expr } => build.push_tokens(self.splice(expr)),
+            Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
+            Markup::Let { tokens } => build.push_tokens(tokens),
             Markup::If { segments } => {
-                tail.cut_many(move |kitsune| {
-                    segments
-                        .into_iter()
-                        .map(|segment| self.special(segment, kitsune.fork()))
-                        .collect()
-                })
+                for segment in segments {
+                    build.push_tokens(self.special(segment));
+                }
             },
-            Markup::Special(special) => tail.cut_once(move |tail| self.special(special, tail)),
+            Markup::Special(special) => build.push_tokens(self.special(special)),
             Markup::Match { head, arms, arms_span } => {
-                tail.cut_many(move |kitsune| {
+                build.push_tokens({
                     let body = arms
                         .into_iter()
-                        .map(|arm| self.special(arm, kitsune.fork()))
+                        .map(|arm| self.special(arm))
                         .collect();
                     let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
                     body.set_span(arms_span);
                     quote!($head $body)
-                })
+                });
             },
         }
     }
 
-    fn block(&self, Block { markups, span }: Block, mut tail: Tail) -> TokenStream {
-        let markups = self.markups(markups, &mut tail);
-        let mut block = TokenTree::Group(Group::new(Delimiter::Brace, tail.finish(markups)));
+    fn block(&self, Block { markups, span }: Block) -> TokenStream {
+        let mut build = self.builder();
+        self.markups(markups, &mut build);
+        let mut block = TokenTree::Group(Group::new(Delimiter::Brace, build.finish()));
         block.set_span(span);
         TokenStream::from(block)
     }
 
-    fn literal(&self, content: &str, span: Span, tail: &mut Tail) -> TokenStream {
-        tail.push_escaped(content);
-        let mut marker = TokenTree::Literal(Literal::string(content));
-        marker.set_span(span);
-        quote!(maud::marker::literal($marker);)
-    }
-
-    fn symbol(&self, symbol: TokenStream, tail: &mut Tail) -> TokenStream {
-        let marker = self.name(symbol, tail);
-        quote!(maud::marker::literal($marker);)
-    }
-
-    fn splice(&self, expr: TokenStream, tail: &mut Tail) -> TokenStream {
+    fn splice(&self, expr: TokenStream) -> TokenStream {
         let output_ident = self.output_ident.clone();
-        tail.cut_once(move |_| quote!({
+        quote!({
             // Create a local trait alias so that autoref works
             trait Render: maud::Render {
                 fn __maud_render_to(&self, output_ident: &mut String) {
@@ -98,7 +90,7 @@ impl Generator {
             }
             impl<T: maud::Render> Render for T {}
             $expr.__maud_render_to(&mut $output_ident);
-        }))
+        })
     }
 
     fn element(
@@ -106,68 +98,55 @@ impl Generator {
         name: TokenStream,
         attrs: Attrs,
         body: Option<Box<Markup>>,
-        tail: &mut Tail,
-    ) -> TokenStream {
-        tail.push_str("<");
-        let name_marker = self.name(name.clone(), tail);
-        let attrs_marker = self.attrs(attrs, tail);
-        tail.push_str(">");
-        let body_marker = if let Some(body) = body {
-            let body_marker = self.markup(*body, tail);
-            tail.push_str("</");
-            for token in name {
-                tail.push_str(&token.to_string());
-            }
-            tail.push_str(">");
-            body_marker
-        } else {
-            TokenStream::empty()
-        };
-        quote!(maud::marker::element($name_marker, { $attrs_marker }, { $body_marker });)
+        build: &mut Builder,
+    ) {
+        build.push_str("<");
+        self.name(name.clone(), build);
+        self.attrs(attrs, build);
+        build.push_str(">");
+        if let Some(body) = body {
+            self.markup(*body, build);
+            build.push_str("</");
+            self.name(name, build);
+            build.push_str(">");
+        }
     }
 
-    fn name(&self, name: TokenStream, tail: &mut Tail) -> TokenStream {
-        let string = name.clone().into_iter().map(|token| token.to_string()).collect::<String>();
-        tail.push_escaped(&string);
-        let mut marker = TokenTree::Literal(Literal::string(&string));
-        marker.set_span(span_tokens(name));
-        TokenStream::from(marker)
+    fn name(&self, name: TokenStream, build: &mut Builder) {
+        let string = name.into_iter().map(|token| token.to_string()).collect::<String>();
+        build.push_escaped(&string);
     }
 
-    fn attrs(&self, attrs: Attrs, tail: &mut Tail) -> TokenStream {
-        let mut markers = Vec::new();
+    fn attrs(&self, attrs: Attrs, build: &mut Builder) {
         for Attribute { name, attr_type } in desugar_attrs(attrs) {
-            markers.push(match attr_type {
+            match attr_type {
                 AttrType::Normal { value } => {
-                    tail.push_str(" ");
-                    let name_marker = self.name(name, tail);
-                    tail.push_str("=\"");
-                    let value_marker = self.markup(value, tail);
-                    tail.push_str("\"");
-                    quote!(maud::marker::attribute($name_marker, { $value_marker });)
+                    build.push_str(" ");
+                    self.name(name, build);
+                    build.push_str("=\"");
+                    self.markup(value, build);
+                    build.push_str("\"");
                 },
                 AttrType::Empty { toggler: None } => {
-                    tail.push_str(" ");
-                    let name_marker = self.name(name, tail);
-                    quote!(maud::marker::attribute($name_marker, ());)
+                    build.push_str(" ");
+                    self.name(name, build);
                 },
                 AttrType::Empty { toggler: Some(toggler) } => {
                     let head = desugar_toggler(toggler);
-                    tail.cut_once(move |mut tail| {
-                        tail.push_str(" ");
-                        let name_marker = self.name(name, &mut tail);
-                        let attr_marker = quote!(maud::marker::attribute($name_marker, ()););
-                        let body = tail.finish(attr_marker);
+                    build.push_tokens({
+                        let mut build = self.builder();
+                        build.push_str(" ");
+                        self.name(name, &mut build);
+                        let body = build.finish();
                         quote!($head { $body })
                     })
                 },
-            });
+            }
         }
-        markers.into_iter().collect()
     }
 
-    fn special(&self, Special { head, body }: Special, tail: Tail) -> TokenStream {
-        let body = self.block(body, tail);
+    fn special(&self, Special { head, body }: Special) -> TokenStream {
+        let body = self.block(body);
         quote!($head $body)
     }
 }
@@ -202,11 +181,11 @@ fn desugar_classes_or_ids(
         markups.push(Markup::Special(Special { head, body }));
     }
     Some(Attribute {
-        name: TokenStream::from(TokenTree::Term(Term::new(attr_name, Span::def_site()))),  // TODO
+        name: TokenStream::from(TokenTree::Term(Term::new(attr_name, Span::call_site()))),
         attr_type: AttrType::Normal {
             value: Markup::Block(Block {
                 markups,
-                span: Span::def_site(),  // TODO
+                span: Span::call_site(),
             }),
         },
     })
@@ -251,15 +230,17 @@ fn span_tokens<I: IntoIterator<Item=TokenTree>>(tokens: I) -> Span {
 
 ////////////////////////////////////////////////////////
 
-struct Tail {
+struct Builder {
     output_ident: TokenTree,
+    tokens: Vec<TokenTree>,
     tail: String,
 }
 
-impl Tail {
-    fn new(output_ident: TokenTree) -> Tail {
-        Tail {
+impl Builder {
+    fn new(output_ident: TokenTree) -> Builder {
+        Builder {
             output_ident,
+            tokens: Vec::new(),
             tail: String::new(),
         }
     }
@@ -273,9 +254,14 @@ impl Tail {
         Escaper::new(&mut self.tail).write_str(string).unwrap();
     }
 
-    fn _cut(&mut self) -> TokenStream {
+    fn push_tokens<T: IntoIterator<Item=TokenTree>>(&mut self, tokens: T) {
+        self.cut();
+        self.tokens.extend(tokens);
+    }
+
+    fn cut(&mut self) {
         if self.tail.is_empty() {
-            return TokenStream::empty();
+            return;
         }
         let push_str_expr = {
             let output_ident = self.output_ident.clone();
@@ -283,39 +269,11 @@ impl Tail {
             quote!($output_ident.push_str($string);)
         };
         self.tail.clear();
-        push_str_expr
+        self.tokens.extend(push_str_expr);
     }
 
-    fn cut_once<F>(&mut self, callback: F) -> TokenStream where
-        F: FnOnce(Tail) -> TokenStream,
-    {
-        self.cut_many(move |kitsune| callback(kitsune.fork()))
-    }
-
-    fn cut_many<F>(&mut self, callback: F) -> TokenStream where
-        F: FnOnce(Kitsune) -> TokenStream,
-    {
-        let push_str_expr = self._cut();
-        let next_expr = callback(Kitsune::new(self.output_ident.clone()));
-        quote!($push_str_expr $next_expr)
-    }
-
-    fn finish(mut self, main_expr: TokenStream) -> TokenStream {
-        let push_str_expr = self._cut();
-        quote!($main_expr $push_str_expr)
-    }
-}
-
-struct Kitsune {
-    output_ident: TokenTree,
-}
-
-impl Kitsune {
-    fn new(output_ident: TokenTree) -> Kitsune {
-        Kitsune { output_ident }
-    }
-
-    fn fork(&self) -> Tail {
-        Tail::new(self.output_ident.clone())
+    fn finish(mut self) -> TokenStream {
+        self.cut();
+        self.tokens.into_iter().collect()
     }
 }
