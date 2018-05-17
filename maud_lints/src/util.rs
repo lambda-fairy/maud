@@ -5,7 +5,7 @@
 use rustc::hir::def_id::DefId;
 use rustc::lint::LateContext;
 use rustc::ty;
-use syntax::symbol::{LocalInternedString, Symbol};
+use syntax_pos::symbol::{LocalInternedString, Symbol};
 
 /// Check if a `DefId`'s path matches the given absolute type path usage.
 ///

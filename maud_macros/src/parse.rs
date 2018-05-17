@@ -1,30 +1,24 @@
 use proc_macro::{
     Delimiter,
-    Group,
     Literal,
     Spacing,
     Span,
     TokenStream,
     TokenTree,
 };
-use std::iter;
 use std::mem;
 
 use literalext::LiteralExt;
 
-use super::build::Builder;
-use super::ParseResult;
+use ast;
+use ParseResult;
 
-pub fn parse(input: TokenStream, output_ident: TokenTree) -> ParseResult<TokenStream> {
-    let mut parser = Parser::new(input, output_ident);
-    let mut builder = parser.builder();
-    parser.markups(&mut builder)?;
-    Ok(builder.build())
+pub fn parse(input: TokenStream) -> ParseResult<Vec<ast::Markup>> {
+    Parser::new(input).markups()
 }
 
 #[derive(Clone)]
 struct Parser {
-    output_ident: TokenTree,
     /// Indicates whether we're inside an attribute node.
     in_attr: bool,
     input: <TokenStream as IntoIterator>::IntoIter,
@@ -39,9 +33,8 @@ impl Iterator for Parser {
 }
 
 impl Parser {
-    fn new(input: TokenStream, output_ident: TokenTree) -> Parser {
+    fn new(input: TokenStream) -> Parser {
         Parser {
-            output_ident,
             in_attr: false,
             input: input.into_iter(),
         }
@@ -49,14 +42,9 @@ impl Parser {
 
     fn with_input(&self, input: TokenStream) -> Parser {
         Parser {
-            output_ident: self.output_ident.clone(),
             in_attr: self.in_attr,
             input: input.into_iter(),
         }
-    }
-
-    fn builder(&self) -> Builder {
-        Builder::new(self.output_ident.clone())
     }
 
     /// Returns the next token in the stream without consuming it.
@@ -92,52 +80,54 @@ impl Parser {
     }
 
     /// Parses and renders multiple blocks of markup.
-    fn markups(&mut self, builder: &mut Builder) -> ParseResult<()> {
+    fn markups(&mut self) -> ParseResult<Vec<ast::Markup>> {
+        let mut result = Vec::new();
         loop {
             match self.peek2() {
-                None => return Ok(()),
+                None => break,
                 Some((TokenTree::Op(op), _)) if op.op() == ';' => self.advance(),
-                Some((TokenTree::Op(op), Some(TokenTree::Term(term)))) if op.op() == '@' && term.as_str() == "let" => {
-                    // When emitting a `@let`, wrap the rest of the block in a
-                    // new block to avoid scoping issues
+                Some((
+                    TokenTree::Op(op),
+                    Some(TokenTree::Term(term)),
+                )) if op.op() == '@' && term.as_str() == "let" => {
                     self.advance2();
-                    builder.push({
-                        let mut builder = self.builder();
-                        builder.push(TokenTree::Term(term));
-                        self.let_expr(&mut builder)?;
-                        self.markups(&mut builder)?;
-                        TokenTree::Group(Group::new(Delimiter::Brace, builder.build()))
-                    });
+                    let keyword = TokenTree::Term(term);
+                    result.push(self.let_expr(keyword)?);
                 },
-                _ => self.markup(builder)?,
+                _ => result.push(self.markup()?),
             }
         }
+        Ok(result)
     }
 
     /// Parses and renders a single block of markup.
-    fn markup(&mut self, builder: &mut Builder) -> ParseResult<()> {
+    fn markup(&mut self) -> ParseResult<ast::Markup> {
         let token = match self.peek() {
             Some(token) => token,
             None => return self.error("unexpected end of input"),
         };
-        match token {
+        let markup = match token {
             // Literal
             TokenTree::Literal(lit) => {
                 self.advance();
-                self.literal(lit, builder)?;
+                self.literal(&lit)?
             },
             // Special form
             TokenTree::Op(op) if op.op() == '@' => {
                 self.advance();
                 match self.next() {
                     Some(TokenTree::Term(term)) => {
-                        builder.push(TokenTree::Term(term));
+                        let keyword = TokenTree::Term(term);
                         match term.as_str() {
-                            "if" => self.if_expr(builder)?,
-                            "while" => self.while_expr(builder)?,
-                            "for" => self.for_expr(builder)?,
-                            "match" => self.match_expr(builder)?,
-                            "let" => return self.error("let only works inside a block"),
+                            "if" => {
+                                let mut segments = Vec::new();
+                                self.if_expr(vec![keyword], &mut segments)?;
+                                ast::Markup::If { segments }
+                            },
+                            "while" => self.while_expr(keyword)?,
+                            "for" => self.for_expr(keyword)?,
+                            "match" => self.match_expr(keyword)?,
+                            "let" => return self.error("@let only works inside a block"),
                             other => return self.error(format!("unknown keyword `@{}`", other)),
                         }
                     },
@@ -147,82 +137,91 @@ impl Parser {
             // Element
             TokenTree::Term(_) => {
                 let name = self.namespaced_name()?;
-                self.element(&name, builder)?;
+                self.element(name)?
             },
             // Splice
             TokenTree::Group(ref group) if group.delimiter() == Delimiter::Parenthesis => {
                 self.advance();
-                builder.splice(group.stream());
-            },
+                ast::Markup::Splice { expr: group.stream() }
+            }
             // Block
             TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace => {
                 self.advance();
-                self.with_input(group.stream()).markups(builder)?;
+                ast::Markup::Block(self.block(group.stream(), group.span())?)
             },
             // ???
             _ => return self.error("invalid syntax"),
-        }
-        Ok(())
+        };
+        Ok(markup)
     }
 
     /// Parses and renders a literal string.
-    fn literal(&mut self, lit: Literal, builder: &mut Builder) -> ParseResult<()> {
+    fn literal(&mut self, lit: &Literal) -> ParseResult<ast::Markup> {
         if let Some(s) = lit.parse_string() {
-            builder.string(&s);
-            Ok(())
+            Ok(ast::Markup::Literal {
+                content: s.to_string(),
+                span: lit.span(),
+            })
         } else {
             self.error("expected string")
         }
     }
 
-    /// Parses and renders an `@if` expression.
+    /// Parses an `@if` expression.
     ///
     /// The leading `@if` should already be consumed.
-    fn if_expr(&mut self, builder: &mut Builder) -> ParseResult<()> {
-        loop {
+    fn if_expr(
+        &mut self,
+        prefix: Vec<TokenTree>,
+        segments: &mut Vec<ast::Special>,
+    ) -> ParseResult<()> {
+        let mut head = prefix;
+        let body = loop {
             match self.next() {
                 Some(TokenTree::Group(ref block)) if block.delimiter() == Delimiter::Brace => {
-                    let block = self.block(block.stream(), block.span())?;
-                    builder.push(block);
-                    break;
+                    break self.block(block.stream(), block.span())?;
                 },
-                Some(token) => builder.push(token),
+                Some(token) => head.push(token),
                 None => return self.error("unexpected end of @if expression"),
             }
-        }
-        self.else_if_expr(builder)
+        };
+        segments.push(ast::Special { head: head.into_iter().collect(), body });
+        self.else_if_expr(segments)
     }
 
-    /// Parses and renders an optional `@else if` or `@else`.
+    /// Parses an optional `@else if` or `@else`.
     ///
     /// The leading `@else if` or `@else` should *not* already be consumed.
-    fn else_if_expr(&mut self, builder: &mut Builder) -> ParseResult<()> {
+    fn else_if_expr(&mut self, segments: &mut Vec<ast::Special>) -> ParseResult<()> {
         match self.peek2() {
             Some((
                 TokenTree::Op(op),
                 Some(TokenTree::Term(else_keyword)),
             )) if op.op() == '@' && else_keyword.as_str() == "else" => {
                 self.advance2();
-                builder.push(TokenTree::Term(else_keyword));
+                let else_keyword = TokenTree::Term(else_keyword);
                 match self.peek() {
                     // `@else if`
                     Some(TokenTree::Term(if_keyword)) if if_keyword.as_str() == "if" => {
                         self.advance();
-                        builder.push(TokenTree::Term(if_keyword));
-                        self.if_expr(builder)?;
+                        let if_keyword = TokenTree::Term(if_keyword);
+                        self.if_expr(vec![else_keyword, if_keyword], segments)
                     },
                     // Just an `@else`
                     _ => {
                         match self.next() {
                             Some(TokenTree::Group(ref group)) if group.delimiter() == Delimiter::Brace => {
-                                let block = self.block(group.stream(), group.span())?;
-                                builder.push(block);
+                                let body = self.block(group.stream(), group.span())?;
+                                segments.push(ast::Special {
+                                    head: vec![else_keyword].into_iter().collect(),
+                                    body,
+                                });
+                                Ok(())
                             },
-                            _ => return self.error("expected body for @else"),
+                            _ => self.error("expected body for @else"),
                         }
                     },
                 }
-                self.else_if_expr(builder)
             },
             // We didn't find an `@else`; stop
             _ => Ok(()),
@@ -232,95 +231,90 @@ impl Parser {
     /// Parses and renders an `@while` expression.
     ///
     /// The leading `@while` should already be consumed.
-    fn while_expr(&mut self, builder: &mut Builder) -> ParseResult<()> {
-        loop {
+    fn while_expr(&mut self, keyword: TokenTree) -> ParseResult<ast::Markup> {
+        let mut head = vec![keyword];
+        let body = loop {
             match self.next() {
                 Some(TokenTree::Group(ref block)) if block.delimiter() == Delimiter::Brace => {
-                    let block = self.block(block.stream(), block.span())?;
-                    builder.push(block);
-                    break;
+                    break self.block(block.stream(), block.span())?;
                 },
-                Some(token) => builder.push(token),
+                Some(token) => head.push(token),
                 None => return self.error("unexpected end of @while expression"),
             }
-        }
-        Ok(())
+        };
+        Ok(ast::Markup::Special(ast::Special { head: head.into_iter().collect(), body }))
     }
 
-    /// Parses and renders a `@for` expression.
+    /// Parses a `@for` expression.
     ///
     /// The leading `@for` should already be consumed.
-    fn for_expr(&mut self, builder: &mut Builder) -> ParseResult<()> {
+    fn for_expr(&mut self, keyword: TokenTree) -> ParseResult<ast::Markup> {
+        let mut head = vec![keyword];
         loop {
             match self.next() {
                 Some(TokenTree::Term(in_keyword)) if in_keyword.as_str() == "in" => {
-                    builder.push(TokenTree::Term(in_keyword));
+                    head.push(TokenTree::Term(in_keyword));
                     break;
                 },
-                Some(token) => builder.push(token),
+                Some(token) => head.push(token),
                 None => return self.error("unexpected end of @for expression"),
             }
         }
-        loop {
+        let body = loop {
             match self.next() {
                 Some(TokenTree::Group(ref block)) if block.delimiter() == Delimiter::Brace => {
-                    let block = self.block(block.stream(), block.span())?;
-                    builder.push(block);
-                    break;
+                    break self.block(block.stream(), block.span())?;
                 },
-                Some(token) => builder.push(token),
+                Some(token) => head.push(token),
                 None => return self.error("unexpected end of @for expression"),
             }
-        }
-        Ok(())
+        };
+        Ok(ast::Markup::Special(ast::Special { head: head.into_iter().collect(), body }))
     }
 
-    /// Parses and renders a `@match` expression.
+    /// Parses a `@match` expression.
     ///
     /// The leading `@match` should already be consumed.
-    fn match_expr(&mut self, builder: &mut Builder) -> ParseResult<()> {
-        loop {
+    fn match_expr(&mut self, keyword: TokenTree) -> ParseResult<ast::Markup> {
+        let mut head = vec![keyword];
+        let (arms, arms_span) = loop {
             match self.next() {
                 Some(TokenTree::Group(ref body)) if body.delimiter() == Delimiter::Brace => {
                     let span = body.span();
-                    let body = self.with_input(body.stream()).match_arms()?;
-                    let mut body = Group::new(Delimiter::Brace, body);
-                    body.set_span(span);
-                    builder.push(TokenTree::Group(body));
-                    break;
+                    break (self.with_input(body.stream()).match_arms()?, span);
                 },
-                Some(token) => builder.push(token),
+                Some(token) => head.push(token),
                 None => return self.error("unexpected end of @match expression"),
             }
-        }
-        Ok(())
+        };
+        Ok(ast::Markup::Match { head: head.into_iter().collect(), arms, arms_span })
     }
 
-    fn match_arms(&mut self) -> ParseResult<TokenStream> {
+    fn match_arms(&mut self) -> ParseResult<Vec<ast::Special>> {
         let mut arms = Vec::new();
         while let Some(arm) = self.match_arm()? {
             arms.push(arm);
         }
-        Ok(arms.into_iter().collect())
+        Ok(arms)
     }
 
-    fn match_arm(&mut self) -> ParseResult<Option<TokenStream>> {
-        let mut pat = Vec::new();
+    fn match_arm(&mut self) -> ParseResult<Option<ast::Special>> {
+        let mut head = Vec::new();
         loop {
             match self.peek2() {
                 Some((TokenTree::Op(eq), Some(TokenTree::Op(gt))))
                 if eq.op() == '=' && gt.op() == '>' && eq.spacing() == Spacing::Joint => {
                     self.advance2();
-                    pat.push(TokenTree::Op(eq));
-                    pat.push(TokenTree::Op(gt));
+                    head.push(TokenTree::Op(eq));
+                    head.push(TokenTree::Op(gt));
                     break;
                 },
                 Some((token, _)) => {
                     self.advance();
-                    pat.push(token);
+                    head.push(token);
                 },
                 None =>
-                    if pat.is_empty() {
+                    if head.is_empty() {
                         return Ok(None);
                     } else {
                         return self.error("unexpected end of @match pattern");
@@ -359,22 +353,23 @@ impl Parser {
             },
             None => return self.error("unexpected end of @match arm"),
         };
-        Ok(Some(pat.into_iter().chain(iter::once(body)).collect()))
+        Ok(Some(ast::Special { head: head.into_iter().collect(), body }))
     }
 
-    /// Parses and renders a `@let` expression.
+    /// Parses a `@let` expression.
     ///
     /// The leading `@let` should already be consumed.
-    fn let_expr(&mut self, builder: &mut Builder) -> ParseResult<()> {
+    fn let_expr(&mut self, keyword: TokenTree) -> ParseResult<ast::Markup> {
+        let mut tokens = vec![keyword];
         loop {
             match self.next() {
                 Some(token) => {
                     match token {
                         TokenTree::Op(ref op) if op.op() == '=' => {
-                            builder.push(token.clone());
+                            tokens.push(token.clone());
                             break;
                         },
-                        _ => builder.push(token),
+                        _ => tokens.push(token),
                     }
                 },
                 None => return self.error("unexpected end of @let expression"),
@@ -385,46 +380,43 @@ impl Parser {
                 Some(token) => {
                     match token {
                         TokenTree::Op(ref op) if op.op() == ';' => {
-                            builder.push(token.clone());
+                            tokens.push(token.clone());
                             break;
                         },
-                        _ => builder.push(token),
+                        _ => tokens.push(token),
                     }
                 },
                 None => return self.error("unexpected end of @let expression"),
             }
         }
-        Ok(())
+        Ok(ast::Markup::Let { tokens: tokens.into_iter().collect() })
     }
 
-    /// Parses and renders an element node.
+    /// Parses an element node.
     ///
     /// The element name should already be consumed.
-    fn element(&mut self, name: &str, builder: &mut Builder) -> ParseResult<()> {
+    fn element(&mut self, name: TokenStream) -> ParseResult<ast::Markup> {
         if self.in_attr {
             return self.error("unexpected element, you silly bumpkin");
         }
-        builder.element_open_start(name);
-        self.attrs(builder)?;
-        builder.element_open_end();
-        match self.peek() {
+        let attrs = self.attrs()?;
+        let body = match self.peek() {
             Some(TokenTree::Op(o)) if o.op() == ';' || o.op() == '/' => {
                 // Void element
                 self.advance();
+                None
             },
-            _ => {
-                self.markup(builder)?;
-                builder.element_close(name);
-            },
-        }
-        Ok(())
+            _ => Some(Box::new(self.markup()?)),
+        };
+        Ok(ast::Markup::Element { name, attrs, body })
     }
 
-    /// Parses and renders the attributes of an element.
-    fn attrs(&mut self, builder: &mut Builder) -> ParseResult<()> {
+    /// Parses the attributes of an element.
+    fn attrs(&mut self) -> ParseResult<ast::Attrs> {
         let mut classes_static = Vec::new();
         let mut classes_toggled = Vec::new();
         let mut ids = Vec::new();
+        let mut attrs = Vec::new();
         loop {
             let mut attempt = self.clone();
             let maybe_name = attempt.namespaced_name();
@@ -433,41 +425,35 @@ impl Parser {
                 // Non-empty attribute
                 (Ok(ref name), Some(TokenTree::Op(ref op))) if op.op() == '=' => {
                     self.commit(attempt);
-                    builder.attribute_start(&name);
+                    let value;
                     {
                         // Parse a value under an attribute context
                         let in_attr = mem::replace(&mut self.in_attr, true);
-                        self.markup(builder)?;
+                        value = self.markup()?;
                         self.in_attr = in_attr;
                     }
-                    builder.attribute_end();
+                    attrs.push(ast::Attribute {
+                        name: name.clone(),
+                        attr_type: ast::AttrType::Normal { value },
+                    });
                 },
                 // Empty attribute
                 (Ok(ref name), Some(TokenTree::Op(ref op))) if op.op() == '?' => {
                     self.commit(attempt);
-                    if let Some((cond, cond_span)) = self.attr_toggler() {
-                        // Toggle the attribute based on a boolean expression
-                        let body = {
-                            let mut builder = self.builder();
-                            builder.attribute_empty(&name);
-                            builder.build()
-                        };
-                        builder.emit_if(cond, cond_span, body);
-                    } else {
-                        // Write the attribute unconditionally
-                        builder.attribute_empty(&name);
-                    }
+                    let toggler = self.attr_toggler();
+                    attrs.push(ast::Attribute {
+                        name: name.clone(),
+                        attr_type: ast::AttrType::Empty { toggler },
+                    });
                 },
                 // Class shorthand
                 (Err(_), Some(TokenTree::Op(op))) if op.op() == '.' => {
                     self.commit(attempt);
-                    let class_name = self.name()?;
-                    if let Some((cond, cond_span)) = self.attr_toggler() {
-                        // Toggle the class based on a boolean expression
-                        classes_toggled.push((cond, cond_span, class_name));
+                    let name = self.name()?;
+                    if let Some(toggler) = self.attr_toggler() {
+                        classes_toggled.push((name, toggler));
                     } else {
-                        // Emit the class unconditionally
-                        classes_static.push(class_name);
+                        classes_static.push(name);
                     }
                 },
                 // ID shorthand
@@ -479,91 +465,68 @@ impl Parser {
                 _ => break,
             }
         }
-        if !classes_static.is_empty() || !classes_toggled.is_empty() {
-            builder.attribute_start("class");
-            builder.string(&classes_static.join(" "));
-            for (i, (cond, cond_span, mut class_name)) in classes_toggled.into_iter().enumerate() {
-                // If a class comes first in the list, then it shouldn't be
-                // prefixed by a space
-                if i > 0 || !classes_static.is_empty() {
-                    class_name = format!(" {}", class_name);
-                }
-                let body = {
-                    let mut builder = self.builder();
-                    builder.string(&class_name);
-                    builder.build()
-                };
-                builder.emit_if(cond, cond_span, body);
-            }
-            builder.attribute_end();
-        }
-        if !ids.is_empty() {
-            builder.attribute_start("id");
-            builder.string(&ids.join(" "));
-            builder.attribute_end();
-        }
-        Ok(())
+        Ok(ast::Attrs { classes_static, classes_toggled, ids, attrs })
     }
 
     /// Parses the `[cond]` syntax after an empty attribute or class shorthand.
-    fn attr_toggler(&mut self) -> Option<(TokenStream, Span)> {
+    fn attr_toggler(&mut self) -> Option<ast::Toggler> {
         match self.peek() {
-            Some(TokenTree::Group(ref grp)) if grp.delimiter() == Delimiter::Bracket => {
+            Some(TokenTree::Group(ref group)) if group.delimiter() == Delimiter::Bracket => {
                 self.advance();
-                Some((grp.stream(), grp.span()))
+                Some(ast::Toggler {
+                    cond: group.stream(),
+                    cond_span: group.span(),
+                })
             },
             _ => None,
         }
     }
 
     /// Parses an identifier, without dealing with namespaces.
-    fn name(&mut self) -> ParseResult<String> {
-        let mut s = if let Some(TokenTree::Term(term)) = self.peek() {
+    fn name(&mut self) -> ParseResult<TokenStream> {
+        let mut result = Vec::new();
+        if let Some(token @ TokenTree::Term(_)) = self.peek() {
             self.advance();
-            String::from(term.as_str())
+            result.push(token);
         } else {
             return self.error("expected identifier");
-        };
+        }
         let mut expect_ident = false;
         loop {
             expect_ident = match self.peek() {
                 Some(TokenTree::Op(op)) if op.op() == '-' => {
                     self.advance();
-                    s.push('-');
+                    result.push(TokenTree::Op(op));
                     true
                 },
                 Some(TokenTree::Term(term)) if expect_ident => {
                     self.advance();
-                    s.push_str(term.as_str());
+                    result.push(TokenTree::Term(term));
                     false
                 },
                 _ => break,
             };
         }
-        Ok(s)
+        Ok(result.into_iter().collect())
     }
 
     /// Parses a HTML element or attribute name, along with a namespace
     /// if necessary.
-    fn namespaced_name(&mut self) -> ParseResult<String> {
-        let mut s = self.name()?;
+    fn namespaced_name(&mut self) -> ParseResult<TokenStream> {
+        let mut result = vec![self.name()?];
         if let Some(TokenTree::Op(op)) = self.peek() {
             if op.op() == ':' {
                 self.advance();
-                s.push(':');
-                s.push_str(&self.name()?);
+                result.push(TokenStream::from(TokenTree::Op(op)));
+                result.push(self.name()?);
             }
         }
-        Ok(s)
+        Ok(result.into_iter().collect())
     }
 
-    /// Parses the given token stream as a Maud expression, returning a block of
-    /// Rust code.
-    fn block(&mut self, body: TokenStream, span: Span) -> ParseResult<TokenTree> {
-        let mut builder = self.builder();
-        self.with_input(body).markups(&mut builder)?;
-        let mut group = Group::new(Delimiter::Brace, builder.build());
-        group.set_span(span);
-        Ok(TokenTree::Group(group))
+    /// Parses the given token stream as a Maud expression.
+    fn block(&mut self, body: TokenStream, span: Span) -> ParseResult<ast::Block> {
+        let markups = self.with_input(body).markups()?;
+        Ok(ast::Block { markups, span })
     }
 }

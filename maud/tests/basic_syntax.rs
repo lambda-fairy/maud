@@ -191,5 +191,5 @@ fn ids_shorthand() {
 #[test]
 fn classes_attrs_ids_mixed_up() {
     let s = html!(p { "Hi, " span.name.here lang="en" #thing { "Lyra" } "!" }).into_string();
-    assert_eq!(s, "<p>Hi, <span lang=\"en\" class=\"name here\" id=\"thing\">Lyra</span>!</p>");
+    assert_eq!(s, r#"<p>Hi, <span class="name here" id="thing" lang="en">Lyra</span>!</p>"#);
 }

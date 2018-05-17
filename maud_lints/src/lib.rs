@@ -11,6 +11,7 @@ extern crate if_chain;
 extern crate rustc;
 extern crate rustc_plugin;
 extern crate syntax;
+extern crate syntax_pos;
 
 use rustc_plugin::Registry;
 

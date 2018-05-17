@@ -8,11 +8,13 @@
 #![cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
 
 extern crate literalext;
+#[macro_use] extern crate matches;
 extern crate maud_htmlescape;
 extern crate proc_macro;
 
+mod ast;
+mod generate;
 mod parse;
-mod build;
 
 use proc_macro::{Literal, Span, Term, TokenStream, TokenTree};
 use proc_macro::quote;
@@ -37,10 +39,11 @@ fn expand(input: TokenStream) -> TokenStream {
     // code size of the template itself
     let size_hint = input.to_string().len();
     let size_hint = TokenTree::Literal(Literal::u64_unsuffixed(size_hint as u64));
-    let stmts = match parse::parse(input, output_ident.clone()) {
-        Ok(stmts) => stmts,
+    let markups = match parse::parse(input) {
+        Ok(markups) => markups,
         Err(e) => panic!(e),
     };
+    let stmts = generate::generate(markups, output_ident.clone());
     quote!({
         extern crate maud;
         let mut $output_ident = String::with_capacity($size_hint);
