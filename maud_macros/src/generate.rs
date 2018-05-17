@@ -5,7 +5,7 @@ use proc_macro::{
     Literal,
     quote,
     Span,
-    Term,
+    Ident,
     TokenStream,
     TokenTree,
 };
@@ -181,7 +181,7 @@ fn desugar_classes_or_ids(
         markups.push(Markup::Special(Special { head, body }));
     }
     Some(Attribute {
-        name: TokenStream::from(TokenTree::Term(Term::new(attr_name, Span::call_site()))),
+        name: TokenStream::from(TokenTree::Ident(Ident::new(attr_name, Span::call_site()))),
         attr_type: AttrType::Normal {
             value: Markup::Block(Block {
                 markups,

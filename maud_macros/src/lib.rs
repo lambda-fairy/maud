@@ -16,7 +16,7 @@ mod ast;
 mod generate;
 mod parse;
 
-use proc_macro::{Literal, Span, Term, TokenStream, TokenTree};
+use proc_macro::{Literal, Span, Ident, TokenStream, TokenTree};
 use proc_macro::quote;
 
 type ParseResult<T> = Result<T, String>;
@@ -34,7 +34,7 @@ pub fn html_debug(input: TokenStream) -> TokenStream {
 }
 
 fn expand(input: TokenStream) -> TokenStream {
-    let output_ident = TokenTree::Term(Term::new("__maud_output", Span::def_site()));
+    let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::def_site()));
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
     let size_hint = input.to_string().len();

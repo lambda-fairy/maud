@@ -85,13 +85,13 @@ impl Parser {
         loop {
             match self.peek2() {
                 None => break,
-                Some((TokenTree::Op(op), _)) if op.op() == ';' => self.advance(),
+                Some((TokenTree::Punct(ref punct), _)) if punct.as_char() == ';' => self.advance(),
                 Some((
-                    TokenTree::Op(op),
-                    Some(TokenTree::Term(term)),
-                )) if op.op() == '@' && term.as_str() == "let" => {
+                    TokenTree::Punct(ref punct),
+                    Some(TokenTree::Ident(ref ident)),
+                )) if punct.as_char() == '@' && ident.to_string() == "let" => {
                     self.advance2();
-                    let keyword = TokenTree::Term(term);
+                    let keyword = TokenTree::Ident(ident.clone());
                     result.push(self.let_expr(keyword)?);
                 },
                 _ => result.push(self.markup()?),
@@ -113,12 +113,12 @@ impl Parser {
                 self.literal(&lit)?
             },
             // Special form
-            TokenTree::Op(op) if op.op() == '@' => {
+            TokenTree::Punct(ref punct) if punct.as_char() == '@' => {
                 self.advance();
                 match self.next() {
-                    Some(TokenTree::Term(term)) => {
-                        let keyword = TokenTree::Term(term);
-                        match term.as_str() {
+                    Some(TokenTree::Ident(ident)) => {
+                        let keyword = TokenTree::Ident(ident.clone());
+                        match ident.to_string().as_str() {
                             "if" => {
                                 let mut segments = Vec::new();
                                 self.if_expr(vec![keyword], &mut segments)?;
@@ -135,7 +135,7 @@ impl Parser {
                 }
             },
             // Element
-            TokenTree::Term(_) => {
+            TokenTree::Ident(_) => {
                 let name = self.namespaced_name()?;
                 self.element(name)?
             },
@@ -195,16 +195,16 @@ impl Parser {
     fn else_if_expr(&mut self, segments: &mut Vec<ast::Special>) -> ParseResult<()> {
         match self.peek2() {
             Some((
-                TokenTree::Op(op),
-                Some(TokenTree::Term(else_keyword)),
-            )) if op.op() == '@' && else_keyword.as_str() == "else" => {
+                TokenTree::Punct(ref punct),
+                Some(TokenTree::Ident(ref else_keyword)),
+            )) if punct.as_char() == '@' && else_keyword.to_string() == "else" => {
                 self.advance2();
-                let else_keyword = TokenTree::Term(else_keyword);
+                let else_keyword = TokenTree::Ident(else_keyword.clone());
                 match self.peek() {
                     // `@else if`
-                    Some(TokenTree::Term(if_keyword)) if if_keyword.as_str() == "if" => {
+                    Some(TokenTree::Ident(ref if_keyword)) if if_keyword.to_string() == "if" => {
                         self.advance();
-                        let if_keyword = TokenTree::Term(if_keyword);
+                        let if_keyword = TokenTree::Ident(if_keyword.clone());
                         self.if_expr(vec![else_keyword, if_keyword], segments)
                     },
                     // Just an `@else`
@@ -252,8 +252,8 @@ impl Parser {
         let mut head = vec![keyword];
         loop {
             match self.next() {
-                Some(TokenTree::Term(in_keyword)) if in_keyword.as_str() == "in" => {
-                    head.push(TokenTree::Term(in_keyword));
+                Some(TokenTree::Ident(ref in_keyword)) if in_keyword.to_string() == "in" => {
+                    head.push(TokenTree::Ident(in_keyword.clone()));
                     break;
                 },
                 Some(token) => head.push(token),
@@ -302,11 +302,11 @@ impl Parser {
         let mut head = Vec::new();
         loop {
             match self.peek2() {
-                Some((TokenTree::Op(eq), Some(TokenTree::Op(gt))))
-                if eq.op() == '=' && gt.op() == '>' && eq.spacing() == Spacing::Joint => {
+                Some((TokenTree::Punct(ref eq), Some(TokenTree::Punct(ref gt))))
+                if eq.as_char() == '=' && gt.as_char() == '>' && eq.spacing() == Spacing::Joint => {
                     self.advance2();
-                    head.push(TokenTree::Op(eq));
-                    head.push(TokenTree::Op(gt));
+                    head.push(TokenTree::Punct(eq.clone()));
+                    head.push(TokenTree::Punct(gt.clone()));
                     break;
                 },
                 Some((token, _)) => {
@@ -326,8 +326,8 @@ impl Parser {
             Some(TokenTree::Group(ref body)) if body.delimiter() == Delimiter::Brace => {
                 let body = self.block(body.stream(), body.span())?;
                 // Trailing commas are optional if the match arm is a braced block
-                if let Some(TokenTree::Op(op)) = self.peek() {
-                    if op.op() == ',' {
+                if let Some(TokenTree::Punct(ref punct)) = self.peek() {
+                    if punct.as_char() == ',' {
                         self.advance();
                     }
                 }
@@ -339,7 +339,7 @@ impl Parser {
                 let mut body = vec![first_token];
                 loop {
                     match self.next() {
-                        Some(TokenTree::Op(o)) if o.op() == ',' => break,
+                        Some(TokenTree::Punct(ref punct)) if punct.as_char() == ',' => break,
                         Some(token) => {
                             if let Some(bigger_span) = span.join(token.span()) {
                                 span = bigger_span;
@@ -365,7 +365,7 @@ impl Parser {
             match self.next() {
                 Some(token) => {
                     match token {
-                        TokenTree::Op(ref op) if op.op() == '=' => {
+                        TokenTree::Punct(ref punct) if punct.as_char() == '=' => {
                             tokens.push(token.clone());
                             break;
                         },
@@ -379,7 +379,7 @@ impl Parser {
             match self.next() {
                 Some(token) => {
                     match token {
-                        TokenTree::Op(ref op) if op.op() == ';' => {
+                        TokenTree::Punct(ref punct) if punct.as_char() == ';' => {
                             tokens.push(token.clone());
                             break;
                         },
@@ -401,7 +401,8 @@ impl Parser {
         }
         let attrs = self.attrs()?;
         let body = match self.peek() {
-            Some(TokenTree::Op(o)) if o.op() == ';' || o.op() == '/' => {
+            Some(TokenTree::Punct(ref punct))
+            if punct.as_char() == ';' || punct.as_char() == '/' => {
                 // Void element
                 self.advance();
                 None
@@ -423,7 +424,7 @@ impl Parser {
             let token_after = attempt.next();
             match (maybe_name, token_after) {
                 // Non-empty attribute
-                (Ok(ref name), Some(TokenTree::Op(ref op))) if op.op() == '=' => {
+                (Ok(ref name), Some(TokenTree::Punct(ref punct))) if punct.as_char() == '=' => {
                     self.commit(attempt);
                     let value;
                     {
@@ -438,7 +439,7 @@ impl Parser {
                     });
                 },
                 // Empty attribute
-                (Ok(ref name), Some(TokenTree::Op(ref op))) if op.op() == '?' => {
+                (Ok(ref name), Some(TokenTree::Punct(ref punct))) if punct.as_char() == '?' => {
                     self.commit(attempt);
                     let toggler = self.attr_toggler();
                     attrs.push(ast::Attribute {
@@ -447,7 +448,7 @@ impl Parser {
                     });
                 },
                 // Class shorthand
-                (Err(_), Some(TokenTree::Op(op))) if op.op() == '.' => {
+                (Err(_), Some(TokenTree::Punct(ref punct))) if punct.as_char() == '.' => {
                     self.commit(attempt);
                     let name = self.name()?;
                     if let Some(toggler) = self.attr_toggler() {
@@ -457,7 +458,7 @@ impl Parser {
                     }
                 },
                 // ID shorthand
-                (Err(_), Some(TokenTree::Op(op))) if op.op() == '#' => {
+                (Err(_), Some(TokenTree::Punct(ref punct))) if punct.as_char() == '#' => {
                     self.commit(attempt);
                     ids.push(self.name()?);
                 },
@@ -485,7 +486,7 @@ impl Parser {
     /// Parses an identifier, without dealing with namespaces.
     fn name(&mut self) -> ParseResult<TokenStream> {
         let mut result = Vec::new();
-        if let Some(token @ TokenTree::Term(_)) = self.peek() {
+        if let Some(token @ TokenTree::Ident(_)) = self.peek() {
             self.advance();
             result.push(token);
         } else {
@@ -494,14 +495,14 @@ impl Parser {
         let mut expect_ident = false;
         loop {
             expect_ident = match self.peek() {
-                Some(TokenTree::Op(op)) if op.op() == '-' => {
+                Some(TokenTree::Punct(ref punct)) if punct.as_char() == '-' => {
                     self.advance();
-                    result.push(TokenTree::Op(op));
+                    result.push(TokenTree::Punct(punct.clone()));
                     true
                 },
-                Some(TokenTree::Term(term)) if expect_ident => {
+                Some(TokenTree::Ident(ref ident)) if expect_ident => {
                     self.advance();
-                    result.push(TokenTree::Term(term));
+                    result.push(TokenTree::Ident(ident.clone()));
                     false
                 },
                 _ => break,
@@ -514,10 +515,10 @@ impl Parser {
     /// if necessary.
     fn namespaced_name(&mut self) -> ParseResult<TokenStream> {
         let mut result = vec![self.name()?];
-        if let Some(TokenTree::Op(op)) = self.peek() {
-            if op.op() == ':' {
+        if let Some(TokenTree::Punct(ref punct)) = self.peek() {
+            if punct.as_char() == ':' {
                 self.advance();
-                result.push(TokenStream::from(TokenTree::Op(op)));
+                result.push(TokenStream::from(TokenTree::Punct(punct.clone())));
                 result.push(self.name()?);
             }
         }
