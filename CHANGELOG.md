@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.17.5] - 2018-05-26
+
+- [Fixed] Update to rustc 1.27.0-nightly (2f2a11dfc 2018-05-16)
+
 ## [0.17.4] - 2018-05-02
 
 - [Fixed] Update to rustc 1.27.0-nightly (686d0ae13 2018-04-27)
@@ -168,7 +172,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.17.4...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.17.5...HEAD
+[0.17.5]: https://github.com/lfairy/maud/compare/v0.17.4...v0.17.5
 [0.17.4]: https://github.com/lfairy/maud/compare/v0.17.3...v0.17.4
 [0.17.3]: https://github.com/lfairy/maud/compare/v0.17.2...v0.17.3
 [0.17.2]: https://github.com/lfairy/maud/compare/v0.17.1...v0.17.2
