@@ -21,10 +21,9 @@ pub enum Markup {
     Let {
         tokens: TokenStream,
     },
-    If {
+    Special {
         segments: Vec<Special>,
     },
-    Special(Special),
     Match {
         head: TokenStream,
         arms: Vec<Special>,

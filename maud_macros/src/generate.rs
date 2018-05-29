@@ -51,12 +51,11 @@ impl Generator {
             Markup::Splice { expr } => build.push_tokens(self.splice(expr)),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
             Markup::Let { tokens } => build.push_tokens(tokens),
-            Markup::If { segments } => {
+            Markup::Special { segments } => {
                 for segment in segments {
                     build.push_tokens(self.special(segment));
                 }
             },
-            Markup::Special(special) => build.push_tokens(self.special(special)),
             Markup::Match { head, arms, arms_span } => {
                 build.push_tokens({
                     let body = arms
@@ -178,7 +177,9 @@ fn desugar_classes_or_ids(
             span: toggler.cond_span,
         };
         let head = desugar_toggler(toggler);
-        markups.push(Markup::Special(Special { head, body }));
+        markups.push(Markup::Special {
+            segments: vec![Special { head, body }],
+        });
     }
     Some(Attribute {
         name: TokenStream::from(TokenTree::Ident(Ident::new(attr_name, Span::call_site()))),

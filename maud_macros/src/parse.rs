@@ -122,7 +122,7 @@ impl Parser {
                             "if" => {
                                 let mut segments = Vec::new();
                                 self.if_expr(vec![keyword], &mut segments)?;
-                                ast::Markup::If { segments }
+                                ast::Markup::Special { segments }
                             },
                             "while" => self.while_expr(keyword)?,
                             "for" => self.for_expr(keyword)?,
@@ -242,7 +242,9 @@ impl Parser {
                 None => return self.error("unexpected end of @while expression"),
             }
         };
-        Ok(ast::Markup::Special(ast::Special { head: head.into_iter().collect(), body }))
+        Ok(ast::Markup::Special {
+            segments: vec![ast::Special { head: head.into_iter().collect(), body }],
+        })
     }
 
     /// Parses a `@for` expression.
@@ -269,7 +271,9 @@ impl Parser {
                 None => return self.error("unexpected end of @for expression"),
             }
         };
-        Ok(ast::Markup::Special(ast::Special { head: head.into_iter().collect(), body }))
+        Ok(ast::Markup::Special {
+            segments: vec![ast::Special { head: head.into_iter().collect(), body }],
+        })
     }
 
     /// Parses a `@match` expression.
