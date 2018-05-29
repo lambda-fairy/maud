@@ -1,5 +1,6 @@
 #![feature(plugin_registrar)]
 #![feature(rustc_private)]
+#![feature(macro_at_most_once_rep)]
 #![feature(macro_vis_matcher)]
 #![recursion_limit = "1000"]  // if_chain
 
