@@ -25,8 +25,9 @@ pub enum Markup {
         segments: Vec<Special>,
     },
     Match {
+        at_span: Span,
         head: TokenStream,
-        arms: Vec<Special>,
+        arms: Vec<MatchArm>,
         arms_span: Span,
     },
 }
@@ -49,6 +50,7 @@ pub struct Block {
 
 #[derive(Debug)]
 pub struct Special {
+    pub at_span: Span,
     pub head: TokenStream,
     pub body: Block,
 }
@@ -73,4 +75,10 @@ pub enum AttrType {
 pub struct Toggler {
     pub cond: TokenStream,
     pub cond_span: Span,
+}
+
+#[derive(Debug)]
+pub struct MatchArm {
+    pub head: TokenStream,
+    pub body: Block,
 }

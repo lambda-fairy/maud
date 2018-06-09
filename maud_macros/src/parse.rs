@@ -117,16 +117,17 @@ impl Parser {
                 self.advance();
                 match self.next() {
                     Some(TokenTree::Ident(ident)) => {
+                        let at_span = punct.span();
                         let keyword = TokenTree::Ident(ident.clone());
                         match ident.to_string().as_str() {
                             "if" => {
                                 let mut segments = Vec::new();
-                                self.if_expr(vec![keyword], &mut segments)?;
+                                self.if_expr(at_span, vec![keyword], &mut segments)?;
                                 ast::Markup::Special { segments }
                             },
-                            "while" => self.while_expr(keyword)?,
-                            "for" => self.for_expr(keyword)?,
-                            "match" => self.match_expr(keyword)?,
+                            "while" => self.while_expr(at_span, keyword)?,
+                            "for" => self.for_expr(at_span, keyword)?,
+                            "match" => self.match_expr(at_span, keyword)?,
                             "let" => return self.error("@let only works inside a block"),
                             other => return self.error(format!("unknown keyword `@{}`", other)),
                         }
@@ -172,6 +173,7 @@ impl Parser {
     /// The leading `@if` should already be consumed.
     fn if_expr(
         &mut self,
+        at_span: Span,
         prefix: Vec<TokenTree>,
         segments: &mut Vec<ast::Special>,
     ) -> ParseResult<()> {
@@ -185,7 +187,11 @@ impl Parser {
                 None => return self.error("unexpected end of @if expression"),
             }
         };
-        segments.push(ast::Special { head: head.into_iter().collect(), body });
+        segments.push(ast::Special {
+            at_span,
+            head: head.into_iter().collect(),
+            body,
+        });
         self.else_if_expr(segments)
     }
 
@@ -199,13 +205,14 @@ impl Parser {
                 Some(TokenTree::Ident(ref else_keyword)),
             )) if punct.as_char() == '@' && else_keyword.to_string() == "else" => {
                 self.advance2();
+                let at_span = punct.span();
                 let else_keyword = TokenTree::Ident(else_keyword.clone());
                 match self.peek() {
                     // `@else if`
                     Some(TokenTree::Ident(ref if_keyword)) if if_keyword.to_string() == "if" => {
                         self.advance();
                         let if_keyword = TokenTree::Ident(if_keyword.clone());
-                        self.if_expr(vec![else_keyword, if_keyword], segments)
+                        self.if_expr(at_span, vec![else_keyword, if_keyword], segments)
                     },
                     // Just an `@else`
                     _ => {
@@ -213,6 +220,7 @@ impl Parser {
                             Some(TokenTree::Group(ref group)) if group.delimiter() == Delimiter::Brace => {
                                 let body = self.block(group.stream(), group.span())?;
                                 segments.push(ast::Special {
+                                    at_span,
                                     head: vec![else_keyword].into_iter().collect(),
                                     body,
                                 });
@@ -231,7 +239,7 @@ impl Parser {
     /// Parses and renders an `@while` expression.
     ///
     /// The leading `@while` should already be consumed.
-    fn while_expr(&mut self, keyword: TokenTree) -> ParseResult<ast::Markup> {
+    fn while_expr(&mut self, at_span: Span, keyword: TokenTree) -> ParseResult<ast::Markup> {
         let mut head = vec![keyword];
         let body = loop {
             match self.next() {
@@ -243,14 +251,14 @@ impl Parser {
             }
         };
         Ok(ast::Markup::Special {
-            segments: vec![ast::Special { head: head.into_iter().collect(), body }],
+            segments: vec![ast::Special { at_span, head: head.into_iter().collect(), body }],
         })
     }
 
     /// Parses a `@for` expression.
     ///
     /// The leading `@for` should already be consumed.
-    fn for_expr(&mut self, keyword: TokenTree) -> ParseResult<ast::Markup> {
+    fn for_expr(&mut self, at_span: Span, keyword: TokenTree) -> ParseResult<ast::Markup> {
         let mut head = vec![keyword];
         loop {
             match self.next() {
@@ -272,14 +280,14 @@ impl Parser {
             }
         };
         Ok(ast::Markup::Special {
-            segments: vec![ast::Special { head: head.into_iter().collect(), body }],
+            segments: vec![ast::Special { at_span, head: head.into_iter().collect(), body }],
         })
     }
 
     /// Parses a `@match` expression.
     ///
     /// The leading `@match` should already be consumed.
-    fn match_expr(&mut self, keyword: TokenTree) -> ParseResult<ast::Markup> {
+    fn match_expr(&mut self, at_span: Span, keyword: TokenTree) -> ParseResult<ast::Markup> {
         let mut head = vec![keyword];
         let (arms, arms_span) = loop {
             match self.next() {
@@ -291,10 +299,10 @@ impl Parser {
                 None => return self.error("unexpected end of @match expression"),
             }
         };
-        Ok(ast::Markup::Match { head: head.into_iter().collect(), arms, arms_span })
+        Ok(ast::Markup::Match { at_span, head: head.into_iter().collect(), arms, arms_span })
     }
 
-    fn match_arms(&mut self) -> ParseResult<Vec<ast::Special>> {
+    fn match_arms(&mut self) -> ParseResult<Vec<ast::MatchArm>> {
         let mut arms = Vec::new();
         while let Some(arm) = self.match_arm()? {
             arms.push(arm);
@@ -302,7 +310,7 @@ impl Parser {
         Ok(arms)
     }
 
-    fn match_arm(&mut self) -> ParseResult<Option<ast::Special>> {
+    fn match_arm(&mut self) -> ParseResult<Option<ast::MatchArm>> {
         let mut head = Vec::new();
         loop {
             match self.peek2() {
@@ -357,7 +365,7 @@ impl Parser {
             },
             None => return self.error("unexpected end of @match arm"),
         };
-        Ok(Some(ast::Special { head: head.into_iter().collect(), body }))
+        Ok(Some(ast::MatchArm { head: head.into_iter().collect(), body }))
     }
 
     /// Parses a `@let` expression.

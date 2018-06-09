@@ -56,11 +56,11 @@ impl Generator {
                     build.push_tokens(self.special(segment));
                 }
             },
-            Markup::Match { head, arms, arms_span } => {
+            Markup::Match { head, arms, arms_span, .. } => {
                 build.push_tokens({
                     let body = arms
                         .into_iter()
-                        .map(|arm| self.special(arm))
+                        .map(|arm| self.match_arm(arm))
                         .collect();
                     let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
                     body.set_span(arms_span);
@@ -144,7 +144,12 @@ impl Generator {
         }
     }
 
-    fn special(&self, Special { head, body }: Special) -> TokenStream {
+    fn special(&self, Special { head, body, .. }: Special) -> TokenStream {
+        let body = self.block(body);
+        quote!($head $body)
+    }
+
+    fn match_arm(&self, MatchArm { head, body }: MatchArm) -> TokenStream {
         let body = self.block(body);
         quote!($head $body)
     }
@@ -178,7 +183,7 @@ fn desugar_classes_or_ids(
         };
         let head = desugar_toggler(toggler);
         markups.push(Markup::Special {
-            segments: vec![Special { head, body }],
+            segments: vec![Special { at_span: Span::call_site(), head, body }],
         });
     }
     Some(Attribute {
