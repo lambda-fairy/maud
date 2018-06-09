@@ -16,7 +16,7 @@ pub enum Markup {
     Element {
         name: TokenStream,
         attrs: Attrs,
-        body: Option<Box<Markup>>,
+        body: ElementBody,
     },
     Let {
         tokens: TokenStream,
@@ -41,6 +41,12 @@ pub struct Attrs {
 }
 
 pub type ClassOrId = TokenStream;
+
+#[derive(Debug)]
+pub enum ElementBody {
+    Void { semi_span: Span },
+    Block { block: Block },
+}
 
 #[derive(Debug)]
 pub struct Block {

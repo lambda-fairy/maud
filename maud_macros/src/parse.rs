@@ -417,9 +417,19 @@ impl Parser {
             if punct.as_char() == ';' || punct.as_char() == '/' => {
                 // Void element
                 self.advance();
-                None
+                ast::ElementBody::Void { semi_span: punct.span() }
             },
-            _ => Some(Box::new(self.markup()?)),
+            _ => {
+                match self.markup()? {
+                    ast::Markup::Block(block) => ast::ElementBody::Block { block },
+                    markup => ast::ElementBody::Block {
+                        block: ast::Block {
+                            markups: vec![markup],
+                            span: Span::call_site(),
+                        },
+                    },
+                }
+            },
         };
         Ok(ast::Markup::Element { name, attrs, body })
     }

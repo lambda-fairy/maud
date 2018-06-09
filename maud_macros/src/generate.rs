@@ -96,15 +96,15 @@ impl Generator {
         &self,
         name: TokenStream,
         attrs: Attrs,
-        body: Option<Box<Markup>>,
+        body: ElementBody,
         build: &mut Builder,
     ) {
         build.push_str("<");
         self.name(name.clone(), build);
         self.attrs(attrs, build);
         build.push_str(">");
-        if let Some(body) = body {
-            self.markup(*body, build);
+        if let ElementBody::Block { block } = body {
+            self.markups(block.markups, build);
             build.push_str("</");
             self.name(name, build);
             build.push_str(">");
