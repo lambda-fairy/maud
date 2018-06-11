@@ -10,6 +10,7 @@
 
 #![doc(html_root_url = "https://docs.rs/maud/0.17.5")]
 
+#[cfg(feature = "actix-web")] extern crate actix_web;
 #[cfg(feature = "iron")] extern crate iron;
 #[cfg(feature = "rocket")] extern crate rocket;
 
@@ -186,6 +187,20 @@ mod rocket_support {
                 .header(ContentType::HTML)
                 .sized_body(Cursor::new(self.0))
                 .ok()
+        }
+    }
+}
+
+#[cfg(feature = "actix-web")]
+mod actix_support {
+    use PreEscaped;
+    use actix_web::{Responder, HttpResponse, HttpRequest, Error};
+
+    impl Responder for PreEscaped<String> {
+        type Item = HttpResponse;
+        type Error = Error;
+        fn respond_to<String>(self, _req: &HttpRequest<String>) -> Result<Self::Item, Self::Error> {
+            Ok(HttpResponse::Ok().body(self.0))
         }
     }
 }
