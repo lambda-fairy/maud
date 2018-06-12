@@ -199,7 +199,7 @@ mod actix_support {
     impl Responder for PreEscaped<String> {
         type Item = HttpResponse;
         type Error = Error;
-        fn respond_to<String>(self, _req: &HttpRequest<String>) -> Result<Self::Item, Self::Error> {
+        fn respond_to<S>(self, _req: &HttpRequest<S>) -> Result<Self::Item, Self::Error> {
             Ok(HttpResponse::Ok().body(self.0))
         }
     }
