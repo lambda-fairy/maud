@@ -7,7 +7,10 @@ before_script:
   - export PATH=$HOME/.cargo/bin:$PATH
 
 script:
-  - cargo test --all --all-features
+  - cargo build --features="iron"
+  - cargo build --features="rocket"
+  - cargo build --features="actix-web"
+  - cargo test --all
   - |
     if command -v cargo-clippy > /dev/null; then
       CLIPPY_STATUS=0
