@@ -425,7 +425,7 @@ impl Parser {
                     markup => ast::ElementBody::Block {
                         block: ast::Block {
                             markups: vec![markup],
-                            span: Span::call_site(),
+                            outer_span: Span::call_site(),
                         },
                     },
                 }
@@ -548,8 +548,8 @@ impl Parser {
     }
 
     /// Parses the given token stream as a Maud expression.
-    fn block(&mut self, body: TokenStream, span: Span) -> ParseResult<ast::Block> {
+    fn block(&mut self, body: TokenStream, outer_span: Span) -> ParseResult<ast::Block> {
         let markups = self.with_input(body).markups()?;
-        Ok(ast::Block { markups, span })
+        Ok(ast::Block { markups, outer_span })
     }
 }

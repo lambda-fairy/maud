@@ -51,7 +51,7 @@ pub enum ElementBody {
 #[derive(Debug)]
 pub struct Block {
     pub markups: Vec<Markup>,
-    pub span: Span,
+    pub outer_span: Span,
 }
 
 #[derive(Debug)]

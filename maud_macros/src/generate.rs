@@ -39,9 +39,9 @@ impl Generator {
 
     fn markup(&self, markup: Markup, build: &mut Builder) {
         match markup {
-            Markup::Block(Block { markups, span }) => {
+            Markup::Block(Block { markups, outer_span }) => {
                 if markups.iter().any(|markup| matches!(*markup, Markup::Let { .. })) {
-                    build.push_tokens(self.block(Block { markups, span }));
+                    build.push_tokens(self.block(Block { markups, outer_span }));
                 } else {
                     self.markups(markups, build);
                 }
@@ -70,11 +70,11 @@ impl Generator {
         }
     }
 
-    fn block(&self, Block { markups, span }: Block) -> TokenStream {
+    fn block(&self, Block { markups, outer_span }: Block) -> TokenStream {
         let mut build = self.builder();
         self.markups(markups, &mut build);
         let mut block = TokenTree::Group(Group::new(Delimiter::Brace, build.finish()));
-        block.set_span(span);
+        block.set_span(outer_span);
         TokenStream::from(block)
     }
 
@@ -179,7 +179,7 @@ fn desugar_classes_or_ids(
     for (symbol, toggler) in values_toggled {
         let body = Block {
             markups: prepend_leading_space(symbol, &mut leading_space),
-            span: toggler.cond_span,
+            outer_span: toggler.cond_span,
         };
         let head = desugar_toggler(toggler);
         markups.push(Markup::Special {
@@ -191,7 +191,7 @@ fn desugar_classes_or_ids(
         attr_type: AttrType::Normal {
             value: Markup::Block(Block {
                 markups,
-                span: Span::call_site(),
+                outer_span: Span::call_site(),
             }),
         },
     })
