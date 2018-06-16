@@ -224,16 +224,6 @@ fn desugar_toggler(Toggler { mut cond, cond_span }: Toggler) -> TokenStream {
     quote!(if $cond)
 }
 
-fn span_tokens<I: IntoIterator<Item=TokenTree>>(tokens: I) -> Span {
-    tokens
-        .into_iter()
-        .fold(None, |span: Option<Span>, token| Some(match span {
-            None => token.span(),
-            Some(span) => span.join(token.span()).unwrap_or(span),
-        }))
-        .unwrap_or_else(Span::def_site)
-}
-
 ////////////////////////////////////////////////////////
 
 struct Builder {
