@@ -50,7 +50,7 @@ impl Generator {
             Markup::Symbol { symbol } => self.name(symbol, build),
             Markup::Splice { expr, .. } => build.push_tokens(self.splice(expr)),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
-            Markup::Let { tokens } => build.push_tokens(tokens),
+            Markup::Let { tokens, .. } => build.push_tokens(tokens),
             Markup::Special { segments } => {
                 for segment in segments {
                     build.push_tokens(self.special(segment));

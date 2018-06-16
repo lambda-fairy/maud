@@ -20,6 +20,7 @@ pub enum Markup {
         body: ElementBody,
     },
     Let {
+        at_span: Span,
         tokens: TokenStream,
     },
     Special {

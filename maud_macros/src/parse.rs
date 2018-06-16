@@ -92,7 +92,7 @@ impl Parser {
                 )) if punct.as_char() == '@' && ident.to_string() == "let" => {
                     self.advance2();
                     let keyword = TokenTree::Ident(ident.clone());
-                    result.push(self.let_expr(keyword)?);
+                    result.push(self.let_expr(punct.span(), keyword)?);
                 },
                 _ => result.push(self.markup()?),
             }
@@ -371,7 +371,7 @@ impl Parser {
     /// Parses a `@let` expression.
     ///
     /// The leading `@let` should already be consumed.
-    fn let_expr(&mut self, keyword: TokenTree) -> ParseResult<ast::Markup> {
+    fn let_expr(&mut self, at_span: Span, keyword: TokenTree) -> ParseResult<ast::Markup> {
         let mut tokens = vec![keyword];
         loop {
             match self.next() {
@@ -401,7 +401,7 @@ impl Parser {
                 None => return self.error("unexpected end of @let expression"),
             }
         }
-        Ok(ast::Markup::Let { tokens: tokens.into_iter().collect() })
+        Ok(ast::Markup::Let { at_span, tokens: tokens.into_iter().collect() })
     }
 
     /// Parses an element node.
