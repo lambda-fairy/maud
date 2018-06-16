@@ -12,6 +12,7 @@ pub enum Markup {
     },
     Splice {
         expr: TokenStream,
+        outer_span: Span,
     },
     Element {
         name: TokenStream,

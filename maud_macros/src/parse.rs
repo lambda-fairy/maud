@@ -143,7 +143,7 @@ impl Parser {
             // Splice
             TokenTree::Group(ref group) if group.delimiter() == Delimiter::Parenthesis => {
                 self.advance();
-                ast::Markup::Splice { expr: group.stream() }
+                ast::Markup::Splice { expr: group.stream(), outer_span: group.span() }
             }
             // Block
             TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace => {
