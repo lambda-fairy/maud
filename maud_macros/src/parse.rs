@@ -422,11 +422,18 @@ impl Parser {
             _ => {
                 match self.markup()? {
                     ast::Markup::Block(block) => ast::ElementBody::Block { block },
-                    markup => ast::ElementBody::Block {
-                        block: ast::Block {
-                            markups: vec![markup],
-                            outer_span: Span::call_site(),
-                        },
+                    markup => {
+                        let markup_span = markup.span();
+                        markup_span
+                            .error("element body must be wrapped in braces")
+                            .help("see https://github.com/lfairy/maud/pull/137 for details")
+                            .emit();
+                        ast::ElementBody::Block {
+                            block: ast::Block {
+                                markups: vec![markup],
+                                outer_span: markup_span,
+                            },
+                        }
                     },
                 }
             },
