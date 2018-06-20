@@ -112,7 +112,7 @@ pub struct Title<T: AsRef<str>>(pub T);
 impl<T: AsRef<str>> Render for Title<T> {
     fn render(&self) -> Markup {
         html! {
-            title (self.0.as_ref())
+            title { (self.0.as_ref()) }
         }
     }
 }

@@ -92,7 +92,7 @@ impl Parser {
                 )) if punct.as_char() == '@' && ident.to_string() == "let" => {
                     self.advance2();
                     let keyword = TokenTree::Ident(ident.clone());
-                    result.push(self.let_expr(keyword)?);
+                    result.push(self.let_expr(punct.span(), keyword)?);
                 },
                 _ => result.push(self.markup()?),
             }
@@ -143,7 +143,7 @@ impl Parser {
             // Splice
             TokenTree::Group(ref group) if group.delimiter() == Delimiter::Parenthesis => {
                 self.advance();
-                ast::Markup::Splice { expr: group.stream() }
+                ast::Markup::Splice { expr: group.stream(), outer_span: group.span() }
             }
             // Block
             TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace => {
@@ -371,7 +371,7 @@ impl Parser {
     /// Parses a `@let` expression.
     ///
     /// The leading `@let` should already be consumed.
-    fn let_expr(&mut self, keyword: TokenTree) -> ParseResult<ast::Markup> {
+    fn let_expr(&mut self, at_span: Span, keyword: TokenTree) -> ParseResult<ast::Markup> {
         let mut tokens = vec![keyword];
         loop {
             match self.next() {
@@ -401,7 +401,7 @@ impl Parser {
                 None => return self.error("unexpected end of @let expression"),
             }
         }
-        Ok(ast::Markup::Let { tokens: tokens.into_iter().collect() })
+        Ok(ast::Markup::Let { at_span, tokens: tokens.into_iter().collect() })
     }
 
     /// Parses an element node.
@@ -417,9 +417,26 @@ impl Parser {
             if punct.as_char() == ';' || punct.as_char() == '/' => {
                 // Void element
                 self.advance();
-                None
+                ast::ElementBody::Void { semi_span: punct.span() }
             },
-            _ => Some(Box::new(self.markup()?)),
+            _ => {
+                match self.markup()? {
+                    ast::Markup::Block(block) => ast::ElementBody::Block { block },
+                    markup => {
+                        let markup_span = markup.span();
+                        markup_span
+                            .error("element body must be wrapped in braces")
+                            .help("see https://github.com/lfairy/maud/pull/137 for details")
+                            .emit();
+                        ast::ElementBody::Block {
+                            block: ast::Block {
+                                markups: vec![markup],
+                                outer_span: markup_span,
+                            },
+                        }
+                    },
+                }
+            },
         };
         Ok(ast::Markup::Element { name, attrs, body })
     }
@@ -538,8 +555,8 @@ impl Parser {
     }
 
     /// Parses the given token stream as a Maud expression.
-    fn block(&mut self, body: TokenStream, span: Span) -> ParseResult<ast::Block> {
+    fn block(&mut self, body: TokenStream, outer_span: Span) -> ParseResult<ast::Block> {
         let markups = self.with_input(body).markups()?;
-        Ok(ast::Block { markups, span })
+        Ok(ast::Block { markups, outer_span })
     }
 }

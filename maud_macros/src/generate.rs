@@ -39,18 +39,18 @@ impl Generator {
 
     fn markup(&self, markup: Markup, build: &mut Builder) {
         match markup {
-            Markup::Block(Block { markups, span }) => {
+            Markup::Block(Block { markups, outer_span }) => {
                 if markups.iter().any(|markup| matches!(*markup, Markup::Let { .. })) {
-                    build.push_tokens(self.block(Block { markups, span }));
+                    build.push_tokens(self.block(Block { markups, outer_span }));
                 } else {
                     self.markups(markups, build);
                 }
             },
             Markup::Literal { content, .. } => build.push_escaped(&content),
             Markup::Symbol { symbol } => self.name(symbol, build),
-            Markup::Splice { expr } => build.push_tokens(self.splice(expr)),
+            Markup::Splice { expr, .. } => build.push_tokens(self.splice(expr)),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
-            Markup::Let { tokens } => build.push_tokens(tokens),
+            Markup::Let { tokens, .. } => build.push_tokens(tokens),
             Markup::Special { segments } => {
                 for segment in segments {
                     build.push_tokens(self.special(segment));
@@ -70,11 +70,11 @@ impl Generator {
         }
     }
 
-    fn block(&self, Block { markups, span }: Block) -> TokenStream {
+    fn block(&self, Block { markups, outer_span }: Block) -> TokenStream {
         let mut build = self.builder();
         self.markups(markups, &mut build);
         let mut block = TokenTree::Group(Group::new(Delimiter::Brace, build.finish()));
-        block.set_span(span);
+        block.set_span(outer_span);
         TokenStream::from(block)
     }
 
@@ -96,15 +96,15 @@ impl Generator {
         &self,
         name: TokenStream,
         attrs: Attrs,
-        body: Option<Box<Markup>>,
+        body: ElementBody,
         build: &mut Builder,
     ) {
         build.push_str("<");
         self.name(name.clone(), build);
         self.attrs(attrs, build);
         build.push_str(">");
-        if let Some(body) = body {
-            self.markup(*body, build);
+        if let ElementBody::Block { block } = body {
+            self.markups(block.markups, build);
             build.push_str("</");
             self.name(name, build);
             build.push_str(">");
@@ -179,7 +179,7 @@ fn desugar_classes_or_ids(
     for (symbol, toggler) in values_toggled {
         let body = Block {
             markups: prepend_leading_space(symbol, &mut leading_space),
-            span: toggler.cond_span,
+            outer_span: toggler.cond_span,
         };
         let head = desugar_toggler(toggler);
         markups.push(Markup::Special {
@@ -191,7 +191,7 @@ fn desugar_classes_or_ids(
         attr_type: AttrType::Normal {
             value: Markup::Block(Block {
                 markups,
-                span: Span::call_site(),
+                outer_span: Span::call_site(),
             }),
         },
     })
@@ -222,16 +222,6 @@ fn desugar_toggler(Toggler { mut cond, cond_span }: Toggler) -> TokenStream {
         cond = TokenStream::from(wrapped_cond);
     }
     quote!(if $cond)
-}
-
-fn span_tokens<I: IntoIterator<Item=TokenTree>>(tokens: I) -> Span {
-    tokens
-        .into_iter()
-        .fold(None, |span: Option<Span>, token| Some(match span {
-            None => token.span(),
-            Some(span) => span.join(token.span()).unwrap_or(span),
-        }))
-        .unwrap_or_else(Span::def_site)
 }
 
 ////////////////////////////////////////////////////////

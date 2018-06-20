@@ -44,8 +44,10 @@ fn if_let() {
 fn while_expr() {
     let mut numbers = (0..3).into_iter().peekable();
     let s = html! {
-        ul @while numbers.peek().is_some() {
-            li (numbers.next().unwrap())
+        ul {
+            @while numbers.peek().is_some() {
+                li { (numbers.next().unwrap()) }
+            }
         }
     }.into_string();
     assert_eq!(s, "<ul><li>0</li><li>1</li><li>2</li></ul>");
@@ -56,8 +58,10 @@ fn while_let_expr() {
     let mut numbers = (0..3).into_iter();
     #[cfg_attr(feature = "cargo-clippy", allow(while_let_on_iterator))]
     let s = html! {
-        ul @while let Some(n) = numbers.next() {
-            li (n)
+        ul {
+            @while let Some(n) = numbers.next() {
+                li { (n) }
+            }
         }
     }.into_string();
     assert_eq!(s, "<ul><li>0</li><li>1</li><li>2</li></ul>");
@@ -67,8 +71,10 @@ fn while_let_expr() {
 fn for_expr() {
     let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
     let s = html! {
-        ul @for pony in &ponies {
-            li (pony)
+        ul {
+            @for pony in &ponies {
+                li { (pony) }
+            }
         }
     }.into_string();
     assert_eq!(s, concat!(
@@ -85,7 +91,7 @@ fn match_expr() {
         let s = html! {
             @match input {
                 Some(value) => {
-                    div (value)
+                    div { (value) }
                 },
                 None => {
                     "oh noes"
@@ -102,7 +108,7 @@ fn match_expr_without_delims() {
         let s = html! {
             @match input {
                 Some(value) => (value),
-                None => span "oh noes",
+                None => span { "oh noes" },
             }
         }.into_string();
         assert_eq!(s, output);

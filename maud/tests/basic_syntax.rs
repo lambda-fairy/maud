@@ -51,12 +51,6 @@ fn simple_elements() {
 }
 
 #[test]
-fn nesting_elements() {
-    let s = html!(html body div p sup "butts").into_string();
-    assert_eq!(s, "<html><body><div><p><sup>butts</sup></p></div></body></html>");
-}
-
-#[test]
 fn empty_elements() {
     let s = html!("pinkie" br; "pie").into_string();
     assert_eq!(s, "pinkie<br>pie");
@@ -73,7 +67,7 @@ fn simple_attributes() {
     let s = html! {
         link rel="stylesheet" href="styles.css";
         section id="midriff" {
-            p class="hotpink" "Hello!"
+            p class="hotpink" { "Hello!" }
         }
     }.into_string();
     assert_eq!(s, concat!(
@@ -83,7 +77,7 @@ fn simple_attributes() {
 
 #[test]
 fn empty_attributes() {
-    let s = html!(div readonly? input type="checkbox" checked?;).into_string();
+    let s = html!(div readonly? { input type="checkbox" checked?; }).into_string();
     assert_eq!(s, r#"<div readonly><input type="checkbox" checked></div>"#);
 }
 
@@ -112,7 +106,7 @@ fn toggle_empty_attributes_braces() {
 
 #[test]
 fn colons_in_names() {
-    let s = html!(pon-pon:controls-alpha a on:click="yay()" "Yay!").into_string();
+    let s = html!(pon-pon:controls-alpha { a on:click="yay()" { "Yay!" } }).into_string();
     assert_eq!(s, concat!(
             r#"<pon-pon:controls-alpha>"#,
             r#"<a on:click="yay()">Yay!</a>"#,
@@ -151,14 +145,14 @@ fn classes_shorthand() {
 
 #[test]
 fn hyphens_in_class_names() {
-    let s = html!(p.rocks-these.are--my--rocks "yes").into_string();
+    let s = html!(p.rocks-these.are--my--rocks { "yes" }).into_string();
     assert_eq!(s, r#"<p class="rocks-these are--my--rocks">yes</p>"#);
 }
 
 #[test]
 fn toggle_classes() {
     fn test(is_cupcake: bool, is_muffin: bool) -> Markup {
-        html!(p.cupcake[is_cupcake].muffin[is_muffin] "Testing!")
+        html!(p.cupcake[is_cupcake].muffin[is_muffin] { "Testing!" })
     }
     assert_eq!(test(true, true).into_string(), r#"<p class="cupcake muffin">Testing!</p>"#);
     assert_eq!(test(false, true).into_string(), r#"<p class=" muffin">Testing!</p>"#);
@@ -169,14 +163,14 @@ fn toggle_classes() {
 #[test]
 fn toggle_classes_braces() {
     struct Maud { rocks: bool }
-    let s = html!(p.rocks[Maud { rocks: true }.rocks] "Awesome!").into_string();
+    let s = html!(p.rocks[Maud { rocks: true }.rocks] { "Awesome!" }).into_string();
     assert_eq!(s, r#"<p class="rocks">Awesome!</p>"#);
 }
 
 #[test]
 fn mixed_classes() {
     fn test(is_muffin: bool) -> Markup {
-        html!(p.cupcake.muffin[is_muffin].lamington "Testing!")
+        html!(p.cupcake.muffin[is_muffin].lamington { "Testing!" })
     }
     assert_eq!(test(true).into_string(), r#"<p class="cupcake lamington muffin">Testing!</p>"#);
     assert_eq!(test(false).into_string(), r#"<p class="cupcake lamington">Testing!</p>"#);
