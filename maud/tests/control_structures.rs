@@ -116,6 +116,19 @@ fn match_expr_without_delims() {
 }
 
 #[test]
+fn match_no_trailing_comma() {
+    for &(input, output) in &[(Some("yay"), "yay"), (None, "<span>oh noes</span>")] {
+        let s = html! {
+            @match input {
+                Some(value) => { (value) }
+                None => span { "oh noes" }
+            }
+        }.into_string();
+        assert_eq!(s, output);
+    }
+}
+
+#[test]
 fn match_expr_with_guards() {
     for &(input, output) in &[(Some(1), "one"), (None, "none"), (Some(2), "2")] {
         let s = html! {

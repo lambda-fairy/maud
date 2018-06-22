@@ -404,11 +404,7 @@ impl Parser {
                             }
                             body.push(token);
                         },
-                        None => {
-                            // TODO this is probably wrong
-                            span.error("unexpected end of @match arm").emit();
-                            return Err(());
-                        },
+                        None => break,
                     }
                 }
                 self.block(body.into_iter().collect(), span)?
