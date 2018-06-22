@@ -19,7 +19,7 @@ mod parse;
 use proc_macro::{Literal, Span, Ident, TokenStream, TokenTree};
 use proc_macro::quote;
 
-type ParseResult<T> = Result<T, String>;
+type ParseResult<T> = Result<T, ()>;
 
 #[proc_macro]
 pub fn html(input: TokenStream) -> TokenStream {
@@ -41,7 +41,7 @@ fn expand(input: TokenStream) -> TokenStream {
     let size_hint = TokenTree::Literal(Literal::u64_unsuffixed(size_hint as u64));
     let markups = match parse::parse(input) {
         Ok(markups) => markups,
-        Err(e) => panic!(e),
+        Err(()) => Vec::new(),
     };
     let stmts = generate::generate(markups, output_ident.clone());
     quote!({
