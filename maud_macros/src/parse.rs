@@ -249,7 +249,7 @@ impl Parser {
                                 let else_span = else_keyword.span();
                                 let span = at_span.join(else_span).unwrap_or(else_span);
                                 span.error("expected body for this `@else`").emit();
-                                return Err(());
+                                Err(())
                             },
                         }
                     },
