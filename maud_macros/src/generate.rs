@@ -160,7 +160,16 @@ impl Generator {
 fn desugar_attrs(Attrs { classes_static, classes_toggled, ids, attrs }: Attrs) -> Vec<Attribute> {
     let classes = desugar_classes_or_ids("class", classes_static, classes_toggled);
     let ids = desugar_classes_or_ids("id", ids, vec![]);
-    classes.into_iter().chain(ids).chain(attrs).collect()
+    let p: Vec<Attribute> = classes.into_iter().chain(ids).chain(attrs).collect();
+
+    let mut attr_syms = Vec::new();
+    for attr in &p {
+        let name  = attr.name.clone().into_iter().next().unwrap().to_string();
+        if attr_syms.contains(&name) {
+            panic!(format!("Duplicate attribute used: `{}`", name))
+        } else { attr_syms.push(name) }
+    }
+    p
 }
 
 fn desugar_classes_or_ids(
