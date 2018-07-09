@@ -80,7 +80,7 @@ fn simple_attributes() {
 fn duplicate_attributes() {
     html! {
         link.what rel="stylesheet" href="styles.css" class="why" href="style.css";
-    }
+    };
 }
 
 #[test]
