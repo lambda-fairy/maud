@@ -169,7 +169,7 @@ fn desugar_attrs(Attrs { classes_static, classes_toggled, ids, attrs }: Attrs) -
             panic!(format!("Duplicate attribute used: `{}`", name))
         } else { attr_syms.push(name) }
     }
-    p
+    collected_attrs
 }
 
 fn desugar_classes_or_ids(
