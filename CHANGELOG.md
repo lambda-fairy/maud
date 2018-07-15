@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.18.0] - 2018-07-15
+
+- [Added] Support for the Actix web framework
+  [#135](https://github.com/lfairy/maud/issues/135)
+  [#136](https://github.com/lfairy/maud/pull/136)
+- [Changed] Require braces around the body of an element
+  [#137](https://github.com/lfairy/maud/pull/137)
+- [Fixed] In a `@match` expression, allow omitting the comma on the last match arm
+- [Fixed] Improved the formatting for syntax errors
+- [Fixed] Update to rustc 1.28.0-nightly (5bf68db6e 2018-05-28)
+
 ## [0.17.5] - 2018-05-26
 
 - [Fixed] Update to rustc 1.27.0-nightly (2f2a11dfc 2018-05-16)
@@ -172,7 +183,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.17.5...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/lfairy/maud/compare/v0.17.5...v0.18.0
 [0.17.5]: https://github.com/lfairy/maud/compare/v0.17.4...v0.17.5
 [0.17.4]: https://github.com/lfairy/maud/compare/v0.17.3...v0.17.4
 [0.17.3]: https://github.com/lfairy/maud/compare/v0.17.2...v0.17.3
