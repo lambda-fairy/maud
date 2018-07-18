@@ -1,5 +1,8 @@
-#![feature(proc_macro)]
+#![feature(proc_macro_diagnostic)]
 #![feature(proc_macro_non_items)]
+#![feature(proc_macro_quote)]
+#![feature(proc_macro_span)]
+#![feature(use_extern_macros)]
 
 #![doc(html_root_url = "https://docs.rs/maud_macros/0.18.0")]
 

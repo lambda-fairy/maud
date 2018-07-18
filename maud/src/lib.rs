@@ -1,5 +1,5 @@
-#![feature(proc_macro)]
 #![feature(specialization)]
+#![feature(use_extern_macros)]
 
 //! A macro for writing HTML templates.
 //!
