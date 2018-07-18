@@ -3,8 +3,7 @@ rust: nightly
 sudo: false
 
 before_script:
-  - cargo install clippy || true
-  - export PATH=$HOME/.cargo/bin:$PATH
+  - rustup component add clippy-preview --toolchain=nightly
 
 script:
   - cargo build --features="iron"
@@ -12,10 +11,8 @@ script:
   - cargo build --features="actix-web"
   - cargo test --all
   - |
-    if command -v cargo-clippy > /dev/null; then
-      CLIPPY_STATUS=0
-      for package in maud_htmlescape maud_macros maud maud_lints maud_extras; do
-        (cd $package && cargo clippy -- -D warnings) || CLIPPY_STATUS=$?
-      done
-      (exit $CLIPPY_STATUS)
-    fi
+    CLIPPY_STATUS=0
+    for package in maud_htmlescape maud_macros maud maud_lints maud_extras; do
+      (cd $package && cargo clippy -- -D warnings) || CLIPPY_STATUS=$?
+    done
+    (exit $CLIPPY_STATUS)
