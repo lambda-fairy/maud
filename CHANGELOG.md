@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.18.1] - 2018-07-18
+
+- [Fixed] Update to rustc 1.29.0-nightly (1ecf6929d 2018-07-16)
+
 ## [0.18.0] - 2018-07-15
 
 - [Added] Support for the Actix web framework
@@ -183,7 +187,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.18.1...HEAD
+[0.18.1]: https://github.com/lfairy/maud/compare/v0.18.0...v0.18.1
 [0.18.0]: https://github.com/lfairy/maud/compare/v0.17.5...v0.18.0
 [0.17.5]: https://github.com/lfairy/maud/compare/v0.17.4...v0.17.5
 [0.17.4]: https://github.com/lfairy/maud/compare/v0.17.3...v0.17.4
