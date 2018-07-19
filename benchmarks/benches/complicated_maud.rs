@@ -1,4 +1,4 @@
-#![feature(proc_macro, test)]
+#![feature(test, use_extern_macros, proc_macro_non_items)]
 
 extern crate maud;
 extern crate test;
@@ -46,7 +46,7 @@ mod btn {
         fn render(&self) -> Markup {
             match self.req_meth {
                 RequestMethod::Get => {
-                    html! { a.btn href=(self.path) (self.label) }
+                    html! { a.btn href=(self.path) { (self.label) } }
                 }
                 RequestMethod::Post => {
                     html! {
@@ -64,7 +64,7 @@ fn layout<S: AsRef<str>>(title: S, inner: Markup) -> Markup {
     html! {
         html {
             head {
-                title (title.as_ref())
+                title { (title.as_ref()) }
             }
             body {
                 (inner)
@@ -89,7 +89,7 @@ fn render_complicated_template(b: &mut test::Bencher) {
 
             @for entry in &teams {
                 div {
-                    strong (entry.name)
+                    strong { (entry.name) }
                     (Button::new("Edit", "edit"))
                     (Button::new("Delete", "edit")
                                 .with_method(RequestMethod::Post))

@@ -1,5 +1,6 @@
 #![feature(plugin, test)]
-#![feature(proc_macro)]
+#![feature(use_extern_macros, proc_macro_non_items)]
+
 
 extern crate maud;
 
@@ -26,14 +27,14 @@ fn render_template(b: &mut test::Bencher) {
         html! {
             html {
                 head {
-                    title (year)
+                    title { (year) }
                 }
                 body {
                     h1 { "CSL " (year) }
                     ul {
                         @for (i, team) in teams.iter().enumerate() {
                             li.champion[i == 0] {
-                                b (team.name) ": " (team.score)
+                                b { (team.name) ": " (team.score) }
                             }
                         }
                     }
