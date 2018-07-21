@@ -5,10 +5,10 @@
 ## [0.18.1] - 2018-07-18
 
 - [Fixed] Update to rustc 1.29.0-nightly (1ecf6929d 2018-07-16)
-- `proc_macro` has been stabilized on 1.29.0-nightly
-  (https://github.com/rust-lang/rust/pull/52081#issue-199544227) which changes
-  the features required to use maud. Replace `#![feature(proc_macro)]` in your
-  crate that uses maud and use `#![feature(use_extern_macros)]` instead.
+    - The `proc_macro` feature was recently stabilized ([rust-lang/rust#52081]). As a result of this change, you may get "unresolved import" errors after updating your Rust compiler. To fix this error, replace any `#![feature(proc_macro)]` in your crate with `#![feature(use_extern_macros)]`. See the [documentation][getting-started] for a working example.
+
+[rust-lang/rust#52081]: https://github.com/rust-lang/rust/pull/52081
+[getting-started]: https://maud.lambda.xyz/getting_started.html
 
 ## [0.18.0] - 2018-07-15
 

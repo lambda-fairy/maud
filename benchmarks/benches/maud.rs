@@ -1,7 +1,6 @@
 #![feature(plugin, test)]
 #![feature(use_extern_macros, proc_macro_non_items)]
 
-
 extern crate maud;
 
 use maud::html;
