@@ -6,6 +6,7 @@ use proc_macro::{
     TokenStream,
     TokenTree,
 };
+use std::collections::{HashMap, hash_map};
 use std::mem;
 
 use literalext::LiteralExt;
@@ -558,6 +559,59 @@ impl Parser {
                 _ => break,
             }
         }
+
+//        let collected_attrs: Vec<Attribute> = classes.into_iter().chain(ids).chain(attrs).collect();
+//
+//        let mut attr_syms = Vec::new();
+//        for attr in &collected_attrs {
+//            let name  = attr.name.clone().into_iter().next().unwrap().to_string();
+//            if attr_syms.contains(&name) {
+//                panic!(format!("Duplicate attribute used: `{}`", name))
+//            } else { attr_syms.push(name) }
+//        }
+//        collected_attrs
+
+//        Build a HashMap<String, Vec<Span>> (or similar) that pairs each attribute name with the Spans where it's used.
+//        Use span_tokens on the name property to get the span for an attribute.
+//        For classes/IDs, I suggest going the easy route and taking the span of the first class and first ID only for now.
+// (The parser doesn't keep all of its spans at the moment, and it'll take some refactoring to fix that.)
+        let mut hashy: HashMap<String, Vec<Span>> = HashMap::new();
+        match classes_static.first() {
+            Some(t) => {
+                hashy.insert("class".to_owned(), vec![ast::span_tokens(t.clone())]);
+            },
+            None => ()
+        };
+        match ids.first() {
+            Some(t) => {
+                hashy.insert("id".to_owned(), vec![ast::span_tokens(t.clone())]);
+            },
+            None => ()
+        };
+
+        for attr in &attrs {
+            let span = ast::span_tokens(attr.name.clone());
+            let name = attr.name.clone().to_string();
+            println!("{:?}", attr.name.clone().to_string());
+            match hashy.entry(name) {
+                Some(entry) => { entry.push(span); },
+                _ => { hashy.insert(name, vec![span]); }
+            }
+        }
+        println!("{:?}", hashy);
+        for (_, spans) in hashy.iter() {
+            println!("hi {:?}", spans);
+            if spans.len() > 1 {
+                let mut iter = spans.into_iter();
+                let first = iter.next().unwrap();
+                let errors = iter.fold(first.error("Duplicate attribute used"), |acc, span| acc.span_error(*span, "Duplicate attribute used"));
+                errors.emit();
+            }
+        }
+//        Once this map is built, report on error on any entry that has >= 2 values.
+//        You can do this by taking the first span, calling .error() on it, attaching each subsequent
+// span with .span_error(), then .emit()ting the result.
+
         Ok(ast::Attrs { classes_static, classes_toggled, ids, attrs })
     }
 

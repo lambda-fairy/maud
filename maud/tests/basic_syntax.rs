@@ -76,14 +76,6 @@ fn simple_attributes() {
 }
 
 #[test]
-#[should_panic(expected = "Duplicate attribute used: `class`")]
-fn duplicate_attributes() {
-    html! {
-        link.what rel="stylesheet" href="styles.css" class="why" href="style.css";
-    };
-}
-
-#[test]
 fn empty_attributes() {
     let s = html!(div readonly? { input type="checkbox" checked?; }).into_string();
     assert_eq!(s, r#"<div readonly><input type="checkbox" checked></div>"#);
