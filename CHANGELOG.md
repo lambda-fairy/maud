@@ -5,6 +5,10 @@
 ## [0.18.1] - 2018-07-18
 
 - [Fixed] Update to rustc 1.29.0-nightly (1ecf6929d 2018-07-16)
+- `proc_macro` has been stabilized on 1.29.0-nightly
+  (https://github.com/rust-lang/rust/pull/52081#issue-199544227) which changes
+  the features required to use maud. Replace `#![feature(proc_macro)]` in your
+  crate that uses maud and use `#![feature(use_extern_macros)]` instead.
 
 ## [0.18.0] - 2018-07-15
 
