@@ -560,16 +560,16 @@ impl Parser {
             }
         }
 
-        let mut hashy: HashMap<String, Vec<Span>> = HashMap::new();
+        let mut attr_map: HashMap<String, Vec<Span>> = HashMap::new();
         match classes_static.first() {
             Some(t) => {
-                hashy.insert("class".to_owned(), vec![ast::span_tokens(t.clone())]);
+                attr_map.insert("class".to_owned(), vec![ast::span_tokens(t.clone())]);
             },
             None => ()
         };
         match ids.first() {
             Some(t) => {
-                hashy.insert("id".to_owned(), vec![ast::span_tokens(t.clone())]);
+                attr_map.insert("id".to_owned(), vec![ast::span_tokens(t.clone())]);
             },
             None => ()
         };
@@ -577,11 +577,11 @@ impl Parser {
         for attr in &attrs {
             let span = ast::span_tokens(attr.name.clone());
             let name = attr.name.clone().to_string();
-            let entry = hashy.entry(name).or_insert(vec![]);
+            let entry = attr_map.entry(name).or_insert(vec![]);
             entry.push(span)
         }
 
-        for (_, spans) in hashy.iter() {
+        for (_, spans) in attr_map.iter() {
             if spans.len() > 1 {
                 let mut iter = spans.into_iter();
                 let first = iter.next().unwrap();
