@@ -1,5 +1,5 @@
-#![feature(proc_macro)]
 #![feature(specialization)]
+#![feature(use_extern_macros)]
 
 //! A macro for writing HTML templates.
 //!
@@ -8,7 +8,7 @@
 //!
 //! [book]: https://maud.lambda.xyz/
 
-#![doc(html_root_url = "https://docs.rs/maud/0.17.5")]
+#![doc(html_root_url = "https://docs.rs/maud/0.18.1")]
 
 #[cfg(feature = "actix-web")] extern crate actix_web;
 #[cfg(feature = "iron")] extern crate iron;

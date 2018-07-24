@@ -1,6 +1,6 @@
 #![feature(plugin)]
-#![feature(proc_macro)]
 #![feature(proc_macro_non_items)]
+#![feature(use_extern_macros)]
 
 #![plugin(maud_lints)]
 
@@ -13,8 +13,8 @@ use maud::{Markup, Render, html};
 /// # Example
 ///
 /// ```rust
-/// # #![feature(proc_macro)]
 /// # #![feature(proc_macro_non_items)]
+/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;
@@ -40,8 +40,8 @@ impl<T: AsRef<str>> Render for Css<T> {
 /// # Example
 ///
 /// ```rust
-/// # #![feature(proc_macro)]
 /// # #![feature(proc_macro_non_items)]
+/// # #![feature(use_extern_macros)]
 /// #
 /// # extern crate maud;
 /// # extern crate maud_extras;
@@ -68,8 +68,8 @@ impl<T: AsRef<str>> Render for Js<T> {
 /// # Example
 ///
 /// ```rust
-/// # #![feature(proc_macro)]
 /// # #![feature(proc_macro_non_items)]
+/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;
@@ -95,8 +95,8 @@ impl<T: AsRef<str>, U: AsRef<str>> Render for Meta<T, U> {
 /// # Example
 ///
 /// ```rust
-/// # #![feature(proc_macro)]
 /// # #![feature(proc_macro_non_items)]
+/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;
@@ -122,8 +122,8 @@ impl<T: AsRef<str>> Render for Title<T> {
 /// # Example
 ///
 /// ```rust
-/// # #![feature(proc_macro)]
 /// # #![feature(proc_macro_non_items)]
+/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;
@@ -149,8 +149,8 @@ impl<T: AsRef<str>> Render for Charset<T> {
 /// # Example
 ///
 /// ```rust
-/// # #![feature(proc_macro)]
 /// # #![feature(proc_macro_non_items)]
+/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;
@@ -176,8 +176,8 @@ impl<T: AsRef<str>, U: AsRef<str>> Render for MetaProperty<T, U> {
 /// # Example
 ///
 /// ```rust
-/// # #![feature(proc_macro)]
 /// # #![feature(proc_macro_non_items)]
+/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;
