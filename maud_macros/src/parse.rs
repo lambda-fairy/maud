@@ -564,6 +564,9 @@ impl Parser {
         if let Some(class) = classes_static.first() {
             attr_map.insert("class".to_owned(), vec![ast::span_tokens(class.clone())]);
         }
+        if let Some((tokens, _)) = classes_toggled.first() {
+            attr_map.insert("class".to_owned(), vec![ast::span_tokens(tokens.clone())]);
+        }
         if let Some(id) = ids.first() {
             attr_map.insert("id".to_owned(), vec![ast::span_tokens(id.clone())]);
         };
@@ -575,12 +578,16 @@ impl Parser {
             entry.push(span);
         }
 
-        for (_, spans) in attr_map {
+        for (name, spans) in attr_map {
             if spans.len() > 1 {
                 let mut spans = spans.into_iter();
                 if let Some(first_span) = spans.next() {
                     spans
-                        .fold(first.error("duplicate attribute used"), |acc, span| acc.span_error(*span, "duplicate attribute used")).emit();
+                        .fold(
+                            first_span.error(format!("duplicate attribute `{}` used here", name)),
+                            |acc, span| acc.span_error(span, format!("duplicate attribute `{}` used here", name))
+                        )
+                        .emit();
                 }
             }
         }
