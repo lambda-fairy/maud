@@ -561,32 +561,27 @@ impl Parser {
         }
 
         let mut attr_map: HashMap<String, Vec<Span>> = HashMap::new();
-        match classes_static.first() {
-            Some(t) => {
-                attr_map.insert("class".to_owned(), vec![ast::span_tokens(t.clone())]);
-            },
-            None => ()
-        };
-        match ids.first() {
-            Some(t) => {
-                attr_map.insert("id".to_owned(), vec![ast::span_tokens(t.clone())]);
-            },
-            None => ()
+        if let Some(class) = classes_static.first() {
+            attr_map.insert("class".to_owned(), vec![ast::span_tokens(class.clone())]);
+        }
+        if let Some(id) = ids.first() {
+            attr_map.insert("id".to_owned(), vec![ast::span_tokens(id.clone())]);
         };
 
         for attr in &attrs {
             let span = ast::span_tokens(attr.name.clone());
-            let name = attr.name.clone().to_string();
-            let entry = attr_map.entry(name).or_insert(vec![]);
-            entry.push(span)
+            let name = attr.name.clone().into_iter().map(|token| token.to_string()).collect();
+            let entry = attr_map.entry(name).or_default();
+            entry.push(span);
         }
 
-        for (_, spans) in attr_map.iter() {
+        for (_, spans) in attr_map {
             if spans.len() > 1 {
-                let mut iter = spans.into_iter();
-                let first = iter.next().unwrap();
-                let errors = iter.fold(first.error("Duplicate attribute used"),|acc,span| acc.span_error(*span, "Duplicate attribute used"));
-                errors.emit();
+                let mut spans = spans.into_iter();
+                if let Some(first_span) = spans.next() {
+                    spans
+                        .fold(first.error("duplicate attribute used"), |acc, span| acc.span_error(*span, "duplicate attribute used")).emit();
+                }
             }
         }
 
