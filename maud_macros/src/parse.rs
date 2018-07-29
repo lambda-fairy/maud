@@ -6,6 +6,7 @@ use proc_macro::{
     TokenStream,
     TokenTree,
 };
+use std::collections::HashMap;
 use std::mem;
 
 use literalext::LiteralExt;
@@ -558,6 +559,39 @@ impl Parser {
                 _ => break,
             }
         }
+
+        let mut attr_map: HashMap<String, Vec<Span>> = HashMap::new();
+        if let Some(class) = classes_static.first() {
+            attr_map.insert("class".to_owned(), vec![ast::span_tokens(class.clone())]);
+        }
+        if let Some((tokens, _)) = classes_toggled.first() {
+            attr_map.insert("class".to_owned(), vec![ast::span_tokens(tokens.clone())]);
+        }
+        if let Some(id) = ids.first() {
+            attr_map.insert("id".to_owned(), vec![ast::span_tokens(id.clone())]);
+        };
+
+        for attr in &attrs {
+            let span = ast::span_tokens(attr.name.clone());
+            let name = attr.name.clone().into_iter().map(|token| token.to_string()).collect();
+            let entry = attr_map.entry(name).or_default();
+            entry.push(span);
+        }
+
+        for (name, spans) in attr_map {
+            if spans.len() > 1 {
+                let mut spans = spans.into_iter();
+                if let Some(first_span) = spans.next() {
+                    spans
+                        .fold(
+                            first_span.error(format!("duplicate attribute `{}` used here", name)),
+                            |acc, span| acc.span_error(span, format!("duplicate attribute `{}` used here", name))
+                        )
+                        .emit();
+                }
+            }
+        }
+
         Ok(ast::Attrs { classes_static, classes_toggled, ids, attrs })
     }
 
