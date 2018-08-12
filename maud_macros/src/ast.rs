@@ -63,10 +63,12 @@ pub type Attrs = Vec<Attr>;
 #[derive(Debug)]
 pub enum Attr {
     Class {
+        dot_span: Span,
         name: TokenStream,
         toggler: Option<Toggler>,
     },
     Id {
+        hash_span: Span,
         name: TokenStream,
     },
     Attribute {
@@ -77,15 +79,19 @@ pub enum Attr {
 impl Attr {
     pub fn span(&self) -> Span {
         match *self {
-            Attr::Class { ref name, ref toggler } => {
+            Attr::Class { dot_span, ref name, ref toggler } => {
                 let name_span = span_tokens(name.clone());
+                let dot_name_span = dot_span.join(name_span).unwrap_or(dot_span);
                 if let Some(toggler) = toggler {
-                    name_span.join(toggler.cond_span).unwrap_or(name_span)
+                    dot_name_span.join(toggler.cond_span).unwrap_or(name_span)
                 } else {
-                    name_span
+                    dot_name_span
                 }
             },
-            Attr::Id { ref name } => span_tokens(name.clone()),
+            Attr::Id { hash_span, ref name } => {
+                let name_span = span_tokens(name.clone());
+                hash_span.join(name_span).unwrap_or(hash_span)
+            },
             Attr::Attribute { ref attribute } => attribute.span(),
         }
     }

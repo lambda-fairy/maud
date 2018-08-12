@@ -546,13 +546,13 @@ impl Parser {
                     self.commit(attempt);
                     let name = self.name()?;
                     let toggler = self.attr_toggler();
-                    attrs.push(ast::Attr::Class { name, toggler });
+                    attrs.push(ast::Attr::Class { dot_span: punct.span(), name, toggler });
                 },
                 // ID shorthand
                 (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '#' => {
                     self.commit(attempt);
                     let name = self.name()?;
-                    attrs.push(ast::Attr::Id { name });
+                    attrs.push(ast::Attr::Id { hash_span: punct.span(), name });
                 },
                 // If it's not a valid attribute, backtrack and bail out
                 _ => break,
