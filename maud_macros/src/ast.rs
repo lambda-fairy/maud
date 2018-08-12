@@ -86,8 +86,7 @@ impl Attr {
                 }
             },
             Attr::Id { ref name } => span_tokens(name.clone()),
-            // TODO
-            Attr::Attribute { ref attribute } => span_tokens(attribute.name.clone()),
+            Attr::Attribute { ref attribute } => attribute.span(),
         }
     }
 }
@@ -139,6 +138,17 @@ pub struct Attribute {
     pub attr_type: AttrType,
 }
 
+impl Attribute {
+    fn span(&self) -> Span {
+        let name_span = span_tokens(self.name.clone());
+        if let Some(attr_type_span) = self.attr_type.span() {
+            name_span.join(attr_type_span).unwrap_or(name_span)
+        } else {
+            name_span
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum AttrType {
     Normal {
@@ -149,10 +159,25 @@ pub enum AttrType {
     },
 }
 
+impl AttrType {
+    fn span(&self) -> Option<Span> {
+        match *self {
+            AttrType::Normal { ref value } => Some(value.span()),
+            AttrType::Empty { ref toggler } => toggler.as_ref().map(|toggler| toggler.span()),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Toggler {
     pub cond: TokenStream,
     pub cond_span: Span,
+}
+
+impl Toggler {
+    fn span(&self) -> Span {
+        self.cond_span
+    }
 }
 
 #[derive(Debug)]
