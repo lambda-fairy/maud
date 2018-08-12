@@ -58,15 +58,39 @@ impl Markup {
     }
 }
 
+pub type Attrs = Vec<Attr>;
+
 #[derive(Debug)]
-pub struct Attrs {
-    pub classes_static: Vec<ClassOrId>,
-    pub classes_toggled: Vec<(ClassOrId, Toggler)>,
-    pub ids: Vec<ClassOrId>,
-    pub attrs: Vec<Attribute>,
+pub enum Attr {
+    Class {
+        name: TokenStream,
+        toggler: Option<Toggler>,
+    },
+    Id {
+        name: TokenStream,
+    },
+    Attribute {
+        attribute: Attribute,
+    },
 }
 
-pub type ClassOrId = TokenStream;
+impl Attr {
+    pub fn span(&self) -> Span {
+        match *self {
+            Attr::Class { ref name, ref toggler } => {
+                let name_span = span_tokens(name.clone());
+                if let Some(toggler) = toggler {
+                    name_span.join(toggler.cond_span).unwrap_or(name_span)
+                } else {
+                    name_span
+                }
+            },
+            Attr::Id { ref name } => span_tokens(name.clone()),
+            // TODO
+            Attr::Attribute { ref attribute } => span_tokens(attribute.name.clone()),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum ElementBody {

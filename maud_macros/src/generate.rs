@@ -157,16 +157,33 @@ impl Generator {
 
 ////////////////////////////////////////////////////////
 
-fn desugar_attrs(Attrs { classes_static, classes_toggled, ids, attrs }: Attrs) -> Vec<Attribute> {
+fn desugar_attrs(attrs: Attrs) -> Vec<Attribute> {
+    let mut classes_static = vec![];
+    let mut classes_toggled = vec![];
+    let mut ids = vec![];
+    let mut attributes = vec![];
+    for attr in attrs {
+        match attr {
+            Attr::Class { name, toggler } => {
+                if let Some(toggler) = toggler {
+                    classes_toggled.push((name, toggler));
+                } else {
+                    classes_static.push(name);
+                }
+            },
+            Attr::Id { name } => ids.push(name),
+            Attr::Attribute { attribute } => attributes.push(attribute),
+        }
+    }
     let classes = desugar_classes_or_ids("class", classes_static, classes_toggled);
     let ids = desugar_classes_or_ids("id", ids, vec![]);
-    classes.into_iter().chain(ids).chain(attrs).collect()
+    classes.into_iter().chain(ids).chain(attributes).collect()
 }
 
 fn desugar_classes_or_ids(
     attr_name: &'static str,
-    values_static: Vec<ClassOrId>,
-    values_toggled: Vec<(ClassOrId, Toggler)>,
+    values_static: Vec<TokenStream>,
+    values_toggled: Vec<(TokenStream, Toggler)>,
 ) -> Option<Attribute> {
     if values_static.is_empty() && values_toggled.is_empty() {
         return None;

@@ -507,9 +507,6 @@ impl Parser {
 
     /// Parses the attributes of an element.
     fn attrs(&mut self) -> ParseResult<ast::Attrs> {
-        let mut classes_static = Vec::new();
-        let mut classes_toggled = Vec::new();
-        let mut ids = Vec::new();
         let mut attrs = Vec::new();
         loop {
             let mut attempt = self.clone();
@@ -526,34 +523,36 @@ impl Parser {
                         value = self.markup()?;
                         self.in_attr = in_attr;
                     }
-                    attrs.push(ast::Attribute {
-                        name: name.clone(),
-                        attr_type: ast::AttrType::Normal { value },
+                    attrs.push(ast::Attr::Attribute {
+                        attribute: ast::Attribute {
+                            name: name.clone(),
+                            attr_type: ast::AttrType::Normal { value },
+                        },
                     });
                 },
                 // Empty attribute
                 (Some(ref name), Some(TokenTree::Punct(ref punct))) if punct.as_char() == '?' => {
                     self.commit(attempt);
                     let toggler = self.attr_toggler();
-                    attrs.push(ast::Attribute {
-                        name: name.clone(),
-                        attr_type: ast::AttrType::Empty { toggler },
+                    attrs.push(ast::Attr::Attribute {
+                        attribute: ast::Attribute {
+                            name: name.clone(),
+                            attr_type: ast::AttrType::Empty { toggler },
+                        },
                     });
                 },
                 // Class shorthand
                 (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '.' => {
                     self.commit(attempt);
                     let name = self.name()?;
-                    if let Some(toggler) = self.attr_toggler() {
-                        classes_toggled.push((name, toggler));
-                    } else {
-                        classes_static.push(name);
-                    }
+                    let toggler = self.attr_toggler();
+                    attrs.push(ast::Attr::Class { name, toggler });
                 },
                 // ID shorthand
                 (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '#' => {
                     self.commit(attempt);
-                    ids.push(self.name()?);
+                    let name = self.name()?;
+                    attrs.push(ast::Attr::Id { name });
                 },
                 // If it's not a valid attribute, backtrack and bail out
                 _ => break,
@@ -561,21 +560,24 @@ impl Parser {
         }
 
         let mut attr_map: HashMap<String, Vec<Span>> = HashMap::new();
-        if let Some(class) = classes_static.first() {
-            attr_map.insert("class".to_owned(), vec![ast::span_tokens(class.clone())]);
-        }
-        if let Some((tokens, _)) = classes_toggled.first() {
-            attr_map.insert("class".to_owned(), vec![ast::span_tokens(tokens.clone())]);
-        }
-        if let Some(id) = ids.first() {
-            attr_map.insert("id".to_owned(), vec![ast::span_tokens(id.clone())]);
-        }
-
+        let mut has_class = false;
         for attr in &attrs {
-            let span = ast::span_tokens(attr.name.clone());
-            let name = attr.name.clone().into_iter().map(|token| token.to_string()).collect();
+            let name = match attr {
+                ast::Attr::Class { .. } => {
+                    if has_class {
+                        // Only check the first class to avoid spurious duplicates
+                        continue;
+                    }
+                    has_class = true;
+                    "class".to_string()
+                },
+                ast::Attr::Id { .. } => "id".to_string(),
+                ast::Attr::Attribute { attribute } => {
+                    attribute.name.clone().into_iter().map(|token| token.to_string()).collect()
+                },
+            };
             let entry = attr_map.entry(name).or_default();
-            entry.push(span);
+            entry.push(attr.span());
         }
 
         for (name, spans) in attr_map {
@@ -591,7 +593,7 @@ impl Parser {
             }
         }
 
-        Ok(ast::Attrs { classes_static, classes_toggled, ids, attrs })
+        Ok(attrs)
     }
 
     /// Parses the `[cond]` syntax after an empty attribute or class shorthand.
