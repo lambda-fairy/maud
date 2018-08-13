@@ -43,7 +43,11 @@ pub use maud_macros::{html, html_debug};
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust
+/// # #![feature(proc_macro_non_items)]
+/// # #![feature(use_extern_macros)]
+/// use maud::{html, Markup, Render};
+///
 /// /// Provides a shorthand for linking to a CSS stylesheet.
 /// pub struct Stylesheet(&'static str);
 ///
@@ -131,18 +135,20 @@ pub use maud_htmlescape::Escaper;
 ///
 /// A minimal web page:
 ///
-/// ```rust,ignore
-/// use maud::DOCTYPE;
+/// ```rust
+/// # #![feature(proc_macro_non_items)]
+/// # #![feature(use_extern_macros)]
+/// use maud::{DOCTYPE, html};
 ///
 /// let markup = html! {
 ///     (DOCTYPE)
 ///     html {
 ///         head {
 ///             meta charset="utf-8";
-///             title "Test page"
+///             title { "Test page" }
 ///         }
 ///         body {
-///             p "Hello, world!"
+///             p { "Hello, world!" }
 ///         }
 ///     }
 /// };
