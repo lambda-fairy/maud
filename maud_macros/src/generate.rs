@@ -182,20 +182,20 @@ fn desugar_attrs(attrs: Attrs) -> Vec<Attribute> {
 
 fn desugar_classes_or_ids(
     attr_name: &'static str,
-    values_static: Vec<TokenStream>,
-    values_toggled: Vec<(TokenStream, Toggler)>,
+    values_static: Vec<Markup>,
+    values_toggled: Vec<(Markup, Toggler)>,
 ) -> Option<Attribute> {
     if values_static.is_empty() && values_toggled.is_empty() {
         return None;
     }
     let mut markups = Vec::new();
     let mut leading_space = false;
-    for symbol in values_static {
-        markups.extend(prepend_leading_space(symbol, &mut leading_space));
+    for name in values_static {
+        markups.extend(prepend_leading_space(name, &mut leading_space));
     }
-    for (symbol, toggler) in values_toggled {
+    for (name, toggler) in values_toggled {
         let body = Block {
-            markups: prepend_leading_space(symbol, &mut leading_space),
+            markups: prepend_leading_space(name, &mut leading_space),
             outer_span: toggler.cond_span,
         };
         let head = desugar_toggler(toggler);
@@ -214,16 +214,16 @@ fn desugar_classes_or_ids(
     })
 }
 
-fn prepend_leading_space(symbol: TokenStream, leading_space: &mut bool) -> Vec<Markup> {
+fn prepend_leading_space(name: Markup, leading_space: &mut bool) -> Vec<Markup> {
     let mut markups = Vec::new();
     if *leading_space {
         markups.push(Markup::Literal {
             content: " ".to_owned(),
-            span: span_tokens(symbol.clone()),
+            span: name.span(),
         });
     }
     *leading_space = true;
-    markups.push(Markup::Symbol { symbol });
+    markups.push(name);
     markups
 }
 

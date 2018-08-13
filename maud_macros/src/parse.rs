@@ -544,14 +544,16 @@ impl Parser {
                 // Class shorthand
                 (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '.' => {
                     self.commit(attempt);
-                    let name = self.name()?;
+                    // TODO parse arbitrary expressions here
+                    let name = ast::Markup::Symbol { symbol: self.name()? };
                     let toggler = self.attr_toggler();
                     attrs.push(ast::Attr::Class { dot_span: punct.span(), name, toggler });
                 },
                 // ID shorthand
                 (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '#' => {
                     self.commit(attempt);
-                    let name = self.name()?;
+                    // TODO parse arbitrary expressions here
+                    let name = ast::Markup::Symbol { symbol: self.name()? };
                     attrs.push(ast::Attr::Id { hash_span: punct.span(), name });
                 },
                 // If it's not a valid attribute, backtrack and bail out
