@@ -150,6 +150,12 @@ fn hyphens_in_class_names() {
 }
 
 #[test]
+fn class_string() {
+    let s = html!(h1."pinkie-123" { "Pinkie Pie" }).into_string();
+    assert_eq!(s, r#"<h1 class="pinkie-123">Pinkie Pie</h1>"#);
+}
+
+#[test]
 fn toggle_classes() {
     fn test(is_cupcake: bool, is_muffin: bool) -> Markup {
         html!(p.cupcake[is_cupcake].muffin[is_muffin] { "Testing!" })
@@ -168,6 +174,14 @@ fn toggle_classes_braces() {
 }
 
 #[test]
+fn toggle_classes_string() {
+    let is_cupcake = true;
+    let is_muffin = false;
+    let s = html!(p."cupcake"[is_cupcake]."is_muffin"[is_muffin] { "Testing!" }).into_string();
+    assert_eq!(s, r#"<p class="cupcake">Testing!</p>"#);
+}
+
+#[test]
 fn mixed_classes() {
     fn test(is_muffin: bool) -> Markup {
         html!(p.cupcake.muffin[is_muffin].lamington { "Testing!" })
@@ -177,9 +191,15 @@ fn mixed_classes() {
 }
 
 #[test]
-fn ids_shorthand() {
+fn id_shorthand() {
     let s = html!(p { "Hi, " span#thing { "Lyra" } "!" }).into_string();
     assert_eq!(s, r#"<p>Hi, <span id="thing">Lyra</span>!</p>"#);
+}
+
+#[test]
+fn id_string() {
+    let s = html!(h1#"pinkie-123" { "Pinkie Pie" }).into_string();
+    assert_eq!(s, r#"<h1 id="pinkie-123">Pinkie Pie</h1>"#);
 }
 
 #[test]

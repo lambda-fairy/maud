@@ -42,6 +42,27 @@ fn attributes() {
     assert_eq!(s, r#"<img src="pinkie.jpg" alt="Pinkie Pie">"#);
 }
 
+#[test]
+fn class_shorthand() {
+    let pinkie_class = "pinkie";
+    let s = html!(p.(pinkie_class) { "Fun!" }).into_string();
+    assert_eq!(s, r#"<p class="pinkie">Fun!</p>"#);
+}
+
+#[test]
+fn class_shorthand_block() {
+    let class_prefix = "pinkie-";
+    let s = html!(p.{ (class_prefix) "123" } { "Fun!" }).into_string();
+    assert_eq!(s, r#"<p class="pinkie-123">Fun!</p>"#);
+}
+
+#[test]
+fn id_shorthand() {
+    let pinkie_id = "pinkie";
+    let s = html!(p#(pinkie_id) { "Fun!" }).into_string();
+    assert_eq!(s, r#"<p id="pinkie">Fun!</p>"#);
+}
+
 static BEST_PONY: &'static str = "Pinkie Pie";
 
 #[test]

@@ -149,7 +149,9 @@ impl Parser {
             },
             // Element
             TokenTree::Ident(_) => {
-                let name = self.namespaced_name()?;
+                // `.try_namespaced_name()` should never fail as we've
+                // already seen an `Ident`
+                let name = self.try_namespaced_name().expect("identifier");
                 self.element(name)?
             },
             // Splice
@@ -544,16 +546,14 @@ impl Parser {
                 // Class shorthand
                 (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '.' => {
                     self.commit(attempt);
-                    // TODO parse arbitrary expressions here
-                    let name = ast::Markup::Symbol { symbol: self.name()? };
+                    let name = self.class_or_id_name()?;
                     let toggler = self.attr_toggler();
                     attrs.push(ast::Attr::Class { dot_span: punct.span(), name, toggler });
                 },
                 // ID shorthand
                 (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '#' => {
                     self.commit(attempt);
-                    // TODO parse arbitrary expressions here
-                    let name = ast::Markup::Symbol { symbol: self.name()? };
+                    let name = self.class_or_id_name()?;
                     attrs.push(ast::Attr::Id { hash_span: punct.span(), name });
                 },
                 // If it's not a valid attribute, backtrack and bail out
@@ -598,6 +598,15 @@ impl Parser {
         Ok(attrs)
     }
 
+    /// Parses the name of a class or ID.
+    fn class_or_id_name(&mut self) -> ParseResult<ast::Markup> {
+        if let Some(symbol) = self.try_name() {
+            Ok(ast::Markup::Symbol { symbol })
+        } else {
+            self.markup()
+        }
+    }
+
     /// Parses the `[cond]` syntax after an empty attribute or class shorthand.
     fn attr_toggler(&mut self) -> Option<ast::Toggler> {
         match self.peek() {
@@ -613,12 +622,6 @@ impl Parser {
     }
 
     /// Parses an identifier, without dealing with namespaces.
-    fn name(&mut self) -> ParseResult<TokenStream> {
-        self.try_name().ok_or_else(|| {
-            Span::call_site().error("expected identifier").emit();
-        })
-    }
-
     fn try_name(&mut self) -> Option<TokenStream> {
         let mut result = Vec::new();
         if let Some(token @ TokenTree::Ident(_)) = self.peek() {
@@ -648,12 +651,6 @@ impl Parser {
 
     /// Parses a HTML element or attribute name, along with a namespace
     /// if necessary.
-    fn namespaced_name(&mut self) -> ParseResult<TokenStream> {
-        self.try_namespaced_name().ok_or_else(|| {
-            Span::call_site().error("expected identifier").emit();
-        })
-    }
-
     fn try_namespaced_name(&mut self) -> Option<TokenStream> {
         let mut result = vec![self.try_name()?];
         if let Some(TokenTree::Punct(ref punct)) = self.peek() {

@@ -27,6 +27,22 @@ fn if_expr() {
 }
 
 #[test]
+fn if_expr_in_class() {
+    for &(chocolate_milk, expected) in &[
+        (0, r#"<p class="empty">Chocolate milk</p>"#),
+        (1, r#"<p class="full">Chocolate milk</p>"#),
+    ]
+    {
+        let s = html! {
+            p.@if chocolate_milk == 0 { "empty" } @else { "full" } {
+                "Chocolate milk"
+            }
+        }.into_string();
+        assert_eq!(s, expected);
+    }
+}
+
+#[test]
 fn if_let() {
     for &(input, output) in &[(Some("yay"), "yay"), (None, "oh noes")] {
         let s = html! {
