@@ -1,4 +1,4 @@
-#![feature(test, use_extern_macros, proc_macro_non_items)]
+#![feature(test, proc_macro_non_items)]
 
 extern crate maud;
 extern crate test;

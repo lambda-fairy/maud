@@ -1,6 +1,5 @@
 #![feature(plugin)]
 #![feature(proc_macro_non_items)]
-#![feature(use_extern_macros)]
 
 #![plugin(maud_lints)]
 
@@ -14,7 +13,6 @@ use maud::{Markup, Render, html};
 ///
 /// ```rust
 /// # #![feature(proc_macro_non_items)]
-/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;
@@ -41,7 +39,6 @@ impl<T: AsRef<str>> Render for Css<T> {
 ///
 /// ```rust
 /// # #![feature(proc_macro_non_items)]
-/// # #![feature(use_extern_macros)]
 /// #
 /// # extern crate maud;
 /// # extern crate maud_extras;
@@ -69,7 +66,6 @@ impl<T: AsRef<str>> Render for Js<T> {
 ///
 /// ```rust
 /// # #![feature(proc_macro_non_items)]
-/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;
@@ -96,7 +92,6 @@ impl<T: AsRef<str>, U: AsRef<str>> Render for Meta<T, U> {
 ///
 /// ```rust
 /// # #![feature(proc_macro_non_items)]
-/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;
@@ -123,7 +118,6 @@ impl<T: AsRef<str>> Render for Title<T> {
 ///
 /// ```rust
 /// # #![feature(proc_macro_non_items)]
-/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;
@@ -150,7 +144,6 @@ impl<T: AsRef<str>> Render for Charset<T> {
 ///
 /// ```rust
 /// # #![feature(proc_macro_non_items)]
-/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;
@@ -177,7 +170,6 @@ impl<T: AsRef<str>, U: AsRef<str>> Render for MetaProperty<T, U> {
 ///
 /// ```rust
 /// # #![feature(proc_macro_non_items)]
-/// # #![feature(use_extern_macros)]
 /// # extern crate maud;
 /// # extern crate maud_extras;
 /// # use maud::html;

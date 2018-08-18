@@ -1,5 +1,4 @@
 #![feature(specialization)]
-#![feature(use_extern_macros)]
 
 //! A macro for writing HTML templates.
 //!
@@ -45,7 +44,6 @@ pub use maud_macros::{html, html_debug};
 ///
 /// ```rust
 /// # #![feature(proc_macro_non_items)]
-/// # #![feature(use_extern_macros)]
 /// use maud::{html, Markup, Render};
 ///
 /// /// Provides a shorthand for linking to a CSS stylesheet.
@@ -137,7 +135,6 @@ pub use maud_htmlescape::Escaper;
 ///
 /// ```rust
 /// # #![feature(proc_macro_non_items)]
-/// # #![feature(use_extern_macros)]
 /// use maud::{DOCTYPE, html};
 ///
 /// let markup = html! {
