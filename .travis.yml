@@ -6,9 +6,9 @@ before_script:
   - rustup component add clippy-preview --toolchain=nightly
 
 script:
-  - cargo build --features="iron"
-  - cargo build --features="rocket"
-  - cargo build --features="actix-web"
+  - (cd maud && cargo build --features="iron")
+  - (cd maud && cargo build --features="rocket")
+  - (cd maud && cargo build --features="actix-web")
   - cargo test --all
   - (cd benchmarks && cargo bench --no-run)
   - |
