@@ -13,7 +13,7 @@ script:
   - (cd benchmarks && cargo bench --no-run)
   - |
     CLIPPY_STATUS=0
-    for package in maud_htmlescape maud_macros maud maud_lints maud_extras; do
+    for package in maud_htmlescape maud_macros maud maud_extras; do
       (cd $package && cargo clippy -- -D warnings) || CLIPPY_STATUS=$?
     done
     (exit $CLIPPY_STATUS)
