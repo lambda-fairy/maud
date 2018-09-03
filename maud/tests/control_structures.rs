@@ -68,7 +68,6 @@ fn while_expr() {
 #[test]
 fn while_let_expr() {
     let mut numbers = (0..3).into_iter();
-    #[cfg_attr(feature = "cargo-clippy", allow(while_let_on_iterator))]
     let s = html! {
         ul {
             @while let Some(n) = numbers.next() {

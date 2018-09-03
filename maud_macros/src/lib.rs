@@ -2,12 +2,13 @@
 #![feature(proc_macro_non_items)]
 #![feature(proc_macro_quote)]
 #![feature(proc_macro_span)]
+#![feature(tool_lints)]
 
 #![doc(html_root_url = "https://docs.rs/maud_macros/0.18.1")]
 
 // TokenStream values are reference counted, and the mental overhead of tracking
 // lifetimes outweighs the marginal gains from explicit borrowing
-#![cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
+#![allow(clippy::needless_pass_by_value)]
 
 extern crate literalext;
 #[macro_use] extern crate matches;
