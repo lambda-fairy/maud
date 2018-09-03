@@ -1,8 +1,24 @@
 #![feature(proc_macro_hygiene)]
 
+extern crate futures;
 extern crate maud;
 
-use maud::{Markup, html};
+use maud::{Markup, html, html_stream_debug};
+
+#[test]
+fn stream() {
+    use futures::Stream;
+
+    let var: Box<futures::Future<Item=&str, Error=String> + Send> =
+        Box::new(futures::future::ok("test"));
+
+    let mut s = html_stream_debug!({ h1 { (var) } }).wait();
+
+    assert_eq!(s.next(), Some(Ok("<h1>")));
+    assert_eq!(s.next(), Some(Ok("test")));
+    assert_eq!(s.next(), Some(Ok("</h1>")));
+    assert_eq!(s.next(), None);
+}
 
 #[test]
 fn literals() {

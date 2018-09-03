@@ -36,6 +36,18 @@ pub fn html_debug(input: TokenStream) -> TokenStream {
     expr
 }
 
+#[proc_macro]
+pub fn html_stream(input: TokenStream) -> TokenStream {
+    expand_stream(input)
+}
+
+#[proc_macro]
+pub fn html_stream_debug(input: TokenStream) -> TokenStream {
+    let expr = expand_stream(input);
+    println!("expansion:\n{}", expr);
+    expr
+}
+
 fn expand(input: TokenStream) -> TokenStream {
     let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::def_site()));
     // Heuristic: the size of the resulting markup tends to correlate with the
@@ -52,5 +64,26 @@ fn expand(input: TokenStream) -> TokenStream {
         let mut $output_ident = String::with_capacity($size_hint);
         $stmts
         maud::PreEscaped($output_ident)
+    })
+}
+
+fn expand_stream(input: TokenStream) -> TokenStream {
+    let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::def_site()));
+    // Heuristic: the size of the resulting markup tends to correlate with the
+    // code size of the template itself
+    let markups = match parse::parse(input) {
+        Ok(markups) => markups,
+        Err(()) => Vec::new(),
+    };
+    let stmts = generate::generate_stream(markups, output_ident.clone());
+    quote!({
+        extern crate maud;
+        extern crate futures;
+        let mut $output_ident: futures::stream::FuturesOrdered<
+            Box<futures::Future<Item = &str, Error = String> + Send>
+        > = futures::stream::FuturesOrdered::new();
+        $stmts
+        $output_ident
+        // maud::PreEscaped($output_ident)
     })
 }

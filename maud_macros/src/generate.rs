@@ -18,23 +18,34 @@ pub fn generate(markups: Vec<Markup>, output_ident: TokenTree) -> TokenStream {
     build.finish()
 }
 
+pub fn generate_stream(markups: Vec<Markup>, output_ident: TokenTree) -> TokenStream {
+    let mut build = StreamBuilder::new(output_ident.clone());
+    StreamGenerator::new(output_ident).markups(markups, &mut build);
+    build.finish()
+}
+
+trait GeneratorTrait<T: BuilderTrait> {
+    fn markups(&self, markups: Vec<Markup>, build: &mut T);
+}
+
 struct Generator {
     output_ident: TokenTree,
 }
 
-impl Generator {
-    fn new(output_ident: TokenTree) -> Generator {
-        Generator { output_ident }
-    }
-
-    fn builder(&self) -> Builder {
-        Builder::new(self.output_ident.clone())
-    }
-
+impl GeneratorTrait<Builder> for Generator {
     fn markups(&self, markups: Vec<Markup>, build: &mut Builder) {
         for markup in markups {
             self.markup(markup, build);
         }
+    }
+}
+impl Generator {
+    fn new(output_ident: TokenTree) -> Self {
+        Self { output_ident }
+    }
+
+    fn builder(&self) -> Builder {
+        Builder::new(self.output_ident.clone())
     }
 
     fn markup(&self, markup: Markup, build: &mut Builder) {
@@ -117,6 +128,146 @@ impl Generator {
     }
 
     fn attrs(&self, attrs: Attrs, build: &mut Builder) {
+        for Attribute { name, attr_type } in desugar_attrs(attrs) {
+            match attr_type {
+                AttrType::Normal { value } => {
+                    build.push_str(" ");
+                    self.name(name, build);
+                    build.push_str("=\"");
+                    self.markup(value, build);
+                    build.push_str("\"");
+                },
+                AttrType::Empty { toggler: None } => {
+                    build.push_str(" ");
+                    self.name(name, build);
+                },
+                AttrType::Empty { toggler: Some(toggler) } => {
+                    let head = desugar_toggler(toggler);
+                    build.push_tokens({
+                        let mut build = self.builder();
+                        build.push_str(" ");
+                        self.name(name, &mut build);
+                        let body = build.finish();
+                        quote!($head { $body })
+                    })
+                },
+            }
+        }
+    }
+
+    fn special(&self, Special { head, body, .. }: Special) -> TokenStream {
+        let body = self.block(body);
+        quote!($head $body)
+    }
+
+    fn match_arm(&self, MatchArm { head, body }: MatchArm) -> TokenStream {
+        let body = self.block(body);
+        quote!($head $body)
+    }
+}
+
+struct StreamGenerator {
+    output_ident: TokenTree,
+}
+
+impl GeneratorTrait<StreamBuilder> for StreamGenerator {
+    fn markups(&self, markups: Vec<Markup>, build: &mut StreamBuilder) {
+        for markup in markups {
+            self.markup(markup, build);
+        }
+    }
+}
+
+impl StreamGenerator {
+    fn new(output_ident: TokenTree) -> Self {
+        Self { output_ident }
+    }
+
+    fn builder(&self) -> StreamBuilder {
+        StreamBuilder::new(self.output_ident.clone())
+    }
+
+    fn markup(&self, markup: Markup, build: &mut StreamBuilder) {
+        match markup {
+            Markup::Block(Block { markups, outer_span }) => {
+                if markups.iter().any(|markup| matches!(*markup, Markup::Let { .. })) {
+                    build.push_tokens(self.block(Block { markups, outer_span }));
+                } else {
+                    self.markups(markups, build);
+                }
+            },
+            Markup::Literal { content, .. } => build.push_escaped(&content),
+            Markup::Symbol { symbol } => self.name(symbol, build),
+            Markup::Splice { expr, .. } => build.push_tokens(self.splice(expr)),
+            Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
+            Markup::Let { tokens, .. } => build.push_tokens(tokens),
+            Markup::Special { segments } => {
+                for segment in segments {
+                    build.push_tokens(self.special(segment));
+                }
+            },
+            Markup::Match { head, arms, arms_span, .. } => {
+                build.push_tokens({
+                    let body = arms
+                        .into_iter()
+                        .map(|arm| self.match_arm(arm))
+                        .collect();
+                    let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
+                    body.set_span(arms_span);
+                    quote!($head $body)
+                });
+            },
+        }
+    }
+
+    fn block(&self, Block { markups, outer_span }: Block) -> TokenStream {
+        let mut build = self.builder();
+        self.markups(markups, &mut build);
+        let mut block = TokenTree::Group(Group::new(Delimiter::Brace, build.finish()));
+        block.set_span(outer_span);
+        TokenStream::from(block)
+    }
+
+    fn splice(&self, expr: TokenStream) -> TokenStream {
+        let output_ident = self.output_ident.clone();
+        quote!({
+            $output_ident.push($expr);
+            // Create a local trait alias so that autoref works
+            // trait Render: maud::Render {
+            //     fn __maud_render_to(&self, output_ident: &mut String) {
+            //         maud::Render::render_to(self, output_ident);
+            //     }
+            // }
+            // impl<T: maud::Render> Render for T {}
+            // $expr.__maud_render_to(&mut $output_ident);
+        })
+    }
+
+    fn element(
+        &self,
+        name: TokenStream,
+        attrs: Attrs,
+        body: ElementBody,
+        build: &mut StreamBuilder,
+    ) {
+        build.push_str("<");
+        self.name(name.clone(), build);
+        self.attrs(attrs, build);
+        build.push_str(">");
+        if let ElementBody::Block { block } = body {
+            self.markups(block.markups, build);
+            build.push_str("</");
+            self.name(name, build);
+            build.push_str(">");
+        }
+    }
+
+    fn name(&self, name: TokenStream, build: &mut StreamBuilder) {
+        let string = name.into_iter().map(|token| token.to_string()).collect::<String>();
+        build.push_escaped(&string);
+    }
+
+    fn attrs(&self, attrs: Attrs, build: &mut StreamBuilder) {
         for Attribute { name, attr_type } in desugar_attrs(attrs) {
             match attr_type {
                 AttrType::Normal { value } => {
@@ -243,15 +394,24 @@ fn desugar_toggler(Toggler { mut cond, cond_span }: Toggler) -> TokenStream {
 
 ////////////////////////////////////////////////////////
 
+trait BuilderTrait {
+    fn new(output_ident: TokenTree) -> Self;
+    fn push_str(&mut self, string: &str);
+    fn push_escaped(&mut self, string: &str);
+    fn push_tokens<T: IntoIterator<Item=TokenTree>>(&mut self, tokens: T);
+    fn cut(&mut self);
+    fn finish(mut self) -> TokenStream;
+}
+
 struct Builder {
     output_ident: TokenTree,
     tokens: Vec<TokenTree>,
     tail: String,
 }
 
-impl Builder {
-    fn new(output_ident: TokenTree) -> Builder {
-        Builder {
+impl BuilderTrait for Builder {
+    fn new(output_ident: TokenTree) -> Self {
+        Self {
             output_ident,
             tokens: Vec::new(),
             tail: String::new(),
@@ -280,6 +440,54 @@ impl Builder {
             let output_ident = self.output_ident.clone();
             let string = TokenTree::Literal(Literal::string(&self.tail));
             quote!($output_ident.push_str($string);)
+        };
+        self.tail.clear();
+        self.tokens.extend(push_str_expr);
+    }
+
+    fn finish(mut self) -> TokenStream {
+        self.cut();
+        self.tokens.into_iter().collect()
+    }
+}
+
+struct StreamBuilder {
+    output_ident: TokenTree,
+    tokens: Vec<TokenTree>,
+    tail: String,
+}
+
+impl BuilderTrait for StreamBuilder {
+    fn new(output_ident: TokenTree) -> Self {
+        Self {
+            output_ident,
+            tokens: Vec::new(),
+            tail: String::new(),
+        }
+    }
+
+    fn push_str(&mut self, string: &str) {
+        self.tail.push_str(string);
+    }
+
+    fn push_escaped(&mut self, string: &str) {
+        use std::fmt::Write;
+        Escaper::new(&mut self.tail).write_str(string).unwrap();
+    }
+
+    fn push_tokens<T: IntoIterator<Item=TokenTree>>(&mut self, tokens: T) {
+        self.cut();
+        self.tokens.extend(tokens);
+    }
+
+    fn cut(&mut self) {
+        if self.tail.is_empty() {
+            return;
+        }
+        let push_str_expr = {
+            let output_ident = self.output_ident.clone();
+            let string = TokenTree::Literal(Literal::string(&self.tail));
+            quote!($output_ident.push(Box::new(futures::future::ok($string)));)
         };
         self.tail.clear();
         self.tokens.extend(push_str_expr);

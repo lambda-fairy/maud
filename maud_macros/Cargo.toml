@@ -12,6 +12,7 @@ repository = "https://github.com/lfairy/maud"
 description = "Compile-time HTML templates."
 
 [dependencies]
+futures = "0.1"
 literalext = { version = "0.1", default-features = false, features = ["proc-macro"] }
 matches = "0.1.6"
 maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
