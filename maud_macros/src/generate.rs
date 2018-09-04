@@ -295,7 +295,7 @@ trait BuilderTrait {
     fn push_escaped(&mut self, string: &str);
     fn push_tokens<T: IntoIterator<Item=TokenTree>>(&mut self, tokens: T);
     fn cut(&mut self);
-    fn finish(mut self) -> TokenStream;
+    fn finish(self) -> TokenStream;
 }
 
 struct Builder {
