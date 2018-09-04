@@ -18,6 +18,7 @@ pub fn generate(markups: Vec<Markup>, output_ident: TokenTree) -> TokenStream {
     build.finish()
 }
 
+#[cfg(feature = "streaming")]
 pub fn generate_stream(markups: Vec<Markup>, output_ident: TokenTree) -> TokenStream {
     let mut build = StreamBuilder::new(output_ident.clone());
     StreamGenerator::new(output_ident).markups(markups, &mut build);
@@ -170,10 +171,12 @@ impl Generator {
     }
 }
 
+#[cfg(feature = "streaming")]
 struct StreamGenerator {
     output_ident: TokenTree,
 }
 
+#[cfg(feature = "streaming")]
 impl GeneratorTrait<StreamBuilder> for StreamGenerator {
     fn builder(&self) -> StreamBuilder {
         StreamBuilder::new(self.output_ident.clone())
@@ -195,6 +198,7 @@ impl GeneratorTrait<StreamBuilder> for StreamGenerator {
     }
 }
 
+#[cfg(feature = "streaming")]
 impl StreamGenerator {
     fn new(output_ident: TokenTree) -> Self {
         Self { output_ident }
@@ -346,12 +350,14 @@ impl BuilderTrait for Builder {
     }
 }
 
+#[cfg(feature = "streaming")]
 struct StreamBuilder {
     output_ident: TokenTree,
     tokens: Vec<TokenTree>,
     tail: String,
 }
 
+#[cfg(feature = "streaming")]
 impl BuilderTrait for StreamBuilder {
     fn new(output_ident: TokenTree) -> Self {
         Self {

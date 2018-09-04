@@ -12,7 +12,7 @@ repository = "https://github.com/lfairy/maud"
 description = "Compile-time HTML templates."
 
 [dependencies]
-futures = "0.1"
+futures = { version = "0.1", optional = true }
 literalext = { version = "0.1", default-features = false, features = ["proc-macro"] }
 matches = "0.1.6"
 maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
@@ -20,6 +20,9 @@ maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
 [lib]
 name = "maud_macros"
 proc-macro = true
+
+[features]
+streaming = ["futures"]
 
 [badges]
 travis-ci = { repository = "lfairy/maud" }

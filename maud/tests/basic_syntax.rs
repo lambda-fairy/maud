@@ -1,23 +1,14 @@
 #![feature(proc_macro_hygiene)]
 
+#[cfg(feature = "streaming")]
 extern crate futures;
 extern crate maud;
 
+#[cfg(feature = "streaming")]
 use futures::Stream;
-use maud::{Markup, html, html_stream_debug};
-
-#[test]
-fn stream() {
-    let var: Box<futures::Future<Item=&str, Error=String> + Send> =
-        Box::new(futures::future::ok("test"));
-
-    let mut s = html_stream_debug!({ h1 { (var) } }).wait();
-
-    assert_eq!(s.next(), Some(Ok("<h1>")));
-    assert_eq!(s.next(), Some(Ok("test")));
-    assert_eq!(s.next(), Some(Ok("</h1>")));
-    assert_eq!(s.next(), None);
-}
+use maud::{Markup, html};
+#[cfg(feature = "streaming")]
+use maud::html_stream_debug;
 
 #[test]
 fn literals() {
@@ -25,6 +16,7 @@ fn literals() {
     assert_eq!(s, "du\tcks-233.14\ngeese");
 }
 
+#[cfg(feature = "streaming")]
 #[test]
 fn literals_stream() {
     let mut s = html_stream_debug!("du\tcks" "-23" "3.14\n" "geese").wait();
@@ -38,6 +30,7 @@ fn escaping() {
     assert_eq!(s, "&lt;flim&amp;flam&gt;");
 }
 
+#[cfg(feature = "streaming")]
 #[test]
 fn escaping_stream() {
     let mut s = html_stream_debug!("<flim&flam>").wait();
@@ -129,6 +122,7 @@ fn toggle_empty_attributes_braces() {
     assert_eq!(s, r#"<input checked>"#);
 }
 
+#[cfg(feature = "streaming")]
 #[test]
 fn toggle_empty_attributes_braces_stream() {
     struct Maud { rocks: bool }

@@ -36,11 +36,13 @@ pub fn html_debug(input: TokenStream) -> TokenStream {
     expr
 }
 
+#[cfg(feature = "streaming")]
 #[proc_macro]
 pub fn html_stream(input: TokenStream) -> TokenStream {
     expand_stream(input)
 }
 
+#[cfg(feature = "streaming")]
 #[proc_macro]
 pub fn html_stream_debug(input: TokenStream) -> TokenStream {
     let expr = expand_stream(input);
@@ -67,6 +69,7 @@ fn expand(input: TokenStream) -> TokenStream {
     })
 }
 
+#[cfg(feature = "streaming")]
 fn expand_stream(input: TokenStream) -> TokenStream {
     let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::def_site()));
     // Heuristic: the size of the resulting markup tends to correlate with the

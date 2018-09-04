@@ -9,6 +9,7 @@
 
 #![doc(html_root_url = "https://docs.rs/maud/0.19.0")]
 
+#[cfg(feature = "streaming")] extern crate futures;
 #[cfg(feature = "actix-web")] extern crate actix_web;
 #[cfg(feature = "iron")] extern crate iron;
 #[cfg(feature = "rocket")] extern crate rocket;
@@ -18,7 +19,10 @@ extern crate maud_macros;
 
 use std::fmt::{self, Write};
 
-pub use maud_macros::{html, html_debug, html_stream, html_stream_debug};
+pub use maud_macros::{html, html_debug};
+
+#[cfg(feature = "streaming")]
+pub use maud_macros::{html_stream, html_stream_debug};
 
 /// Represents a type that can be rendered as HTML.
 ///
