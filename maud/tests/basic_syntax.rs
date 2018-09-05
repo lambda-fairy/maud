@@ -202,6 +202,17 @@ fn toggle_classes_braces() {
     assert_eq!(s, r#"<p class="rocks">Awesome!</p>"#);
 }
 
+#[cfg(feature = "streaming")]
+#[test]
+fn toggle_classes_braces_stream() {
+    struct Maud { rocks: bool }
+    let mut s = html_stream_debug!(p.rocks[Maud { rocks: true }.rocks] { "Awesome!" }).wait();
+    assert_eq!(s.next(), Some(Ok(r#"<p class=""#)));
+    assert_eq!(s.next(), Some(Ok(r#"rocks"#)));
+    assert_eq!(s.next(), Some(Ok(r#"">Awesome!</p>"#)));
+    assert_eq!(s.next(), None);
+}
+
 #[test]
 fn toggle_classes_string() {
     let is_cupcake = true;

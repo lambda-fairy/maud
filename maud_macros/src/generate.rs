@@ -187,13 +187,15 @@ impl GeneratorTrait<StreamBuilder> for StreamGenerator {
         quote!({
             $output_ident.push($expr);
             // Create a local trait alias so that autoref works
-            // trait Render: maud::Render {
-            //     fn __maud_render_to(&self, output_ident: &mut String) {
-            //         maud::Render::render_to(self, output_ident);
+            // trait FutureRender: maud::FutureRender {
+            //     fn __maud_render_to(&self, output_ident: &mut futures::stream::FuturesOrdered<
+            //         Box<futures::Future<Item = &str, Error = String> + Send>
+            //     >) {
+            //         maud::FutureRender::render_to(self, output_ident);
             //     }
             // }
-            // impl<T: maud::Render> Render for T {}
-            // $expr.__maud_render_to(&mut $output_ident);
+            // impl<T: maud::FutureRender> FutureRender for T {}
+            $expr.to_string().__maud_render_to(&mut $output_ident);
         })
     }
 }

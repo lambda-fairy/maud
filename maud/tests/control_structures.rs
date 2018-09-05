@@ -1,8 +1,14 @@
 #![feature(proc_macro_hygiene)]
 
+#[cfg(feature = "streaming")]
+extern crate futures;
 extern crate maud;
 
+#[cfg(feature = "streaming")]
+use futures::Stream;
 use maud::html;
+#[cfg(feature = "streaming")]
+use maud::html_stream_debug;
 
 #[test]
 fn if_expr() {
@@ -19,6 +25,26 @@ fn if_expr() {
             }
         }.into_string();
         assert_eq!(s, name);
+    }
+}
+
+#[cfg(feature = "streaming")]
+#[test]
+fn if_expr_stream() {
+    for (number, &name) in (1..4).zip(["one", "two", "three"].iter()) {
+        let mut s = html_stream_debug! {
+            @if number == 1 {
+                "one"
+            } @else if number == 2 {
+                "two"
+            } @else if number == 3 {
+                "three"
+            } @else {
+                "oh noes"
+            }
+        }.wait();
+        assert_eq!(s.next(), Some(Ok(name)));
+        assert_eq!(s.next(), None);
     }
 }
 
@@ -95,6 +121,26 @@ fn for_expr() {
             "<li>Sweetie Belle</li>",
             "</ul>"));
 }
+
+// #[cfg(feature = "streaming")]
+// #[test]
+// fn for_expr_stream() {
+//     let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
+//     let mut s = html_stream_debug! {
+//         ul {
+//             @for pony in &ponies {
+//                 li { (pony) }
+//             }
+//         }
+//     }.wait();
+    
+//     assert_eq!(s.next(), Some(Ok("<ul>")));
+//     assert_eq!(s.next(), Some(Ok("<li>Apple Bloom</li>")));
+//     assert_eq!(s.next(), Some(Ok("<li>Scootaloo</li>")));
+//     assert_eq!(s.next(), Some(Ok("<li>Sweetie Belle</li>")));
+//     assert_eq!(s.next(), Some(Ok("</ul>")));
+//     assert_eq!(s.next(), None);
+// }
 
 #[test]
 fn match_expr() {

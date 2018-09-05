@@ -101,13 +101,52 @@ impl Render for str {
     }
 }
 
+#[cfg(feature = "streaming")]
+pub trait FutureRender {
+    fn render_to(&self, stream: &mut futures::stream::FuturesOrdered<
+        Box<futures::Future<Item = String, Error = String> + Send>
+    >);
+}
+
+#[cfg(feature = "streaming")]
+impl FutureRender for String {
+    fn render_to(&self, stream: &mut futures::stream::FuturesOrdered<
+        Box<futures::Future<Item = String, Error = String> + Send>
+    >) {
+        let mut escaped = String::with_capacity(self.len());
+        let _ = Escaper::new(&mut escaped).write_str(self);
+        stream.push(Box::new(futures::future::ok(escaped)));
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl FutureRender for str {
+    fn render_to(&self, stream: &mut futures::stream::FuturesOrdered<
+        Box<futures::Future<Item = String, Error = String> + Send>
+    >) {
+        let mut escaped = String::with_capacity(self.len());
+        let _ = Escaper::new(&mut escaped).write_str(self);
+        stream.push(Box::new(futures::future::ok(escaped)));
+    }
+}
+
 /// A wrapper that renders the inner value without escaping.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PreEscaped<T: AsRef<str>>(pub T);
 
 impl<T: AsRef<str>> Render for PreEscaped<T> {
     fn render_to(&self, w: &mut String) {
         w.push_str(self.0.as_ref());
+    }
+}
+
+impl<T: AsRef<str>> FutureRender for PreEscaped<T> {
+    fn render_to(&self, stream: &mut futures::stream::FuturesOrdered<
+        Box<futures::Future<Item = String, Error = String> + Send>
+    >) {
+        let mut escaped = String::with_capacity(self.0.as_ref().len());
+        let _ = Escaper::new(&mut escaped).write_str(self.0.as_ref());
+        stream.push(Box::new(futures::future::ok(escaped)));
     }
 }
 

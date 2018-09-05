@@ -72,8 +72,6 @@ fn expand(input: TokenStream) -> TokenStream {
 #[cfg(feature = "streaming")]
 fn expand_stream(input: TokenStream) -> TokenStream {
     let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::def_site()));
-    // Heuristic: the size of the resulting markup tends to correlate with the
-    // code size of the template itself
     let markups = match parse::parse(input) {
         Ok(markups) => markups,
         Err(()) => Vec::new(),
@@ -83,10 +81,9 @@ fn expand_stream(input: TokenStream) -> TokenStream {
         extern crate maud;
         extern crate futures;
         let mut $output_ident: futures::stream::FuturesOrdered<
-            Box<futures::Future<Item = &str, Error = String> + Send>
+            Box<futures::Future<Item = &str, Error = &str> + Send>
         > = futures::stream::FuturesOrdered::new();
         $stmts
         $output_ident
-        // maud::PreEscaped($output_ident)
     })
 }
