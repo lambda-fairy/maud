@@ -8,7 +8,7 @@ extern crate maud;
 use futures::Stream;
 use maud::{Markup, html};
 #[cfg(feature = "streaming")]
-use maud::html_stream_debug;
+use maud::html_stream;
 
 #[test]
 fn literals() {
@@ -19,7 +19,7 @@ fn literals() {
 #[cfg(feature = "streaming")]
 #[test]
 fn literals_stream() {
-    let mut s = html_stream_debug!("du\tcks" "-23" "3.14\n" "geese").wait();
+    let mut s = html_stream!("du\tcks" "-23" "3.14\n" "geese").wait();
     assert_eq!(s.next(), Some(Ok("du\tcks-233.14\ngeese")));
     assert_eq!(s.next(), None);
 }
@@ -33,7 +33,7 @@ fn escaping() {
 #[cfg(feature = "streaming")]
 #[test]
 fn escaping_stream() {
-    let mut s = html_stream_debug!("<flim&flam>").wait();
+    let mut s = html_stream!("<flim&flam>").wait();
     assert_eq!(s.next(), Some(Ok("&lt;flim&amp;flam&gt;")));
     assert_eq!(s.next(), None);
 }
@@ -126,7 +126,7 @@ fn toggle_empty_attributes_braces() {
 #[test]
 fn toggle_empty_attributes_braces_stream() {
     struct Maud { rocks: bool }
-    let mut s = html_stream_debug!(input checked?[Maud { rocks: true }.rocks] /).wait();
+    let mut s = html_stream!(input checked?[Maud { rocks: true }.rocks] /).wait();
     assert_eq!(s.next(), Some(Ok(r#"<input"#)));
     assert_eq!(s.next(), Some(Ok(r#" checked"#)));
     assert_eq!(s.next(), Some(Ok(r#">"#)));
@@ -206,7 +206,7 @@ fn toggle_classes_braces() {
 #[test]
 fn toggle_classes_braces_stream() {
     struct Maud { rocks: bool }
-    let mut s = html_stream_debug!(p.rocks[Maud { rocks: true }.rocks] { "Awesome!" }).wait();
+    let mut s = html_stream!(p.rocks[Maud { rocks: true }.rocks] { "Awesome!" }).wait();
     assert_eq!(s.next(), Some(Ok(r#"<p class=""#)));
     assert_eq!(s.next(), Some(Ok(r#"rocks"#)));
     assert_eq!(s.next(), Some(Ok(r#"">Awesome!</p>"#)));

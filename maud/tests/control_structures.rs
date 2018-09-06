@@ -8,7 +8,7 @@ extern crate maud;
 use futures::Stream;
 use maud::html;
 #[cfg(feature = "streaming")]
-use maud::html_stream_debug;
+use maud::html_stream;
 
 #[test]
 fn if_expr() {
@@ -32,7 +32,7 @@ fn if_expr() {
 #[test]
 fn if_expr_stream() {
     for (number, &name) in (1..4).zip(["one", "two", "three"].iter()) {
-        let mut s = html_stream_debug! {
+        let mut s = html_stream! {
             @if number == 1 {
                 "one"
             } @else if number == 2 {
@@ -126,7 +126,7 @@ fn for_expr() {
 // #[test]
 // fn for_expr_stream() {
 //     let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
-//     let mut s = html_stream_debug! {
+//     let mut s = html_stream! {
 //         ul {
 //             @for pony in &ponies {
 //                 li { (pony) }
