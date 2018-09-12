@@ -185,16 +185,16 @@ impl GeneratorTrait<StreamBuilder> for StreamGenerator {
     fn splice(&self, expr: TokenStream) -> TokenStream {
         let output_ident = self.output_ident.clone();
         quote!({
-            $output_ident.push($expr);
+            // $output_ident.push($expr);
             // Create a local trait alias so that autoref works
-            // trait FutureRender: maud::FutureRender {
-            //     fn __maud_render_to(&self, output_ident: &mut futures::stream::FuturesOrdered<
-            //         Box<futures::Future<Item = &str, Error = String> + Send>
-            //     >) {
-            //         maud::FutureRender::render_to(self, output_ident);
-            //     }
-            // }
-            // impl<T: maud::FutureRender> FutureRender for T {}
+            trait FutureRender: maud::FutureRender {
+                fn __maud_render_to(&self, output_ident: &mut futures::stream::FuturesOrdered<
+                    Box<futures::Future<Item = maud::Markup, Error = maud::Markup> + Send>
+                >) {
+                    maud::FutureRender::render_to(self, output_ident);
+                }
+            }
+            impl<T: maud::FutureRender> FutureRender for T {}
             $expr.to_string().__maud_render_to(&mut $output_ident);
         })
     }

@@ -104,29 +104,29 @@ impl Render for str {
 #[cfg(feature = "streaming")]
 pub trait FutureRender {
     fn render_to(&self, stream: &mut futures::stream::FuturesOrdered<
-        Box<futures::Future<Item = String, Error = String> + Send>
+        Box<futures::Future<Item = Markup, Error = Markup> + Send>
     >);
 }
 
 #[cfg(feature = "streaming")]
 impl FutureRender for String {
     fn render_to(&self, stream: &mut futures::stream::FuturesOrdered<
-        Box<futures::Future<Item = String, Error = String> + Send>
+        Box<futures::Future<Item = Markup, Error = Markup> + Send>
     >) {
         let mut escaped = String::with_capacity(self.len());
         let _ = Escaper::new(&mut escaped).write_str(self);
-        stream.push(Box::new(futures::future::ok(escaped)));
+        stream.push(Box::new(futures::future::ok(PreEscaped(escaped))));
     }
 }
 
 #[cfg(feature = "streaming")]
 impl FutureRender for str {
     fn render_to(&self, stream: &mut futures::stream::FuturesOrdered<
-        Box<futures::Future<Item = String, Error = String> + Send>
+        Box<futures::Future<Item = Markup, Error = Markup> + Send>
     >) {
         let mut escaped = String::with_capacity(self.len());
         let _ = Escaper::new(&mut escaped).write_str(self);
-        stream.push(Box::new(futures::future::ok(escaped)));
+        stream.push(Box::new(futures::future::ok(PreEscaped(escaped))));
     }
 }
 
@@ -142,11 +142,11 @@ impl<T: AsRef<str>> Render for PreEscaped<T> {
 
 impl<T: AsRef<str>> FutureRender for PreEscaped<T> {
     fn render_to(&self, stream: &mut futures::stream::FuturesOrdered<
-        Box<futures::Future<Item = String, Error = String> + Send>
+        Box<futures::Future<Item = Markup, Error = Markup> + Send>
     >) {
         let mut escaped = String::with_capacity(self.0.as_ref().len());
         let _ = Escaper::new(&mut escaped).write_str(self.0.as_ref());
-        stream.push(Box::new(futures::future::ok(escaped)));
+        stream.push(Box::new(futures::future::ok(PreEscaped(escaped))));
     }
 }
 

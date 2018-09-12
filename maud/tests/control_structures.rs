@@ -8,7 +8,7 @@ extern crate maud;
 use futures::Stream;
 use maud::html;
 #[cfg(feature = "streaming")]
-use maud::html_stream;
+use maud::{html_stream, html_stream_debug};
 
 #[test]
 fn if_expr() {
@@ -122,25 +122,31 @@ fn for_expr() {
             "</ul>"));
 }
 
-// #[cfg(feature = "streaming")]
-// #[test]
-// fn for_expr_stream() {
-//     let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
-//     let mut s = html_stream! {
-//         ul {
-//             @for pony in &ponies {
-//                 li { (pony) }
-//             }
-//         }
-//     }.wait();
+#[cfg(feature = "streaming")]
+#[test]
+fn for_expr_stream() {
+    let ponies = ["Apple Bloom", "Scootaloo", "Sweetie Belle"];
+    let mut s = html_stream_debug! {
+        ul {
+            @for pony in &ponies {
+                li { (pony) }
+            }
+        }
+    }.wait();
     
-//     assert_eq!(s.next(), Some(Ok("<ul>")));
-//     assert_eq!(s.next(), Some(Ok("<li>Apple Bloom</li>")));
-//     assert_eq!(s.next(), Some(Ok("<li>Scootaloo</li>")));
-//     assert_eq!(s.next(), Some(Ok("<li>Sweetie Belle</li>")));
-//     assert_eq!(s.next(), Some(Ok("</ul>")));
-//     assert_eq!(s.next(), None);
-// }
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("<ul>".into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("<li>".into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("Apple Bloom".into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("</li>".into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("<li>".into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("Scootaloo".into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("</li>".into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("<li>".into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("Sweetie Belle".into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("</li>".into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("</ul>".into()))));
+    assert_eq!(s.next(), None);
+}
 
 #[test]
 fn match_expr() {
