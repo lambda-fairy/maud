@@ -43,7 +43,7 @@ fn if_expr_stream() {
                 "oh noes"
             }
         }.wait();
-        assert_eq!(s.next(), Some(Ok(name)));
+        assert_eq!(s.next(), Some(Ok(maud::PreEscaped(name.into()))));
         assert_eq!(s.next(), None);
     }
 }

@@ -81,7 +81,7 @@ fn expand_stream(input: TokenStream) -> TokenStream {
         extern crate maud;
         extern crate futures;
         let mut $output_ident: futures::stream::FuturesOrdered<
-            Box<futures::Future<Item = &str, Error = &str> + Send>
+            Box<futures::Future<Item = maud::Markup, Error = maud::Markup> + Send>
         > = futures::stream::FuturesOrdered::new();
         $stmts
         $output_ident

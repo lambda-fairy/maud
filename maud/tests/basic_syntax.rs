@@ -20,7 +20,7 @@ fn literals() {
 #[test]
 fn literals_stream() {
     let mut s = html_stream!("du\tcks" "-23" "3.14\n" "geese").wait();
-    assert_eq!(s.next(), Some(Ok("du\tcks-233.14\ngeese")));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("du\tcks-233.14\ngeese".into()))));
     assert_eq!(s.next(), None);
 }
 
@@ -34,7 +34,7 @@ fn escaping() {
 #[test]
 fn escaping_stream() {
     let mut s = html_stream!("<flim&flam>").wait();
-    assert_eq!(s.next(), Some(Ok("&lt;flim&amp;flam&gt;")));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped("&lt;flim&amp;flam&gt;".into()))));
     assert_eq!(s.next(), None);
 }
 
@@ -127,9 +127,9 @@ fn toggle_empty_attributes_braces() {
 fn toggle_empty_attributes_braces_stream() {
     struct Maud { rocks: bool }
     let mut s = html_stream!(input checked?[Maud { rocks: true }.rocks] /).wait();
-    assert_eq!(s.next(), Some(Ok(r#"<input"#)));
-    assert_eq!(s.next(), Some(Ok(r#" checked"#)));
-    assert_eq!(s.next(), Some(Ok(r#">"#)));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped(r#"<input"#.into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped(r#" checked"#.into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped(r#">"#.into()))));
     assert_eq!(s.next(), None);
 }
 
@@ -207,9 +207,9 @@ fn toggle_classes_braces() {
 fn toggle_classes_braces_stream() {
     struct Maud { rocks: bool }
     let mut s = html_stream!(p.rocks[Maud { rocks: true }.rocks] { "Awesome!" }).wait();
-    assert_eq!(s.next(), Some(Ok(r#"<p class=""#)));
-    assert_eq!(s.next(), Some(Ok(r#"rocks"#)));
-    assert_eq!(s.next(), Some(Ok(r#"">Awesome!</p>"#)));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped(r#"<p class=""#.into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped(r#"rocks"#.into()))));
+    assert_eq!(s.next(), Some(Ok(maud::PreEscaped(r#"">Awesome!</p>"#.into()))));
     assert_eq!(s.next(), None);
 }
 
