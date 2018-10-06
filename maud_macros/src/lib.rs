@@ -1,5 +1,6 @@
+#![feature(proc_macro_def_site)]
 #![feature(proc_macro_diagnostic)]
-#![feature(proc_macro_non_items)]
+#![feature(proc_macro_hygiene)]
 #![feature(proc_macro_quote)]
 #![feature(proc_macro_span)]
 #![feature(tool_lints)]
