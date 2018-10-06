@@ -1,4 +1,5 @@
-#![feature(test, proc_macro_non_items)]
+#![feature(test)]
+#![feature(proc_macro_hygiene)]
 
 extern crate maud;
 extern crate test;
