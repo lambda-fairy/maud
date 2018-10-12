@@ -3,7 +3,6 @@
 #![feature(proc_macro_hygiene)]
 #![feature(proc_macro_quote)]
 #![feature(proc_macro_span)]
-#![feature(tool_lints)]
 
 #![doc(html_root_url = "https://docs.rs/maud_macros/0.18.1")]
 
