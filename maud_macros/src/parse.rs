@@ -154,7 +154,7 @@ impl Parser {
                 match ident_string.as_str() {
                     "if" | "while" | "for" | "match" | "let" => {
                         ident.span()
-                            .warning(format!("found keyword `{}` - should this be a `@{}`?", ident_string, ident_string))
+                            .warning(format!("found keyword `{0}` - should this be a `@{0}`?", ident_string))
                             .emit();
                     }
                     _ => {}
