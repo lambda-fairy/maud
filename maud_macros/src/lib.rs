@@ -49,7 +49,7 @@ fn expand(input: TokenStream) -> TokenStream {
     let stmts = generate::generate(markups, output_ident.clone());
     quote!({
         extern crate maud;
-        let mut $output_ident = String::with_capacity($size_hint);
+        let mut $output_ident = std::string::String::with_capacity($size_hint);
         $stmts
         maud::PreEscaped($output_ident)
     })

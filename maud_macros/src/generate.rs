@@ -83,7 +83,7 @@ impl Generator {
         quote!({
             // Create a local trait alias so that autoref works
             trait Render: maud::Render {
-                fn __maud_render_to(&self, output_ident: &mut String) {
+                fn __maud_render_to(&self, output_ident: &mut std::string::String) {
                     maud::Render::render_to(self, output_ident);
                 }
             }
