@@ -3,7 +3,7 @@ rust: nightly
 sudo: false
 
 before_script:
-  - rustup component add clippy-preview --toolchain=nightly
+  - rustup component add clippy-preview
 
 script:
   - (cd maud && cargo build --features="iron")
