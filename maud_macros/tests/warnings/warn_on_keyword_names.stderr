@@ -1,0 +1,6 @@
+warning: found keyword `if` - should this be a `@if`?
+ --> $DIR/warn_on_keyword_names.rs:9:9
+  |
+9 |         if {} //~WARNING found keyword `if` - should this be a `@if`?
+  |         ^^
+
