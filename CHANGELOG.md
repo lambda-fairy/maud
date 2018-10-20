@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.19.0] - 2018-10-20
+
+- [Added] Allow arbitrary syntax in class and ID shorthand
+  [#128](https://github.com/lfairy/maud/issues/128)
+- [Added] Actix 0.7 support
+  [#144](https://github.com/lfairy/maud/issues/144)
+- [Added] Warn on keywords without a leading `@`
+  [#91](https://github.com/lfairy/maud/issues/91)
+- [Changed] Disallow elements that mention the same attribute twice
+  [#129](https://github.com/lfairy/maud/issues/129)
+- [Removed] Dropped support for the `maud_lints` crate
+  [66ddbca](https://github.com/lfairy/maud/commit/66ddbcac986f099e309c28491c276de39340068a)
+- [Fixed] Update to rustc 1.31.0-nightly (77af31408 2018-10-11)
+    - The feature flags have changed again! Remove `#![feature(use_extern_macros)]` and `#![feature(proc_macro_non_items)]`, and add `#![feature(proc_macro_hygiene)]` in their place. See the [documentation][getting-started] for a working example.
+
 ## [0.18.1] - 2018-07-18
 
 - [Fixed] Update to rustc 1.29.0-nightly (1ecf6929d 2018-07-16)
@@ -191,7 +206,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.18.1...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/lfairy/maud/compare/v0.18.1...v0.19.0
 [0.18.1]: https://github.com/lfairy/maud/compare/v0.18.0...v0.18.1
 [0.18.0]: https://github.com/lfairy/maud/compare/v0.17.5...v0.18.0
 [0.17.5]: https://github.com/lfairy/maud/compare/v0.17.4...v0.17.5
