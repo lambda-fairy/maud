@@ -148,7 +148,17 @@ impl Parser {
                 }
             },
             // Element
-            TokenTree::Ident(_) => {
+            TokenTree::Ident(ident) => {
+                let ident_string = ident.to_string();
+                // Is this a keyword that's missing a '@'?
+                match ident_string.as_str() {
+                    "if" | "while" | "for" | "match" | "let" => {
+                        ident.span()
+                            .warning(format!("found keyword `{0}` - should this be a `@{0}`?", ident_string))
+                            .emit();
+                    }
+                    _ => {}
+                }
                 // `.try_namespaced_name()` should never fail as we've
                 // already seen an `Ident`
                 let name = self.try_namespaced_name().expect("identifier");
