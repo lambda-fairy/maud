@@ -203,7 +203,9 @@ mod actix_support {
         type Item = HttpResponse;
         type Error = Error;
         fn respond_to<S>(self, _req: &HttpRequest<S>) -> Result<Self::Item, Self::Error> {
-            Ok(HttpResponse::Ok().body(self.0))
+            Ok(HttpResponse::Ok()
+               .content_type("text/html; charset=utf-8")
+               .body(self.0))
         }
     }
 }
