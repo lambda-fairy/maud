@@ -6,12 +6,13 @@ before_script:
   - rustup component add clippy-preview --toolchain=nightly
 
 script:
-  - (cd maud && cargo build) 
-  - (cd maud_macros && cargo test)
   - (cd maud && cargo build --features="iron")
+  # The compiletest tests require a single version of the crate to be built
+  # or else there will be errors in picking the right version - so we test now
+  - cargo test --test warnings 
   - (cd maud && cargo build --features="rocket")
   - (cd maud && cargo build --features="actix-web")
-  - cargo test --all --exclude maud_macros
+  - cargo test --all --exclude warnings
   - (cd benchmarks && cargo bench --no-run)
   - |
     CLIPPY_STATUS=0

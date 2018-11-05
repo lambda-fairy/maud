@@ -16,9 +16,6 @@ literalext = { version = "0.1", default-features = false, features = ["proc-macr
 matches = "0.1.6"
 maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
 
-[dev-dependencies]
-compiletest_rs = "0.3.14"
-
 [lib]
 name = "maud_macros"
 proc-macro = true
