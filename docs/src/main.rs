@@ -2,7 +2,7 @@
 #![feature(proc_macro_hygiene)]
 
 use comrak::{self, Arena, ComrakOptions};
-use comrak::nodes::{AstNode, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeValue};
+use comrak::nodes::{AstNode, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink, NodeValue};
 use indexmap::IndexMap;
 use std::error::Error;
 use std::fs;
@@ -81,6 +81,8 @@ fn load_page<'a>(
         });
 
     lower_headings(content);
+    rewrite_md_links(content)
+        .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
     highlight_code(content)
         .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
 
@@ -94,6 +96,21 @@ fn lower_headings<'a>(root: &'a AstNode<'a>) {
             *level += 1;
         }
     }
+}
+
+fn rewrite_md_links<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
+    for node in root.descendants() {
+        let mut data = node.data.borrow_mut();
+        if let NodeValue::Link(NodeLink { url, .. }) = &mut data.value {
+            let mut url_string = String::from_utf8(mem::replace(url, Vec::new()))?;
+            if url_string.ends_with(".md") {
+                url_string.truncate(url_string.len() - ".md".len());
+                url_string.push_str(".html");
+            }
+            *url = url_string.into_bytes();
+        }
+    }
+    Ok(())
 }
 
 fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
