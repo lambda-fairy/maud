@@ -19,6 +19,13 @@ mod views;
 const BOOK_FILES: &[&str] = &[
     "index",
     "getting-started",
+    "basic-syntax",
+    "dynamic-content",
+    "partials",
+    "control-structures",
+    "traits",
+    "web-frameworks",
+    "faq",
 ];
 
 fn main() -> Result<(), Box<dyn Error>> {
