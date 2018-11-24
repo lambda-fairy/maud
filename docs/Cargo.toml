@@ -1,0 +1,17 @@
+[package]
+
+name = "docs"
+version = "0.0.0"
+authors = ["Chris Wong <lambda.fairy@gmail.com>"]
+
+license = "CC-BY-SA-4.0"
+repository = "https://github.com/lfairy/maud"
+description = "Documentation for Maud."
+
+edition = "2018"
+
+[dependencies]
+comrak = "*"
+indexmap = "*"
+maud = { path = "../maud" }
+syntect = "*"
