@@ -5,7 +5,7 @@ sudo: false
 before_script:
   - |
     RUN_CLIPPY=true
-    rustup component add clippy-preview --toolchain=nightly || RUN_CLIPPY=false
+    rustup component add clippy --toolchain=nightly || RUN_CLIPPY=false
 
 script:
   - (cd maud && cargo build --features="iron")
