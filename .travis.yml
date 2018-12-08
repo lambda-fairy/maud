@@ -9,10 +9,9 @@ script:
   - (cd maud && cargo build --features="iron")
   # The compiletest tests require a single version of the crate to be built
   # or else there will be errors in picking the right version - so we test now
-  - cargo test --test warnings 
+  - cargo test --all
   - (cd maud && cargo build --features="rocket")
   - (cd maud && cargo build --features="actix-web")
-  - cargo test --all --exclude warnings
   - (cd benchmarks && cargo bench --no-run)
   - |
     CLIPPY_STATUS=0
