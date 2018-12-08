@@ -5,7 +5,7 @@ extern crate maud_macros;
 use maud_macros::html;
 
 fn main() {
-    let markup = html!{ 
+    html! {
         if {}
     };
 }
