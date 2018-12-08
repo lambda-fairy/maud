@@ -3,17 +3,23 @@ rust: nightly
 sudo: false
 
 before_script:
-  - rustup component add clippy-preview --toolchain=nightly
+  - |
+    RUN_CLIPPY=true
+    rustup component add clippy-preview --toolchain=nightly || RUN_CLIPPY=false
 
 script:
   - (cd maud && cargo build --features="iron")
+  # The compiletest tests require a single version of the crate to be built
+  # or else there will be errors in picking the right version - so we test now
+  - cargo test --all
   - (cd maud && cargo build --features="rocket")
   - (cd maud && cargo build --features="actix-web")
-  - cargo test --all
   - (cd benchmarks && cargo bench --no-run)
   - |
-    CLIPPY_STATUS=0
-    for package in maud_htmlescape maud_macros maud maud_extras; do
-      (cd $package && cargo clippy -- -D warnings) || CLIPPY_STATUS=$?
-    done
-    (exit $CLIPPY_STATUS)
+    if $RUN_CLIPPY; then
+      CLIPPY_STATUS=0
+      for package in maud_htmlescape maud_macros maud maud_extras; do
+        (cd $package && cargo clippy -- -D warnings) || CLIPPY_STATUS=$?
+      done
+      (exit $CLIPPY_STATUS)
+    fi
