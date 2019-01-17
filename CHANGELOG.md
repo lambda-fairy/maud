@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.20.0] - 2019-01-17
+
+- [Added] Rocket 0.4 support
+  [#162](https://github.com/lfairy/maud/pull/162)
+- [Changed] Set `Content-Type` header for Actix responses
+  [#160](https://github.com/lfairy/maud/pull/160)
+
 ## [0.19.0] - 2018-10-20
 
 - [Added] Allow arbitrary syntax in class and ID shorthand
@@ -206,7 +213,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/lfairy/maud/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/lfairy/maud/compare/v0.18.1...v0.19.0
 [0.18.1]: https://github.com/lfairy/maud/compare/v0.18.0...v0.18.1
 [0.18.0]: https://github.com/lfairy/maud/compare/v0.17.5...v0.18.0
