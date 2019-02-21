@@ -49,7 +49,7 @@ impl Markup {
                 at_span.join(span_tokens(tokens.clone())).unwrap_or(at_span)
             },
             Markup::Special { ref segments } => {
-                join_spans(segments.iter().map(|segment| segment.span()))
+                join_spans(segments.iter().map(Special::span))
             },
             Markup::Match { at_span, arms_span, .. } => {
                 at_span.join(arms_span).unwrap_or(at_span)
@@ -169,7 +169,7 @@ impl AttrType {
     fn span(&self) -> Option<Span> {
         match *self {
             AttrType::Normal { ref value } => Some(value.span()),
-            AttrType::Empty { ref toggler } => toggler.as_ref().map(|toggler| toggler.span()),
+            AttrType::Empty { ref toggler } => toggler.as_ref().map(Toggler::span),
         }
     }
 }
