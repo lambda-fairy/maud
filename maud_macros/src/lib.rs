@@ -10,9 +10,6 @@
 // lifetimes outweighs the marginal gains from explicit borrowing
 #![allow(clippy::needless_pass_by_value)]
 
-extern crate literalext;
-#[macro_use] extern crate matches;
-extern crate maud_htmlescape;
 extern crate proc_macro;
 
 mod ast;

@@ -13,9 +13,6 @@
 #[cfg(feature = "iron")] extern crate iron;
 #[cfg(feature = "rocket")] extern crate rocket;
 
-extern crate maud_htmlescape;
-extern crate maud_macros;
-
 use std::fmt::{self, Write};
 
 pub use maud_macros::{html, html_debug};
@@ -159,7 +156,7 @@ mod iron_support {
     use iron::modifier::{Modifier, Set};
     use iron::modifiers::Header;
     use iron::response::{Response, WriteBody};
-    use PreEscaped;
+    use crate::PreEscaped;
 
     impl Modifier<Response> for PreEscaped<String> {
         fn modify(self, response: &mut Response) {
@@ -182,7 +179,7 @@ mod rocket_support {
     use rocket::request::Request;
     use rocket::response::{Responder, Response};
     use std::io::Cursor;
-    use PreEscaped;
+    use crate::PreEscaped;
 
     impl Responder<'static> for PreEscaped<String> {
         fn respond_to(self, _: &Request) -> Result<Response<'static>, Status> {
@@ -196,7 +193,7 @@ mod rocket_support {
 
 #[cfg(feature = "actix-web")]
 mod actix_support {
-    use PreEscaped;
+    use crate::PreEscaped;
     use actix_web::{Responder, HttpResponse, HttpRequest, Error};
 
     impl Responder for PreEscaped<String> {

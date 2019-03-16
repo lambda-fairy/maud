@@ -11,8 +11,8 @@ use std::mem;
 
 use literalext::LiteralExt;
 
-use ast;
-use ParseResult;
+use crate::ast;
+use crate::ParseResult;
 
 pub fn parse(input: TokenStream) -> ParseResult<Vec<ast::Markup>> {
     Parser::new(input).markups()

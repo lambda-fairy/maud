@@ -1,8 +1,6 @@
 #![feature(proc_macro_hygiene)]
 
-extern crate maud;
-
-use maud::html;
+use maud::{self, html};
 
 #[test]
 fn issue_13() {

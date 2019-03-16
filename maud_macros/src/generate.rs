@@ -1,3 +1,4 @@
+use matches::matches;
 use maud_htmlescape::Escaper;
 use proc_macro::{
     Delimiter,
@@ -10,7 +11,7 @@ use proc_macro::{
     TokenTree,
 };
 
-use ast::*;
+use crate::ast::*;
 
 pub fn generate(markups: Vec<Markup>, output_ident: TokenTree) -> TokenStream {
     let mut build = Builder::new(output_ident.clone());

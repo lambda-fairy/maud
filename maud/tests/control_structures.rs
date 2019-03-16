@@ -1,7 +1,5 @@
 #![feature(proc_macro_hygiene)]
 
-extern crate maud;
-
 use maud::html;
 
 #[test]
@@ -194,7 +192,7 @@ fn let_lexical_scope() {
 #[test]
 fn let_type_ascription() {
     let s = html! {
-        @let mut x: Box<Iterator<Item=u32>> = Box::new(vec![42].into_iter());
+        @let mut x: Box<dyn Iterator<Item=u32>> = Box::new(vec![42].into_iter());
         "I have " (x.next().unwrap()) " cupcakes!"
     }.into_string();
     assert_eq!(s, "I have 42 cupcakes!");

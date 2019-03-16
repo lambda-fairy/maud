@@ -1,4 +1,4 @@
-extern crate compiletest_rs;
+use compiletest_rs;
 
 use std::path::PathBuf;
 
