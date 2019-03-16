@@ -1,7 +1,7 @@
 html {
   box-sizing: border-box;
   font: 16px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
-  border-top: 1rem solid #808;
+  border-top: 0.75rem solid #808;
 }
 
 *, *::before, *::after {
@@ -21,9 +21,9 @@ header {
 }
 
 header h1 {
-  margin: 0;
-  font-size: 16rem;
-  line-height: 0.5;
+  margin: 0 0 0 -0.25rem;
+  font-size: 5rem;
+  line-height: 0.75;
 }
 
 header h1 a {
@@ -31,12 +31,7 @@ header h1 a {
 }
 
 header p {
-  position: relative;
-  left: 25rem;
-  top: -2rem;
-  margin: 0 0 0 1rem;
-  background: white;
-  padding: 0.5rem 0.75rem;
+  margin: 0 0.75em;
 }
 
 nav ul {
