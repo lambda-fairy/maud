@@ -1,3 +1,7 @@
+<!-- Comment that prevents the title from getting picked up -->
+
+# A macro for writing HTML
+
 ```rust
 html! {
     h1 { "Hello, world!" }

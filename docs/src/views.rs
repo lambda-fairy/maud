@@ -63,7 +63,6 @@ crate fn main<'a>(
                     "maud"
                 }
             }
-            p { "a macro for writing html" }
         }
 
         nav {
