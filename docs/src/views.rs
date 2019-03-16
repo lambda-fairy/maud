@@ -56,6 +56,8 @@ crate fn main<'a>(
             "Maud, a macro for writing HTML"
         }
         link rel="stylesheet" href="styles.css";
+        meta name="theme-color" content="#808";
+        meta name="viewport" content="width=device-width";
 
         header {
             h1 {
