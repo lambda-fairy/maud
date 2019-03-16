@@ -21,12 +21,7 @@ maud = { version = "*", features = ["actix-web"] }
 Actix request handlers can use a `Markup` that implements the `actix_web::Responder` trait.
 
 ```rust
-#![feature(proc_macro_non_items)]
-#![feature(use_extern_macros)]
-
-extern crate actix;
-extern crate actix_web;
-extern crate maud;
+#![feature(proc_macro_hygiene)]
 
 use maud::{html, Markup};
 use actix_web::{App, server, Path, http::Method};
@@ -67,11 +62,7 @@ maud = { version = "*", features = ["iron"] }
 With this feature enabled, you can then build a `Response` from a `Markup` object directly. Here's an example application using Iron and Maud:
 
 ```rust
-#![feature(proc_macro_non_items)]
-#![feature(use_extern_macros)]
-
-extern crate iron;
-extern crate maud;
+#![feature(proc_macro_hygiene)]
 
 use iron::prelude::*;
 use iron::status;
@@ -106,15 +97,11 @@ maud = { version = "*", features = ["rocket"] }
 This adds a `Responder` implementation for the `Markup` type, so you can return the result directly:
 
 ```rust
-#![feature(plugin)]
-#![plugin(rocket_codegen)]
-#![feature(proc_macro_non_items)]
-#![feature(use_extern_macros)]
-
-extern crate maud;
-extern crate rocket;
+#![feature(decl_macro)]
+#![feature(proc_macro_hygiene)]
 
 use maud::{html, Markup};
+use rocket::{get, routes};
 use std::borrow::Cow;
 
 #[get("/<name>")]
@@ -135,14 +122,10 @@ fn main() {
 Unlike with the other frameworks, Rouille doesn't need any extra features at all! Calling `Response::html` on the rendered `Markup` will Just Work®.
 
 ```rust
-#![feature(proc_macro_non_items)]
-#![feature(use_extern_macros)]
-
-extern crate maud;
-#[macro_use] extern crate rouille;
+#![feature(proc_macro_hygiene)]
 
 use maud::html;
-use rouille::Response;
+use rouille::{Response, router};
 
 fn main() {
     rouille::start_server("localhost:8000", move |request| {
