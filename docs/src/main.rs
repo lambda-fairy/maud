@@ -34,6 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let arena = Arena::new();
     let options = ComrakOptions {
         ext_header_ids: Some("".to_string()),
+        unsafe_: true,
         ..ComrakOptions::default()
     };
 
