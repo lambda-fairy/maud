@@ -2,6 +2,7 @@
 name = "benchmarks"
 version = "0.1.2"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
+edition = "2018"
 
 [dependencies]
 maud = { path = "../maud" }
@@ -10,7 +11,6 @@ horrorshow = "*"
 liquid = "*"
 rustc-serialize = "*"
 serde = "*"
-serde_derive = "*"
 serde_json = "*"
 tera = "*"
 askama = "*"

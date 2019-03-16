@@ -1,8 +1,6 @@
 #![feature(test)]
 #![feature(proc_macro_hygiene)]
 
-extern crate maud;
-
 use maud::html;
 
 extern crate test;

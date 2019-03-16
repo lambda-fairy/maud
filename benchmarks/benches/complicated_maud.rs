@@ -1,7 +1,6 @@
 #![feature(test)]
 #![feature(proc_macro_hygiene)]
 
-extern crate maud;
 extern crate test;
 
 use maud::{Markup, html};
@@ -84,7 +83,7 @@ fn render_complicated_template(b: &mut test::Bencher) {
         Entry { name: "Shandong", score: 12 },
     ]);
     b.iter(|| {
-        use btn::{Button, RequestMethod};
+        use crate::btn::{Button, RequestMethod};
         layout(format!("Homepage of {}", year), html! {
             h1 { "Hello there!" }
 

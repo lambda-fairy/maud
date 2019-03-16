@@ -1,10 +1,8 @@
 #![feature(test)]
 
-#[macro_use]
-extern crate serde_derive;
-extern crate tera;
 extern crate test;
 
+use serde::Serialize;
 use tera::{Context, Tera};
 
 #[derive(Serialize, Debug)]
@@ -36,13 +34,13 @@ fn render_template(b: &mut test::Bencher) {
 
     let context = test::black_box({
         let mut context = Context::new();
-        context.add("teams", &[
+        context.insert("teams", &[
             Entry { name: "Jiangsu", score: 43 },
             Entry { name: "Beijing", score: 27 },
             Entry { name: "Guangzhou", score: 22 },
             Entry { name: "Shandong", score: 12 },
         ]);
-        context.add("year", &"2015");
+        context.insert("year", &"2015");
         context
     });
 

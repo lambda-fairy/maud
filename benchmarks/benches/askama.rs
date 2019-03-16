@@ -1,6 +1,5 @@
 #![feature(test)]
 
-extern crate askama;
 extern crate test;
 
 use askama::Template;

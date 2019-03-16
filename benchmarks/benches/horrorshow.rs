@@ -1,5 +1,6 @@
 #![feature(test)]
 
+// TODO https://github.com/Stebalien/horrorshow-rs/issues/26
 #[macro_use]
 extern crate horrorshow;
 extern crate test;

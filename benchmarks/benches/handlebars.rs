@@ -2,9 +2,7 @@
 
 #![feature(test)]
 
-extern crate handlebars;
 extern crate test;
-extern crate serde_json;
 
 use serde_json::value::{Map, Value as Json};
 use handlebars::{to_json, Handlebars};
