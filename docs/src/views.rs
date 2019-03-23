@@ -1,7 +1,6 @@
 use comrak::{self, ComrakOptions};
 use comrak::nodes::AstNode;
 use crate::Page;
-use indexmap::IndexMap;
 use maud::{DOCTYPE, Markup, Render, html};
 use std::io;
 use std::str;
@@ -41,10 +40,10 @@ impl<'a> Render for ComrakText<'a> {
 
 crate fn main<'a>(
     options: &'a ComrakOptions,
-    path: &str,
-    pages: &IndexMap<&str, Page<'a>>,
+    _path: &str,  // TODO add nav indicator
+    page: Page<'a>,
+    nav: &[(&str, Option<&str>)],
 ) -> Markup {
-    let page = &pages[path];
     html! {
         (DOCTYPE)
         meta charset="utf-8";
@@ -69,11 +68,11 @@ crate fn main<'a>(
 
         nav {
             ul {
-                @for (other_path, other_page) in pages {
-                    @if let Some(title) = other_page.title {
+                @for (other_path, other_title) in nav {
+                    @if let Some(title) = other_title {
                         li {
                             a href={ (other_path) ".html" } {
-                                (Comrak(title, options))
+                                (title)
                             }
                         }
                     }

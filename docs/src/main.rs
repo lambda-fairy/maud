@@ -3,8 +3,8 @@
 
 use comrak::{self, Arena, ComrakOptions};
 use comrak::nodes::{AstNode, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink, NodeValue};
-use indexmap::IndexMap;
 use std::error::Error;
+use std::env;
 use std::fs;
 use std::io;
 use std::mem;
@@ -16,20 +16,30 @@ use syntect::html::highlighted_html_for_string;
 
 mod views;
 
-const BOOK_FILES: &[&str] = &[
-    "index",
-    "getting-started",
-    "basic-syntax",
-    "dynamic-content",
-    "partials",
-    "control-structures",
-    "traits",
-    "web-frameworks",
-    "faq",
-];
-
 fn main() -> Result<(), Box<dyn Error>> {
-    fs::create_dir_all("site")?;
+    let args = env::args().collect::<Vec<_>>();
+    if args.len() == 4 && &args[1] == "build-page" {
+        build_page(&args[2], &args[3])
+    } else {
+        Err("invalid arguments".into())
+    }
+}
+
+fn build_page(input_path: &str, output_path: &str) -> Result<(), Box<dyn Error>> {
+    // TODO make this list dynamically generated
+    const NAV: &[(&str, Option<&str>)] = &[
+        ("index", None),
+        ("getting-started", Some("Getting started")),
+        ("basic-syntax", Some("Basic syntax")),
+        ("dynamic-content", Some("Dynamic content")),
+        ("partials", Some("Partials")),
+        ("control-structures", Some("Control structures")),
+        ("traits", Some("Traits")),
+        ("web-frameworks", Some("Web frameworks")),
+        ("faq", Some("FAQ")),
+    ];
+
+    fs::create_dir_all(Path::new(output_path).parent().unwrap())?;
 
     let arena = Arena::new();
     let options = ComrakOptions {
@@ -38,26 +48,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         ..ComrakOptions::default()
     };
 
-    let mut pages = IndexMap::<&str, _>::new();
+    let page = load_page(&arena, &options, input_path)?;
+    let markup = views::main(&options, input_path, page, &NAV);
 
-    for path in BOOK_FILES {
-        let mut input_path = Path::new("content").join(path);
-        input_path.set_extension("md");
-
-        let page = load_page(&arena, &options, &input_path)?;
-
-        pages.insert(path, page);
-    }
-
-    for path in pages.keys() {
-        let mut output_path = Path::new("site").join(path);
-        output_path.set_extension("html");
-        println!("{}", output_path.display());
-        let markup = views::main(&options, path, &pages);
-        fs::write(output_path, markup.into_string())?;
-    }
-
-    fs::copy("styles.css", "site/styles.css")?;
+    fs::write(output_path, markup.into_string())?;
 
     Ok(())
 }
@@ -70,7 +64,7 @@ struct Page<'a> {
 fn load_page<'a>(
     arena: &'a Arena<AstNode<'a>>,
     options: &ComrakOptions,
-    path: &Path,
+    path: impl AsRef<Path>,
 ) -> io::Result<Page<'a>> {
     let buffer = fs::read_to_string(path)?;
     let content = comrak::parse_document(arena, &buffer, options);

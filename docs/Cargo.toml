@@ -12,6 +12,5 @@ edition = "2018"
 
 [dependencies]
 comrak = "*"
-indexmap = "*"
 maud = { path = "../maud" }
 syntect = "*"
