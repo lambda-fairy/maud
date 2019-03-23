@@ -40,7 +40,7 @@ impl<'a> Render for ComrakText<'a> {
 
 crate fn main<'a>(
     options: &'a ComrakOptions,
-    _path: &str,  // TODO add nav indicator
+    slug: &str,
     page: Page<'a>,
     nav: &[(&str, Option<&str>)],
 ) -> Markup {
@@ -68,11 +68,17 @@ crate fn main<'a>(
 
         nav {
             ul {
-                @for (other_path, other_title) in nav {
+                @for &(other_slug, other_title) in nav {
                     @if let Some(title) = other_title {
                         li {
-                            a href={ (other_path) ".html" } {
-                                (title)
+                            @if other_slug == slug {
+                                b {
+                                    (title)
+                                }
+                            } @else {
+                                a href={ (other_slug) ".html" } {
+                                    (title)
+                                }
                             }
                         }
                     }

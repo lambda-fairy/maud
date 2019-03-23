@@ -18,14 +18,14 @@ mod views;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = env::args().collect::<Vec<_>>();
-    if args.len() == 4 && &args[1] == "build-page" {
-        build_page(&args[2], &args[3])
+    if args.len() == 5 && &args[1] == "build-page" {
+        build_page(&args[2], &args[3], &args[4])
     } else {
         Err("invalid arguments".into())
     }
 }
 
-fn build_page(input_path: &str, output_path: &str) -> Result<(), Box<dyn Error>> {
+fn build_page(input_path: &str, output_path: &str, slug: &str) -> Result<(), Box<dyn Error>> {
     // TODO make this list dynamically generated
     const NAV: &[(&str, Option<&str>)] = &[
         ("index", None),
@@ -49,7 +49,7 @@ fn build_page(input_path: &str, output_path: &str) -> Result<(), Box<dyn Error>>
     };
 
     let page = load_page(&arena, &options, input_path)?;
-    let markup = views::main(&options, input_path, page, &NAV);
+    let markup = views::main(&options, slug, page, &NAV);
 
     fs::write(output_path, markup.into_string())?;
 

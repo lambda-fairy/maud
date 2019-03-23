@@ -8,7 +8,7 @@ target/debug/docs: $(wildcard src/*)
 	cargo build
 
 site/%.html: content/%.md target/debug/docs
-	target/debug/docs build-page $< $@
+	target/debug/docs build-page $< $@ $(*F)
 
 site/styles.css: styles.css
 	cp $^ $@
