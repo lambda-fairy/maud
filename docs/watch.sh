@@ -10,5 +10,5 @@ nproc=$(nproc || echo 4)
 
 while true
 do
-    find . -name '*.rs' -o -name '*.md' -o -name '*.css' | entr -d make -j$nproc
+    find . -name '*.rs' -o -name '*.md' -o -name '*.css' -not -path './site/*' | entr -d make -j$nproc
 done
