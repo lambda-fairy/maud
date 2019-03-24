@@ -1,32 +1,28 @@
 use comrak::{self, ComrakOptions};
 use comrak::nodes::AstNode;
 use crate::Page;
-use maud::{DOCTYPE, Markup, Render, html};
-use std::io;
+use crate::string_writer::StringWriter;
+use maud::{DOCTYPE, Markup, PreEscaped, Render, html};
 use std::str;
-
-struct StringWriter<'a>(&'a mut String);
-
-impl<'a> io::Write for StringWriter<'a> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        str::from_utf8(buf)
-            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))
-            .map(|s| {
-                self.0.push_str(s);
-                buf.len()
-            })
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
 
 struct Comrak<'a>(&'a AstNode<'a>, &'a ComrakOptions);
 
 impl<'a> Render for Comrak<'a> {
     fn render_to(&self, buffer: &mut String) {
         comrak::format_html(self.0, self.1, &mut StringWriter(buffer)).unwrap();
+    }
+}
+
+/// Hack! Comrak wraps a single line of input in `<p>` tags, which is great in
+/// general but not suitable for links in the navigation bar.
+struct ComrakRemovePTags<'a>(&'a AstNode<'a>, &'a ComrakOptions);
+
+impl<'a> Render for ComrakRemovePTags<'a> {
+    fn render(&self) -> Markup {
+        let mut buffer = String::new();
+        comrak::format_html(self.0, self.1, &mut StringWriter(&mut buffer)).unwrap();
+        assert!(buffer.starts_with("<p>") && buffer.ends_with("</p>\n"));
+        PreEscaped(buffer.trim_start_matches("<p>").trim_end_matches("</p>\n").to_string())
     }
 }
 
@@ -42,7 +38,7 @@ crate fn main<'a>(
     options: &'a ComrakOptions,
     slug: &str,
     page: Page<'a>,
-    nav: &[(&str, Option<&str>)],
+    nav: &[(&str, &'a AstNode<'a>)],
 ) -> Markup {
     html! {
         (DOCTYPE)
@@ -69,16 +65,14 @@ crate fn main<'a>(
         nav {
             ul {
                 @for &(other_slug, other_title) in nav {
-                    @if let Some(title) = other_title {
-                        li {
-                            @if other_slug == slug {
-                                b {
-                                    (title)
-                                }
-                            } @else {
-                                a href={ (other_slug) ".html" } {
-                                    (title)
-                                }
+                    li {
+                        @if other_slug == slug {
+                            b {
+                                (ComrakRemovePTags(other_title, options))
+                            }
+                        } @else {
+                            a href={ (other_slug) ".html" } {
+                                (ComrakRemovePTags(other_title, options))
                             }
                         }
                     }

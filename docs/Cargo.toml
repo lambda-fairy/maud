@@ -13,4 +13,5 @@ edition = "2018"
 [dependencies]
 comrak = "*"
 maud = { path = "../maud" }
+serde_json = "*"
 syntect = "*"
