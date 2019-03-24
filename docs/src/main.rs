@@ -177,7 +177,7 @@ fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
     let ss = SyntaxSet::load_defaults_newlines();
     let ts = ThemeSet::load_defaults();
     let mut theme = ts.themes["InspiredGitHub"].clone();
-    theme.settings.background = Some(Color { r: 0xee, g: 0xee, b: 0xee, a: 0xff });
+    theme.settings.background = Some(Color { r: 0xff, g: 0xee, b: 0xff, a: 0xff });
     for node in root.descendants() {
         let mut data = node.data.borrow_mut();
         if let NodeValue::CodeBlock(NodeCodeBlock { info, literal, ..  }) = &mut data.value {
