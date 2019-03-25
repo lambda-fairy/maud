@@ -4,7 +4,7 @@ By default, a `(splice)` is rendered using the [`std::fmt::Display`][Display] tr
 
 To change this behavior, implement the [`Render`][Render] trait for your type. Then, when a value of this type is used in a template, Maud will call your custom code instead.
 
-Below are some examples of using `Render`. Feel free to use these snippets in your own project! For more examples, take a look at the [`maud_extras`][maud_extras] crate.
+Below are some examples of using `Render`. Feel free to use these snippets in your own project!
 
 ## Example: a shorthand for including CSS stylesheets
 
@@ -75,7 +75,6 @@ impl<T: AsRef<str>> Render for Markdown<T> {
 }
 ```
 
-[maud_extras]: https://github.com/lfairy/maud/tree/master/maud_extras
 [Debug]: https://doc.rust-lang.org/std/fmt/trait.Debug.html
 [Display]: https://doc.rust-lang.org/std/fmt/trait.Display.html
 [Render]: https://docs.rs/maud/*/maud/trait.Render.html

@@ -18,7 +18,7 @@ script:
   - |
     if $RUN_CLIPPY; then
       CLIPPY_STATUS=0
-      for package in maud_htmlescape maud_macros maud maud_extras; do
+      for package in maud_htmlescape maud_macros maud; do
         (cd $package && cargo clippy -- -D warnings) || CLIPPY_STATUS=$?
       done
       (exit $CLIPPY_STATUS)
