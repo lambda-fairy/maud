@@ -12,7 +12,7 @@ Note that Maud depends on the unstable [procedural macro API][rustissue], and so
 For more info on Maud, see the [official book][book].
 
 [book]: https://maud.lambda.xyz/
-[booksrc]: https://github.com/lfairy/maud-book
+[booksrc]: https://github.com/lfairy/maud/tree/master/docs
 [apiref]: https://docs.rs/maud/
 [changelog]: https://github.com/lfairy/maud/blob/master/CHANGELOG.md
 [rustissue]: https://github.com/rust-lang/rust/issues/38356
