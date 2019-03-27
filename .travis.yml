@@ -21,3 +21,14 @@ jobs:
     - name: "Benchmarks"
       script:
         - (cd benchmarks && cargo test --benches)
+    - name: "Documentation"
+      script:
+        - (cd docs && make -j$(nproc))
+      deploy:
+        provider: pages
+        skip_cleanup: true
+        github_token: $GITHUB_TOKEN
+        fqdn: maud.lambda.xyz
+        local_dir: docs/site
+        on:
+          branch: master
