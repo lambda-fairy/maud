@@ -33,6 +33,7 @@ pre {
   padding: 1rem;
   font: 15px Consolas, monospace;
   background: #fef;
+  overflow: auto;
 }
 
 a:link {
