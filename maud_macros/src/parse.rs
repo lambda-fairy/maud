@@ -1,5 +1,6 @@
 use proc_macro::{
     Delimiter,
+    Ident,
     Literal,
     Spacing,
     Span,
@@ -163,6 +164,11 @@ impl Parser {
                 // already seen an `Ident`
                 let name = self.try_namespaced_name().expect("identifier");
                 self.element(name)?
+            },
+            // Div element shorthand
+            TokenTree::Punct(ref punct) if punct.as_char() == '.' || punct.as_char() == '#' => {
+                let name = TokenTree::Ident(Ident::new("div", punct.span()));
+                self.element(name.into())?
             },
             // Splice
             TokenTree::Group(ref group) if group.delimiter() == Delimiter::Parenthesis => {

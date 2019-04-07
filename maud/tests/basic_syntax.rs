@@ -201,3 +201,27 @@ fn classes_attrs_ids_mixed_up() {
     let s = html!(p { "Hi, " span.name.here lang="en" #thing { "Lyra" } "!" }).into_string();
     assert_eq!(s, r#"<p>Hi, <span class="name here" id="thing" lang="en">Lyra</span>!</p>"#);
 }
+
+#[test]
+fn div_shorthand_class() {
+    let s = html!(.awesome-class {}).into_string();
+    assert_eq!(s, r#"<div class="awesome-class"></div>"#);
+}
+
+#[test]
+fn div_shorthand_id() {
+    let s = html!(#unique-id {}).into_string();
+    assert_eq!(s, r#"<div id="unique-id"></div>"#);
+}
+
+#[test]
+fn div_shorthand_class_with_attrs() {
+    let s = html!(.awesome-class contenteditable? dir="rtl" #unique-id {}).into_string();
+    assert_eq!(s, r#"<div class="awesome-class" id="unique-id" contenteditable dir="rtl"></div>"#);
+}
+
+#[test]
+fn div_shorthand_id_with_attrs() {
+    let s = html!(#unique-id contenteditable? dir="rtl" .awesome-class {}).into_string();
+    assert_eq!(s, r#"<div class="awesome-class" id="unique-id" contenteditable dir="rtl"></div>"#);
+}
