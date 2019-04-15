@@ -129,11 +129,11 @@ html! {
 
 ## Classes and IDs `.foo` `#bar`
 
-Add classes and IDs to an element using `.foo` and `#bar` syntax. You can chain multiple classes and IDs together, and mix and match them with other attributes:
+Add classes and IDs to an element using `.foo` and `#bar` syntax. The tag will default to `div` if an element begins with a class or ID. You can chain multiple classes and IDs together, and mix and match them with other attributes:
 
 ```rust
 html! {
-    div.container#main {
+    .container#main {
         input.big.scary.bright-red type="button" value="Launch Party Cannon";
     }
 }
