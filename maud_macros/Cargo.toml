@@ -11,7 +11,7 @@ description = "Compile-time HTML templates."
 edition = "2018"
 
 [dependencies]
-literalext = { version = "0.1", default-features = false, features = ["proc-macro"] }
+syn = "0.15.34"
 matches = "0.1.6"
 maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
 

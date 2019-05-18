@@ -10,7 +10,7 @@ use proc_macro::{
 use std::collections::HashMap;
 use std::mem;
 
-use literalext::LiteralExt;
+use syn::{LitStr, parse_str};
 
 use crate::ast;
 use crate::ParseResult;
@@ -191,10 +191,12 @@ impl Parser {
 
     /// Parses and renders a literal string.
     fn literal(&mut self, lit: &Literal) -> ParseResult<ast::Markup> {
-        let content = lit.parse_string().unwrap_or_else(|| {
-            lit.span().error("expected string").emit();
-            String::new()  // Insert a dummy value
-        });
+        let content = parse_str::<LitStr>(&lit.to_string())
+            .map(|l| l.value())
+            .unwrap_or_else(|_| {
+                lit.span().error("expected string").emit();
+                String::new()  // Insert a dummy value
+            });
         Ok(ast::Markup::Literal {
             content,
             span: lit.span(),
