@@ -162,12 +162,12 @@ mod iron_support {
         fn modify(self, response: &mut Response) {
             response
                 .set_mut(Header(ContentType::html()))
-                .set_mut(Box::new(self) as Box<WriteBody>);
+                .set_mut(Box::new(self) as Box<dyn WriteBody>);
         }
     }
 
     impl WriteBody for PreEscaped<String> {
-        fn write_body(&mut self, body: &mut io::Write) -> io::Result<()> {
+        fn write_body(&mut self, body: &mut dyn io::Write) -> io::Result<()> {
             self.0.write_body(body)
         }
     }
