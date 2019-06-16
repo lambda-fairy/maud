@@ -197,9 +197,9 @@ mod actix_support {
     use actix_web::{Responder, HttpResponse, HttpRequest, Error};
 
     impl Responder for PreEscaped<String> {
-        type Item = HttpResponse;
         type Error = Error;
-        fn respond_to<S>(self, _req: &HttpRequest<S>) -> Result<Self::Item, Self::Error> {
+        type Future = Result<HttpResponse, Self::Error>;
+        fn respond_to(self, _req: &HttpRequest) -> Self::Future {
             Ok(HttpResponse::Ok()
                .content_type("text/html; charset=utf-8")
                .body(self.0))
