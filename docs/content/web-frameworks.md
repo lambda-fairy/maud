@@ -24,27 +24,21 @@ Actix request handlers can use a `Markup` that implements the `actix_web::Respon
 #![feature(proc_macro_hygiene)]
 
 use maud::{html, Markup};
-use actix_web::{App, server, Path, http::Method};
+use actix_web::{web, App, HttpServer};
 
-fn index(params: Path<(String, u32)>) -> Markup {
+fn index(params: web::Path<(String, u32)>) -> Markup {
     html! {
-        h1 { "Hello " (params.0) " with id " (params.1) "!"}
+        h1 { "Hello " (params.0) " with id " (params.1) "!" }
     }
 }
 
-fn main() {
-    let sys = actix::System::new("maud-example");
-
-    server::new(move || {
+fn main() -> std::io::Result<()> {
+    HttpServer::new(|| {
         App::new()
-            .resource("/user/{name}/{id}", |r| {
-                r.method(Method::GET).with(index)
-            })
-    }).bind("127.0.0.1:8080")
-        .unwrap()
-        .start();
-
-    let _ = sys.run();
+            .route("/user/{name}/{id}", web::get().to(index))
+    })
+    .bind("127.0.0.1:8080")?
+    .run()
 }
 ```
 
