@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.21.0] - 2019-07-01
+
+- [Added] Default tag name to `div` when a class or ID is provided
+  [#173](https://github.com/lfairy/maud/pull/173)
+- [Changed] Maud has a new website! Check it out at <https://maud.lambda.xyz/>.
+- [Changed] Update Actix to 1.0. Pre-release versions of Actix are no longer supported.
+  [#176](https://github.com/lfairy/maud/pull/174)
+- [Fixed] Use absolute imports in generated code
+  [#170](https://github.com/lfairy/maud/issues/170)
+- [Fixed] Use `syn` instead of `literalext`
+  [#174](https://github.com/lfairy/maud/pull/174)
+
 ## [0.20.0] - 2019-01-17
 
 - [Added] Rocket 0.4 support
@@ -213,7 +225,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lfairy/maud/compare/v0.20.0...HEAD
+[Unreleased]: https://github.com/lfairy/maud/compare/v0.21.0...HEAD
+[0.21.0]: https://github.com/lfairy/maud/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/lfairy/maud/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/lfairy/maud/compare/v0.18.1...v0.19.0
 [0.18.1]: https://github.com/lfairy/maud/compare/v0.18.0...v0.18.1
