@@ -5,7 +5,7 @@ set -e
 nproc=$(nproc || echo 4)
 
 make clean
-make
+make -j$nproc
 
 cd site
 git init
