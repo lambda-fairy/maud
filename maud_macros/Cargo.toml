@@ -6,7 +6,7 @@ authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 license = "MIT/Apache-2.0"
 documentation = "https://docs.rs/maud_macros/"
 homepage = "https://maud.lambda.xyz/"
-repository = "https://github.com/lfairy/maud"
+repository = "https://github.com/lambda-fairy/maud"
 description = "Compile-time HTML templates."
 edition = "2018"
 
@@ -20,4 +20,4 @@ name = "maud_macros"
 proc-macro = true
 
 [badges]
-travis-ci = { repository = "lfairy/maud" }
+travis-ci = { repository = "lambda-fairy/maud" }

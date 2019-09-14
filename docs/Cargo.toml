@@ -5,7 +5,7 @@ version = "0.0.0"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 
 license = "CC-BY-SA-4.0"
-repository = "https://github.com/lfairy/maud"
+repository = "https://github.com/lambda-fairy/maud"
 description = "Documentation for Maud."
 
 edition = "2018"

@@ -12,6 +12,6 @@ Great to see that you want to help out! Here are some tips for getting started:
 
 Have fun! ☺️
 
-[easy issues]: https://github.com/lfairy/maud/issues?q=is%3Aissue+is%3Aopen+label%3A%22difficulty%3A+easy%22
-[existing test code]: https://github.com/lfairy/maud/tree/master/maud/tests
+[easy issues]: https://github.com/lambda-fairy/maud/issues?q=is%3Aissue+is%3Aopen+label%3A%22difficulty%3A+easy%22
+[existing test code]: https://github.com/lambda-fairy/maud/tree/master/maud/tests
 [proc_macro]: https://doc.rust-lang.org/nightly/proc_macro/

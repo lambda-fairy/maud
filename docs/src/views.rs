@@ -85,7 +85,7 @@ crate fn main<'a>(
                     }
                 }
                 li {
-                    a href="https://github.com/lfairy/maud" {
+                    a href="https://github.com/lambda-fairy/maud" {
                         "GitHub"
                     }
                 }

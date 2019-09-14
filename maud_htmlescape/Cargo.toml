@@ -6,7 +6,7 @@ authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 license = "MIT/Apache-2.0"
 documentation = "https://docs.rs/maud_htmlescape/"
 homepage = "https://maud.lambda.xyz/"
-repository = "https://github.com/lfairy/maud"
+repository = "https://github.com/lambda-fairy/maud"
 description = "Internal support code used by Maud."
 edition = "2018"
 

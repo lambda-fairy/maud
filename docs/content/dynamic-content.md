@@ -45,7 +45,7 @@ To concatenate multiple values within an attribute, wrap the whole thing in brac
 ```rust
 const GITHUB: &'static str = "https://github.com";
 html! {
-    a href={ (GITHUB) "/lfairy/maud" } {
+    a href={ (GITHUB) "/lambda-fairy/maud" } {
         "Fork me on GitHub"
     }
 }

@@ -510,7 +510,7 @@ impl Parser {
                         let markup_span = markup.span();
                         markup_span
                             .error("element body must be wrapped in braces")
-                            .help("see https://github.com/lfairy/maud/pull/137 for details")
+                            .help("see https://github.com/lambda-fairy/maud/pull/137 for details")
                             .emit();
                         ast::ElementBody::Block {
                             block: ast::Block {

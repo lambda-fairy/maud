@@ -6,7 +6,7 @@ authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 license = "MIT/Apache-2.0"
 documentation = "https://docs.rs/maud/"
 homepage = "https://maud.lambda.xyz/"
-repository = "https://github.com/lfairy/maud"
+repository = "https://github.com/lambda-fairy/maud"
 description = "Compile-time HTML templates."
 categories = ["template-engine"]
 edition = "2018"
@@ -22,7 +22,7 @@ actix-web = { version = "1.0.0", optional = true, default-features = false }
 compiletest_rs = { version = "0.3.19", features = ["stable"] }
 
 [badges]
-travis-ci = { repository = "lfairy/maud" }
+travis-ci = { repository = "lambda-fairy/maud" }
 
 [package.metadata.docs.rs]
 all-features = true

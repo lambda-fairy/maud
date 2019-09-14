@@ -1,5 +1,5 @@
 # <img align="right" src="maud.png" alt="HTML5 rocks." title="HTML5 rocks."> maud 
-[![Build Status](https://img.shields.io/travis/lfairy/maud.svg)](http://travis-ci.org/lfairy/maud) 
+[![Build Status](https://img.shields.io/travis/lambda-fairy/maud.svg)](http://travis-ci.org/lambda-fairy/maud) 
 [![Cargo](https://img.shields.io/crates/v/maud.svg)](https://crates.io/crates/maud) 
 [![API reference](https://docs.rs/maud/badge.svg)](https://docs.rs/maud/)
 
@@ -12,9 +12,9 @@ Note that Maud depends on the unstable [procedural macro API][rustissue], and so
 For more info on Maud, see the [official book][book].
 
 [book]: https://maud.lambda.xyz/
-[booksrc]: https://github.com/lfairy/maud/tree/master/docs
+[booksrc]: https://github.com/lambda-fairy/maud/tree/master/docs
 [apiref]: https://docs.rs/maud/
-[changelog]: https://github.com/lfairy/maud/blob/master/CHANGELOG.md
+[changelog]: https://github.com/lambda-fairy/maud/blob/master/CHANGELOG.md
 [rustissue]: https://github.com/rust-lang/rust/issues/38356
 
 ## Stability
