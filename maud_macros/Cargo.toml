@@ -11,8 +11,8 @@ description = "Compile-time HTML templates."
 edition = "2018"
 
 [dependencies]
-syn = "0.15.34"
-matches = "0.1.6"
+syn = "1.0.8"
+matches = "0.1.8"
 maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
 
 [lib]
