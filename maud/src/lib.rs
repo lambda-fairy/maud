@@ -206,3 +206,20 @@ mod actix_support {
         }
     }
 }
+
+#[cfg(feature = "actix-web-2")]
+mod actix2_support {
+    use crate::PreEscaped;
+    use actix_web_2_dep::{Responder, HttpResponse, HttpRequest, Error};
+    use futures::future::{ok, Ready};
+
+    impl Responder for PreEscaped<String> {
+        type Error = Error;
+        type Future = Ready<Result<HttpResponse, Self::Error>>;
+        fn respond_to(self, _req: &HttpRequest) -> Self::Future {
+            ok(HttpResponse::Ok()
+               .content_type("text/html; charset=utf-8")
+               .body(self.0))
+        }
+    }
+}
