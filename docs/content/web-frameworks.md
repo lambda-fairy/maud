@@ -9,7 +9,7 @@ Maud includes support for these web frameworks: [Actix], [Iron], [Rocket], and [
 
 # Actix
 
-Actix support is available with the "actix-web" feature:
+Actix support is available with the "actix-web" or the "actix-web-2" feature. The "actix-web" feature enables usage of 1.0.0 <= actix-web < 2.0.0 wheras "actix-web-2" enables the usage of version 2.:
 
 ```toml
 # ...
