@@ -9,7 +9,7 @@
 
 #![doc(html_root_url = "https://docs.rs/maud/0.21.0")]
 
-#[cfg(feature = "actix-web")] extern crate actix_web;
+#[cfg(feature = "actix-web")] extern crate actix_web_dep;
 #[cfg(feature = "iron")] extern crate iron;
 #[cfg(feature = "rocket")] extern crate rocket;
 
@@ -194,23 +194,7 @@ mod rocket_support {
 #[cfg(feature = "actix-web")]
 mod actix_support {
     use crate::PreEscaped;
-    use actix_web::{Responder, HttpResponse, HttpRequest, Error};
-
-    impl Responder for PreEscaped<String> {
-        type Error = Error;
-        type Future = Result<HttpResponse, Self::Error>;
-        fn respond_to(self, _req: &HttpRequest) -> Self::Future {
-            Ok(HttpResponse::Ok()
-               .content_type("text/html; charset=utf-8")
-               .body(self.0))
-        }
-    }
-}
-
-#[cfg(feature = "actix-web-2")]
-mod actix2_support {
-    use crate::PreEscaped;
-    use actix_web_2_dep::{Responder, HttpResponse, HttpRequest, Error};
+    use actix_web_dep::{Responder, HttpResponse, HttpRequest, Error};
     use futures::future::{ok, Ready};
 
     impl Responder for PreEscaped<String> {
