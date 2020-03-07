@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+- [Changed] Update Actix to 2.0.0. Actix 1.0.0 is no longer supported.
+  [#182](https://github.com/lambda-fairy/maud/pull/182)
 
 ## [0.21.0] - 2019-07-01
 
