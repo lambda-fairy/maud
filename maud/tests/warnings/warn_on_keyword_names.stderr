@@ -4,3 +4,5 @@ warning: found keyword `if` - should this be a `@if`?
 9 |         if {}
   |         ^^
 
+warning: 1 warning emitted
+
