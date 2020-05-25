@@ -79,6 +79,22 @@ Before version 0.18, Maud allowed the curly braces to be omitted. This syntax wa
 
 [#137]: https://github.com/lambda-fairy/maud/pull/137
 
+## Non-standard HTML ("custom") elements
+
+Maud is not restricted to writing well-known HTML elements like `h1`, `p`, `span`, etc. If you are using a framework such as [React][react] or [Vue][vue] that requires the use of [custom elements][custom-elements], it's straightforward.
+
+```rust
+html! {
+  blog-post {
+    title { "My blog" }
+  }
+}
+```
+
+[react]: https://reactjs.org/
+[vue]: https://vuejs.org/
+[custom-elements]: https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements
+
 ## Non-empty attributes `id="yay"`
 
 ```rust
