@@ -1,4 +1,3 @@
-#![feature(proc_macro_def_site)]
 #![feature(proc_macro_diagnostic)]
 #![feature(proc_macro_hygiene)]
 #![feature(proc_macro_quote)]
@@ -34,7 +33,7 @@ pub fn html_debug(input: TokenStream) -> TokenStream {
 }
 
 fn expand(input: TokenStream) -> TokenStream {
-    let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::def_site()));
+    let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
     let size_hint = input.to_string().len();
