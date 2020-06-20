@@ -3,7 +3,7 @@
 extern crate test;
 
 use liquid::ParserBuilder;
-use liquid::value::{Object, Value};
+use liquid::model::{Object, Value};
 
 static SOURCE: &'static str = "<html>
   <head>
@@ -30,7 +30,7 @@ fn make_team(name: &'static str, score: u16) -> Value {
 
 #[bench]
 fn render_template(b: &mut test::Bencher) {
-    let template = test::black_box(ParserBuilder::with_liquid().build().unwrap().parse(SOURCE).unwrap());
+    let template = test::black_box(ParserBuilder::with_stdlib().build().unwrap().parse(SOURCE).unwrap());
     let mut globals = test::black_box({
         let mut globals = Object::new();
         globals.insert("year".into(), Value::scalar(2015));
