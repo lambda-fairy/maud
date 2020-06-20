@@ -65,7 +65,7 @@ dependencies = [
  "handlebars 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "horrorshow 0.8.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "liquid 0.20.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "maud 0.21.0",
+ "maud 0.22.0",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.113 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.55 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -366,10 +366,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "maud"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "maud_htmlescape 0.17.0",
- "maud_macros 0.21.0",
+ "maud_macros 0.22.0",
 ]
 
 [[package]]
@@ -378,7 +378,7 @@ version = "0.17.0"
 
 [[package]]
 name = "maud_macros"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "matches 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "maud_htmlescape 0.17.0",
