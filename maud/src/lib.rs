@@ -1,4 +1,4 @@
-#![feature(specialization)]
+#![feature(min_specialization)]
 
 //! A macro for writing HTML templates.
 //!
