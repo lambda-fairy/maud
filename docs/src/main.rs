@@ -1,4 +1,3 @@
-#![feature(crate_visibility_modifier)]
 #![feature(proc_macro_hygiene)]
 
 use comrak::{self, Arena, ComrakOptions};
@@ -15,6 +14,10 @@ use syntect::parsing::SyntaxSet;
 use syntect::highlighting::{Color, ThemeSet};
 use syntect::html::highlighted_html_for_string;
 
+use crate::page::Page;
+use crate::string_writer::StringWriter;
+
+mod page;
 mod string_writer;
 mod views;
 
@@ -86,11 +89,6 @@ fn build_page(
     Ok(())
 }
 
-struct Page<'a> {
-    title: Option<&'a AstNode<'a>>,
-    content: &'a AstNode<'a>,
-}
-
 fn load_page<'a>(
     arena: &'a Arena<AstNode<'a>>,
     options: &ComrakOptions,
@@ -118,7 +116,7 @@ fn load_page_title<'a>(
         comrak::format_commonmark(
             title,
             options,
-            &mut string_writer::StringWriter(&mut buffer),
+            &mut StringWriter(&mut buffer),
         ).unwrap();
         buffer
     });

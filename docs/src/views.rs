@@ -34,7 +34,7 @@ impl<'a> Render for ComrakText<'a> {
     }
 }
 
-crate fn main<'a>(
+pub fn main<'a>(
     options: &'a ComrakOptions,
     slug: &str,
     page: Page<'a>,

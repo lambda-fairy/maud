@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## [0.22.0] - 2020-06-20
 - [Changed] Update Actix to 2.0.0. Actix 1.0.0 is no longer supported.
   [#182](https://github.com/lambda-fairy/maud/pull/182)
 
@@ -227,7 +229,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.21.0...HEAD
+[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/lambda-fairy/maud/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/lambda-fairy/maud/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/lambda-fairy/maud/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/lambda-fairy/maud/compare/v0.18.1...v0.19.0
