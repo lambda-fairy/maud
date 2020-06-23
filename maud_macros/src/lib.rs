@@ -45,12 +45,10 @@ fn expand(input: TokenStream) -> TokenStream {
         Err(()) => Vec::new(),
     };
     let stmts = generate::generate(markups, output_ident.clone());
-    TokenStream::from(
-        quote!({
-            extern crate maud;
-            let mut #output_ident = ::std::string::String::with_capacity(#size_hint);
-            #stmts
-            maud::PreEscaped(#output_ident)
-        })
-    )
+    quote!({
+        extern crate maud;
+        let mut #output_ident = ::std::string::String::with_capacity(#size_hint);
+        #stmts
+        maud::PreEscaped(#output_ident)
+    })
 }
