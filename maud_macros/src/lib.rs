@@ -16,38 +16,42 @@ mod ast;
 mod generate;
 mod parse;
 
-use proc_macro::{Literal, Span, Ident, TokenStream, TokenTree};
-use proc_macro::quote;
+use proc_macro2::{Literal, Ident, TokenStream, TokenTree};
+// use proc_macro::quote;
+use quote::quote;
 
 type ParseResult<T> = Result<T, ()>;
 
 #[proc_macro]
-pub fn html(input: TokenStream) -> TokenStream {
-    expand(input)
+pub fn html(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    expand(input.into()).into()
 }
 
 #[proc_macro]
-pub fn html_debug(input: TokenStream) -> TokenStream {
-    let expr = expand(input);
+pub fn html_debug(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let expr = expand(input.into());
     println!("expansion:\n{}", expr);
-    expr
+    expr.into()
 }
 
 fn expand(input: TokenStream) -> TokenStream {
-    let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::def_site()));
+    // using proc_macro::Span here allows us to work around the limitation set by proc_macro2 on Span
+    let output_ident = TokenTree::Ident(Ident::new("__maud_output", proc_macro::Span::mixed_site().into()));
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
     let size_hint = input.to_string().len();
     let size_hint = TokenTree::Literal(Literal::u64_unsuffixed(size_hint as u64));
-    let markups = match parse::parse(input) {
+    let markups = match parse::parse(proc_macro::TokenStream::from(input)) {
         Ok(markups) => markups,
         Err(()) => Vec::new(),
     };
     let stmts = generate::generate(markups, output_ident.clone());
-    quote!({
-        extern crate maud;
-        let mut $output_ident = ::std::string::String::with_capacity($size_hint);
-        $stmts
-        maud::PreEscaped($output_ident)
-    })
+    TokenStream::from(
+        quote!({
+            extern crate maud;
+            let mut #output_ident = ::std::string::String::with_capacity(#size_hint);
+            #stmts
+            maud::PreEscaped(#output_ident)
+        })
+    )
 }
