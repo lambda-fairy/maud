@@ -82,18 +82,16 @@ impl Generator {
 
     fn splice(&self, expr: TokenStream) -> TokenStream {
         let output_ident = self.output_ident.clone();
-        TokenStream::from(
-            quote!({
-                // Create a local trait alias so that autoref works
-                trait Render: maud::Render {
-                    fn __maud_render_to(&self, output_ident: &mut ::std::string::String) {
-                        maud::Render::render_to(self, output_ident);
-                    }
+        quote!({
+            // Create a local trait alias so that autoref works
+            trait Render: maud::Render {
+                fn __maud_render_to(&self, output_ident: &mut ::std::string::String) {
+                    maud::Render::render_to(self, output_ident);
                 }
-                impl<T: maud::Render> Render for T {}
-                #expr.__maud_render_to(&mut #output_ident);
-            })
-        )
+            }
+            impl<T: maud::Render> Render for T {}
+            #expr.__maud_render_to(&mut #output_ident);
+        })
     }
 
     fn element(
@@ -141,7 +139,7 @@ impl Generator {
                         build.push_str(" ");
                         self.name(name.into(), &mut build);
                         let body = build.finish();
-                        TokenStream::from(quote!(#head { #body }))
+                        quote!(#head { #body })
                     })
                 },
             }
@@ -245,7 +243,7 @@ fn desugar_toggler(Toggler { cond, cond_span }: Toggler) -> TokenStream {
         wrapped_cond.set_span(cond_span.into());
         cond = TokenStream::from(wrapped_cond);
     }
-    TokenStream::from(quote!(if #cond))
+    quote!(if #cond)
 }
 
 ////////////////////////////////////////////////////////
@@ -286,7 +284,7 @@ impl Builder {
         let push_str_expr = {
             let output_ident = self.output_ident.clone();
             let string = TokenTree::Literal(Literal::string(&self.tail));
-            TokenStream::from(quote!(#output_ident.push_str(#string);))
+            quote!(#output_ident.push_str(#string);)
         };
         self.tail.clear();
         self.tokens.extend(push_str_expr);
