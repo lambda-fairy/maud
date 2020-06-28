@@ -33,7 +33,7 @@ pub fn html_debug(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 }
 
 fn expand(input: TokenStream) -> TokenStream {
-    // using proc_macro::Span here allows us to work around the limitation set by proc_macro2 on Span
+    // TODO: call `proc_macro2::Span::mixed_site()` directly when Rust 1.45 is stable
     let output_ident = TokenTree::Ident(Ident::new("__maud_output", proc_macro::Span::mixed_site().into()));
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
