@@ -51,7 +51,7 @@ impl Generator {
             Markup::Symbol { symbol } => self.name(symbol.into(), build),
             Markup::Splice { expr, .. } => build.push_tokens(self.splice(expr.into())),
             Markup::Element { name, attrs, body } => self.element(name.into(), attrs, body, build),
-            Markup::Let { tokens, .. } => build.push_tokens(TokenStream::from(tokens)),
+            Markup::Let { tokens, .. } => build.push_tokens(tokens.into()),
             Markup::Special { segments } => {
                 for segment in segments {
                     build.push_tokens(self.special(segment));
@@ -272,7 +272,7 @@ impl Builder {
         Escaper::new(&mut self.tail).write_str(string).unwrap();
     }
 
-    fn push_tokens<T: IntoIterator<Item=TokenTree>>(&mut self, tokens: T) {
+    fn push_tokens(&mut self, tokens: TokenStream) {
         self.cut();
         self.tokens.extend(tokens);
     }
