@@ -232,9 +232,9 @@ fn prepend_leading_space(name: Markup, leading_space: &mut bool) -> Vec<Markup> 
 }
 
 fn desugar_toggler(Toggler { cond, cond_span }: Toggler) -> TokenStream {
+    let mut cond = TokenStream::from(cond);
     // If the expression contains an opening brace `{`,
     // wrap it in parentheses to avoid parse errors
-    let mut cond = TokenStream::from(cond);
     if cond.clone().into_iter().any(|token| match token {
         TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace => true,
         _ => false,
