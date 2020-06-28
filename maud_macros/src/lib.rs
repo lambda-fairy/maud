@@ -16,7 +16,6 @@ mod generate;
 mod parse;
 
 use proc_macro2::{Literal, Ident, TokenStream, TokenTree};
-// use proc_macro::quote;
 use quote::quote;
 
 type ParseResult<T> = Result<T, ()>;
