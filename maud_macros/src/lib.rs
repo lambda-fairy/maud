@@ -39,7 +39,7 @@ fn expand(input: TokenStream) -> TokenStream {
     // code size of the template itself
     let size_hint = input.to_string().len();
     let size_hint = TokenTree::Literal(Literal::u64_unsuffixed(size_hint as u64));
-    let markups = match parse::parse(proc_macro::TokenStream::from(input)) {
+    let markups = match parse::parse(input.into()) {
         Ok(markups) => markups,
         Err(()) => Vec::new(),
     };
