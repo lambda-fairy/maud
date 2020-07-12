@@ -1,15 +1,15 @@
 use matches::matches;
 use maud_htmlescape::Escaper;
-use proc_macro::{
+use proc_macro2::{
     Delimiter,
     Group,
     Literal,
-    quote,
     Span,
     Ident,
     TokenStream,
     TokenTree,
 };
+use quote::quote;
 
 use crate::ast::*;
 
@@ -48,10 +48,10 @@ impl Generator {
                 }
             },
             Markup::Literal { content, .. } => build.push_escaped(&content),
-            Markup::Symbol { symbol } => self.name(symbol, build),
-            Markup::Splice { expr, .. } => build.push_tokens(self.splice(expr)),
-            Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
-            Markup::Let { tokens, .. } => build.push_tokens(tokens),
+            Markup::Symbol { symbol } => self.name(symbol.into(), build),
+            Markup::Splice { expr, .. } => build.push_tokens(self.splice(expr.into())),
+            Markup::Element { name, attrs, body } => self.element(name.into(), attrs, body, build),
+            Markup::Let { tokens, .. } => build.push_tokens(tokens.into()),
             Markup::Special { segments } => {
                 for segment in segments {
                     build.push_tokens(self.special(segment));
@@ -64,8 +64,9 @@ impl Generator {
                         .map(|arm| self.match_arm(arm))
                         .collect();
                     let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
-                    body.set_span(arms_span);
-                    quote!($head $body)
+                    body.set_span(arms_span.into());
+                    let head: TokenStream = head.into();
+                    quote!(#head #body)
                 });
             },
         }
@@ -75,7 +76,7 @@ impl Generator {
         let mut build = self.builder();
         self.markups(markups, &mut build);
         let mut block = TokenTree::Group(Group::new(Delimiter::Brace, build.finish()));
-        block.set_span(outer_span);
+        block.set_span(outer_span.into());
         TokenStream::from(block)
     }
 
@@ -89,7 +90,7 @@ impl Generator {
                 }
             }
             impl<T: maud::Render> Render for T {}
-            $expr.__maud_render_to(&mut $output_ident);
+            #expr.__maud_render_to(&mut #output_ident);
         })
     }
 
@@ -122,23 +123,23 @@ impl Generator {
             match attr_type {
                 AttrType::Normal { value } => {
                     build.push_str(" ");
-                    self.name(name, build);
+                    self.name(name.into(), build);
                     build.push_str("=\"");
                     self.markup(value, build);
                     build.push_str("\"");
                 },
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
-                    self.name(name, build);
+                    self.name(name.into(), build);
                 },
                 AttrType::Empty { toggler: Some(toggler) } => {
                     let head = desugar_toggler(toggler);
                     build.push_tokens({
                         let mut build = self.builder();
                         build.push_str(" ");
-                        self.name(name, &mut build);
+                        self.name(name.into(), &mut build);
                         let body = build.finish();
-                        quote!($head { $body })
+                        quote!(#head { #body })
                     })
                 },
             }
@@ -147,12 +148,14 @@ impl Generator {
 
     fn special(&self, Special { head, body, .. }: Special) -> TokenStream {
         let body = self.block(body);
-        quote!($head $body)
+        let head: TokenStream = head.into();
+        quote!(#head #body)
     }
 
     fn match_arm(&self, MatchArm { head, body }: MatchArm) -> TokenStream {
         let body = self.block(body);
-        quote!($head $body)
+        let head: TokenStream = head.into();
+        quote!(#head #body)
     }
 }
 
@@ -201,15 +204,15 @@ fn desugar_classes_or_ids(
         };
         let head = desugar_toggler(toggler);
         markups.push(Markup::Special {
-            segments: vec![Special { at_span: Span::call_site(), head, body }],
+            segments: vec![Special { at_span: proc_macro::Span::call_site(), head: head.into(), body }],
         });
     }
     Some(Attribute {
-        name: TokenStream::from(TokenTree::Ident(Ident::new(attr_name, Span::call_site()))),
+        name: TokenStream::from(TokenTree::Ident(Ident::new(attr_name, Span::call_site()))).into(),
         attr_type: AttrType::Normal {
             value: Markup::Block(Block {
                 markups,
-                outer_span: Span::call_site(),
+                outer_span: proc_macro::Span::call_site(),
             }),
         },
     })
@@ -228,7 +231,8 @@ fn prepend_leading_space(name: Markup, leading_space: &mut bool) -> Vec<Markup> 
     markups
 }
 
-fn desugar_toggler(Toggler { mut cond, cond_span }: Toggler) -> TokenStream {
+fn desugar_toggler(Toggler { cond, cond_span }: Toggler) -> TokenStream {
+    let mut cond = TokenStream::from(cond);
     // If the expression contains an opening brace `{`,
     // wrap it in parentheses to avoid parse errors
     if cond.clone().into_iter().any(|token| match token {
@@ -236,10 +240,10 @@ fn desugar_toggler(Toggler { mut cond, cond_span }: Toggler) -> TokenStream {
         _ => false,
     }) {
         let mut wrapped_cond = TokenTree::Group(Group::new(Delimiter::Parenthesis, cond));
-        wrapped_cond.set_span(cond_span);
+        wrapped_cond.set_span(cond_span.into());
         cond = TokenStream::from(wrapped_cond);
     }
-    quote!(if $cond)
+    quote!(if #cond)
 }
 
 ////////////////////////////////////////////////////////
@@ -268,7 +272,7 @@ impl Builder {
         Escaper::new(&mut self.tail).write_str(string).unwrap();
     }
 
-    fn push_tokens<T: IntoIterator<Item=TokenTree>>(&mut self, tokens: T) {
+    fn push_tokens(&mut self, tokens: TokenStream) {
         self.cut();
         self.tokens.extend(tokens);
     }
@@ -280,7 +284,7 @@ impl Builder {
         let push_str_expr = {
             let output_ident = self.output_ident.clone();
             let string = TokenTree::Literal(Literal::string(&self.tail));
-            quote!($output_ident.push_str($string);)
+            quote!(#output_ident.push_str(#string);)
         };
         self.tail.clear();
         self.tokens.extend(push_str_expr);
