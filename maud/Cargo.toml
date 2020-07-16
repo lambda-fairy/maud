@@ -12,7 +12,15 @@ categories = ["template-engine"]
 edition = "2018"
 
 [features]
+default = []
+
+# Web framework integrations
 actix-web = ["actix-web-dep", "futures"]
+iron = []
+rocket = []
+
+# Unstable features
+unstable = []
 
 [dependencies]
 maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
