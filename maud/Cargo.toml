@@ -16,8 +16,6 @@ default = []
 
 # Web framework integrations
 actix-web = ["actix-web-dep", "futures"]
-iron = []
-rocket = []
 
 # Unstable features
 unstable = []
