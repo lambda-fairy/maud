@@ -9,7 +9,9 @@ jobs:
         - |
           RUN_CLIPPY=true
           rustup component add clippy --toolchain=nightly || RUN_CLIPPY=false
-        - cargo test --all --features actix-web iron rocket
+        - cargo test --manifest-path maud/Cargo.toml --features actix-web,iron,rocket
+        - cargo test --manifest-path maud_htmlescape/Cargo.toml
+        - cargo test --manifest-path maud_macros/Cargo.toml
         - |
           if $RUN_CLIPPY; then
             CLIPPY_STATUS=0
