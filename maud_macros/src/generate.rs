@@ -1,4 +1,3 @@
-use matches::matches;
 use maud_htmlescape::Escaper;
 use proc_macro2::{
     Delimiter,
@@ -235,9 +234,8 @@ fn desugar_toggler(Toggler { cond, cond_span }: Toggler) -> TokenStream {
     let mut cond = TokenStream::from(cond);
     // If the expression contains an opening brace `{`,
     // wrap it in parentheses to avoid parse errors
-    if cond.clone().into_iter().any(|token| match token {
-        TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace => true,
-        _ => false,
+    if cond.clone().into_iter().any(|token| {
+        matches!(token, TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace)
     }) {
         let mut wrapped_cond = TokenTree::Group(Group::new(Delimiter::Parenthesis, cond));
         wrapped_cond.set_span(cond_span.into());
