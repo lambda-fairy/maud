@@ -234,14 +234,16 @@ fn desugar_toggler(Toggler { cond, cond_span }: Toggler) -> TokenStream {
     let mut cond = TokenStream::from(cond);
     // If the expression contains an opening brace `{`,
     // wrap it in parentheses to avoid parse errors
-    if cond.clone().into_iter().any(|token| {
-        matches!(token, TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace)
-    }) {
+    if cond.clone().into_iter().any(is_braced_block) {
         let mut wrapped_cond = TokenTree::Group(Group::new(Delimiter::Parenthesis, cond));
         wrapped_cond.set_span(cond_span.into());
         cond = TokenStream::from(wrapped_cond);
     }
     quote!(if #cond)
+}
+
+fn is_braced_block(token: TokenTree) -> bool {
+    matches!(token, TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace)
 }
 
 ////////////////////////////////////////////////////////
