@@ -1,4 +1,4 @@
-#![feature(min_specialization)]
+#![cfg_attr(feature = "unstable", feature(min_specialization))]
 
 //! A macro for writing HTML templates.
 //!
@@ -76,33 +76,43 @@ pub trait Render {
     }
 }
 
+#[cfg(feature = "unstable")]
 impl<T: fmt::Display + ?Sized> Render for T {
     default fn render_to(&self, w: &mut String) {
         let _ = write!(Escaper::new(w), "{}", self);
     }
 }
 
+impl<T: AsRef<str>> Render for PreEscaped<T> {
+    fn render_to(&self, w: &mut String) {
+        w.push_str(self.0.as_ref());
+    }
+}
+
+#[cfg(feature = "unstable")]
 impl Render for String {
     fn render_to(&self, w: &mut String) {
         let _ = Escaper::new(w).write_str(self);
     }
 }
 
+#[cfg(feature = "unstable")]
 impl Render for str {
     fn render_to(&self, w: &mut String) {
         let _ = Escaper::new(w).write_str(self);
     }
 }
 
+#[cfg(not(feature = "unstable"))]
+impl<T: fmt::Display + ?Sized> Render for T {
+    fn render_to(&self, w: &mut String) {
+        let _ = write!(Escaper::new(w), "{}", self);
+    }
+}
+
 /// A wrapper that renders the inner value without escaping.
 #[derive(Debug, Clone, Copy)]
 pub struct PreEscaped<T: AsRef<str>>(pub T);
-
-impl<T: AsRef<str>> Render for PreEscaped<T> {
-    fn render_to(&self, w: &mut String) {
-        w.push_str(self.0.as_ref());
-    }
-}
 
 /// A block of markup is a string that does not need to be escaped.
 ///
