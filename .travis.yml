@@ -9,6 +9,12 @@ jobs:
         - |
           RUN_CLIPPY=true
           rustup component add clippy --toolchain=nightly || RUN_CLIPPY=false
+        # As of right now, these need to be tested individually becuase `--workspace`
+        # (which is implied by `workspace = true`) cannot be used with `--features`
+        # This _may_ be resolved with the `--package` flag, however this requires
+        # opting in to a `-Z` unstable feature as of time of commit.
+        #
+        # Follow https://github.com/rust-lang/cargo/issues/5364 for updates.
         - cargo test --manifest-path maud/Cargo.toml --features actix-web,iron,rocket
         - cargo test --manifest-path maud_htmlescape/Cargo.toml
         - cargo test --manifest-path maud_macros/Cargo.toml
