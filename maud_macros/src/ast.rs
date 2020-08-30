@@ -1,4 +1,4 @@
-use proc_macro::{Span, TokenStream, TokenTree};
+use proc_macro2::{Span, TokenStream, TokenTree};
 
 #[derive(Debug)]
 pub enum Markup {

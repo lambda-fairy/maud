@@ -203,7 +203,7 @@ fn desugar_classes_or_ids(
         };
         let head = desugar_toggler(toggler);
         markups.push(Markup::Special {
-            segments: vec![Special { at_span: proc_macro::Span::call_site(), head: head.into(), body }],
+            segments: vec![Special { at_span: Span::call_site(), head: head.into(), body }],
         });
     }
     Some(Attribute {
@@ -211,7 +211,7 @@ fn desugar_classes_or_ids(
         attr_type: AttrType::Normal {
             value: Markup::Block(Block {
                 markups,
-                outer_span: proc_macro::Span::call_site(),
+                outer_span: Span::call_site(),
             }),
         },
     })
