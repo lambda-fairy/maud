@@ -9,6 +9,7 @@ use proc_macro2::{
     TokenTree,
 };
 use quote::quote;
+use proc_macro_error::SpanRange;
 
 use crate::ast::*;
 
@@ -63,7 +64,7 @@ impl Generator {
                         .map(|arm| self.match_arm(arm))
                         .collect();
                     let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
-                    body.set_span(arms_span.into());
+                    body.set_span(arms_span.collapse());
                     let head: TokenStream = head.into();
                     quote!(#head #body)
                 });
@@ -75,7 +76,7 @@ impl Generator {
         let mut build = self.builder();
         self.markups(markups, &mut build);
         let mut block = TokenTree::Group(Group::new(Delimiter::Brace, build.finish()));
-        block.set_span(outer_span.into());
+        block.set_span(outer_span.collapse());
         TokenStream::from(block)
     }
 
@@ -203,7 +204,7 @@ fn desugar_classes_or_ids(
         };
         let head = desugar_toggler(toggler);
         markups.push(Markup::Special {
-            segments: vec![Special { at_span: Span::call_site(), head: head.into(), body }],
+            segments: vec![Special { at_span: SpanRange::call_site(), head: head.into(), body }],
         });
     }
     Some(Attribute {
@@ -211,7 +212,7 @@ fn desugar_classes_or_ids(
         attr_type: AttrType::Normal {
             value: Markup::Block(Block {
                 markups,
-                outer_span: Span::call_site(),
+                outer_span: SpanRange::call_site(),
             }),
         },
     })
@@ -236,7 +237,7 @@ fn desugar_toggler(Toggler { cond, cond_span }: Toggler) -> TokenStream {
     // wrap it in parentheses to avoid parse errors
     if cond.clone().into_iter().any(is_braced_block) {
         let mut wrapped_cond = TokenTree::Group(Group::new(Delimiter::Parenthesis, cond));
-        wrapped_cond.set_span(cond_span.into());
+        wrapped_cond.set_span(cond_span.collapse());
         cond = TokenStream::from(wrapped_cond);
     }
     quote!(if #cond)

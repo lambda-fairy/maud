@@ -1,18 +1,19 @@
-use proc_macro2::{Span, TokenStream, TokenTree};
+use proc_macro2::{TokenStream, TokenTree};
+use proc_macro_error::SpanRange;
 
 #[derive(Debug)]
 pub enum Markup {
     Block(Block),
     Literal {
         content: String,
-        span: Span,
+        span: SpanRange,
     },
     Symbol {
         symbol: TokenStream,
     },
     Splice {
         expr: TokenStream,
-        outer_span: Span,
+        outer_span: SpanRange,
     },
     Element {
         name: TokenStream,
@@ -20,22 +21,22 @@ pub enum Markup {
         body: ElementBody,
     },
     Let {
-        at_span: Span,
+        at_span: SpanRange,
         tokens: TokenStream,
     },
     Special {
         segments: Vec<Special>,
     },
     Match {
-        at_span: Span,
+        at_span: SpanRange,
         head: TokenStream,
         arms: Vec<MatchArm>,
-        arms_span: Span,
+        arms_span: SpanRange,
     },
 }
 
 impl Markup {
-    pub fn span(&self) -> Span {
+    pub fn span(&self) -> SpanRange {
         match *self {
             Markup::Block(ref block) => block.span(),
             Markup::Literal { span, .. } => span,
@@ -43,16 +44,16 @@ impl Markup {
             Markup::Splice { outer_span, .. } => outer_span,
             Markup::Element { ref name, ref body, .. } => {
                 let name_span = span_tokens(name.clone());
-                name_span.join(body.span()).unwrap_or(name_span)
+                name_span.join_range(body.span())
             },
             Markup::Let { at_span, ref tokens } => {
-                at_span.join(span_tokens(tokens.clone())).unwrap_or(at_span)
+                at_span.join_range(span_tokens(tokens.clone()))
             },
             Markup::Special { ref segments } => {
-                join_spans(segments.iter().map(Special::span))
+                join_ranges(segments.iter().map(Special::span))
             },
             Markup::Match { at_span, arms_span, .. } => {
-                at_span.join(arms_span).unwrap_or(at_span)
+                at_span.join_range(arms_span)
             },
         }
     }
@@ -63,12 +64,12 @@ pub type Attrs = Vec<Attr>;
 #[derive(Debug)]
 pub enum Attr {
     Class {
-        dot_span: Span,
+        dot_span: SpanRange,
         name: Markup,
         toggler: Option<Toggler>,
     },
     Id {
-        hash_span: Span,
+        hash_span: SpanRange,
         name: Markup,
     },
     Attribute {
@@ -77,20 +78,20 @@ pub enum Attr {
 }
 
 impl Attr {
-    pub fn span(&self) -> Span {
+    pub fn span(&self) -> SpanRange {
         match *self {
             Attr::Class { dot_span, ref name, ref toggler } => {
                 let name_span = name.span();
-                let dot_name_span = dot_span.join(name_span).unwrap_or(dot_span);
+                let dot_name_span = dot_span.join_range(name_span);
                 if let Some(toggler) = toggler {
-                    dot_name_span.join(toggler.cond_span).unwrap_or(name_span)
+                    dot_name_span.join_range(toggler.cond_span)
                 } else {
                     dot_name_span
                 }
             },
             Attr::Id { hash_span, ref name } => {
                 let name_span = name.span();
-                hash_span.join(name_span).unwrap_or(hash_span)
+                hash_span.join_range(name_span)
             },
             Attr::Attribute { ref attribute } => attribute.span(),
         }
@@ -99,12 +100,12 @@ impl Attr {
 
 #[derive(Debug)]
 pub enum ElementBody {
-    Void { semi_span: Span },
+    Void { semi_span: SpanRange },
     Block { block: Block },
 }
 
 impl ElementBody {
-    pub fn span(&self) -> Span {
+    pub fn span(&self) -> SpanRange {
         match *self {
             ElementBody::Void { semi_span } => semi_span,
             ElementBody::Block { ref block } => block.span(),
@@ -115,26 +116,26 @@ impl ElementBody {
 #[derive(Debug)]
 pub struct Block {
     pub markups: Vec<Markup>,
-    pub outer_span: Span,
+    pub outer_span: SpanRange,
 }
 
 impl Block {
-    pub fn span(&self) -> Span {
+    pub fn span(&self) -> SpanRange {
         self.outer_span
     }
 }
 
 #[derive(Debug)]
 pub struct Special {
-    pub at_span: Span,
+    pub at_span: SpanRange,
     pub head: TokenStream,
     pub body: Block,
 }
 
 impl Special {
-    pub fn span(&self) -> Span {
+    pub fn span(&self) -> SpanRange {
         let body_span = self.body.span();
-        self.at_span.join(body_span).unwrap_or(self.at_span)
+        self.at_span.join_range(body_span)
     }
 }
 
@@ -145,10 +146,10 @@ pub struct Attribute {
 }
 
 impl Attribute {
-    fn span(&self) -> Span {
+    fn span(&self) -> SpanRange {
         let name_span = span_tokens(self.name.clone());
         if let Some(attr_type_span) = self.attr_type.span() {
-            name_span.join(attr_type_span).unwrap_or(name_span)
+            name_span.join_range(attr_type_span)
         } else {
             name_span
         }
@@ -166,7 +167,7 @@ pub enum AttrType {
 }
 
 impl AttrType {
-    fn span(&self) -> Option<Span> {
+    fn span(&self) -> Option<SpanRange> {
         match *self {
             AttrType::Normal { ref value } => Some(value.span()),
             AttrType::Empty { ref toggler } => toggler.as_ref().map(Toggler::span),
@@ -177,11 +178,11 @@ impl AttrType {
 #[derive(Debug)]
 pub struct Toggler {
     pub cond: TokenStream,
-    pub cond_span: Span,
+    pub cond_span: SpanRange,
 }
 
 impl Toggler {
-    fn span(&self) -> Span {
+    fn span(&self) -> SpanRange {
         self.cond_span
     }
 }
@@ -192,20 +193,16 @@ pub struct MatchArm {
     pub body: Block,
 }
 
-pub fn span_tokens<I: IntoIterator<Item=TokenTree>>(tokens: I) -> Span {
-    join_spans(tokens.into_iter().map(|token| token.span()))
+pub fn span_tokens<I: IntoIterator<Item=TokenTree>>(tokens: I) -> SpanRange {
+    join_ranges(tokens.into_iter().map(|s| SpanRange::single_span(s.span())))
 }
 
-pub fn join_spans<I: IntoIterator<Item=Span>>(spans: I) -> Span {
-    let mut iter = spans.into_iter();
-    let mut span = match iter.next() {
+pub fn join_ranges<I: IntoIterator<Item=SpanRange>>(ranges: I) -> SpanRange {
+    let mut iter = ranges.into_iter();
+    let first = match iter.next() {
         Some(span) => span,
-        None => return Span::call_site(),
+        None => return SpanRange::call_site(),
     };
-    for new_span in iter {
-        if let Some(joined) = span.join(new_span) {
-            span = joined;
-        }
-    }
-    span
+    let last = iter.last().unwrap_or(first);
+    first.join_range(last)
 }

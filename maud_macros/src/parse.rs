@@ -7,7 +7,7 @@ use proc_macro2::{
     TokenStream,
     TokenTree,
 };
-use proc_macro_error::{abort, abort_call_site};
+use proc_macro_error::{abort, abort_call_site, SpanRange};
 use std::collections::HashMap;
 use std::mem;
 
@@ -128,13 +128,11 @@ impl Parser {
                             "for" => self.for_expr(at_span, keyword),
                             "match" => self.match_expr(at_span, keyword),
                             "let" => {
-                                let ident_span = ident.span();
-                                let span = at_span.join(ident_span).unwrap_or(ident_span);
+                                let span = SpanRange { first: at_span, last: ident.span() };
                                 abort!(span, "`@let` only works inside a block");
                             },
                             other => {
-                                let ident_span = ident.span();
-                                let span = at_span.join(ident_span).unwrap_or(ident_span);
+                                let span = SpanRange { first: at_span, last: ident.span() };
                                 abort!(span, "unknown keyword `@{}`", other);
                             }
                         }
@@ -146,7 +144,7 @@ impl Parser {
             },
             // Element
             TokenTree::Ident(ident) => {
-                let ident_string = ident.to_string();
+                let _ident_string = ident.to_string();
                 // Is this a keyword that's missing a '@'?
                 // TODO: warning or error?
                 // match ident_string.as_str() {
@@ -171,12 +169,12 @@ impl Parser {
             // Splice
             TokenTree::Group(ref group) if group.delimiter() == Delimiter::Parenthesis => {
                 self.advance();
-                ast::Markup::Splice { expr: group.stream(), outer_span: group.span() }
+                ast::Markup::Splice { expr: group.stream(), outer_span: SpanRange::single_span(group.span()) }
             }
             // Block
             TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace => {
                 self.advance();
-                ast::Markup::Block(self.block(group.stream(), group.span()))
+                ast::Markup::Block(self.block(group.stream(), SpanRange::single_span(group.span())))
             },
             // ???
             token => {
@@ -193,7 +191,7 @@ impl Parser {
             .unwrap_or_else(|_| abort!(lit, "expected string"));
         ast::Markup::Literal {
             content,
-            span: lit.span(),
+            span: SpanRange::single_span(lit.span()),
         }
     }
 
@@ -210,18 +208,18 @@ impl Parser {
         let body = loop {
             match self.next() {
                 Some(TokenTree::Group(ref block)) if block.delimiter() == Delimiter::Brace => {
-                    break self.block(block.stream(), block.span());
+                    break self.block(block.stream(), SpanRange::single_span(block.span()));
                 },
                 Some(token) => head.push(token),
                 None => {
-                    let head_span = ast::span_tokens(head);
-                    let span = at_span.join(head_span).unwrap_or(head_span);
+                    let mut span = ast::span_tokens(head);
+                    span.first = at_span;
                     abort!(span, "expected body for this `@if`");
                 },
             }
         };
         segments.push(ast::Special {
-            at_span,
+            at_span: SpanRange::single_span(at_span),
             head: head.into_iter().collect(),
             body,
         });
@@ -251,16 +249,15 @@ impl Parser {
                     _ => {
                         match self.next() {
                             Some(TokenTree::Group(ref group)) if group.delimiter() == Delimiter::Brace => {
-                                let body = self.block(group.stream(), group.span());
+                                let body = self.block(group.stream(), SpanRange::single_span(group.span()));
                                 segments.push(ast::Special {
-                                    at_span,
+                                    at_span: SpanRange::single_span(at_span),
                                     head: vec![else_keyword].into_iter().collect(),
                                     body,
                                 });
                             },
                             _ => {
-                                let else_span = else_keyword.span();
-                                let span = at_span.join(else_span).unwrap_or(else_span);
+                                let span = SpanRange { first: at_span, last: else_keyword.span() };
                                 abort!(span, "expected body for this `@else`");
                             },
                         }
@@ -281,17 +278,17 @@ impl Parser {
         let body = loop {
             match self.next() {
                 Some(TokenTree::Group(ref block)) if block.delimiter() == Delimiter::Brace => {
-                    break self.block(block.stream(), block.span());
+                    break self.block(block.stream(), SpanRange::single_span(block.span()));
                 },
                 Some(token) => head.push(token),
                 None => {
-                    let span = at_span.join(keyword_span).unwrap_or(keyword_span);
+                    let span = SpanRange { first: at_span, last: keyword_span };
                     abort!(span, "expected body for this `@while`");
                 },
             }
         };
         ast::Markup::Special {
-            segments: vec![ast::Special { at_span, head: head.into_iter().collect(), body }],
+            segments: vec![ast::Special { at_span: SpanRange::single_span(at_span), head: head.into_iter().collect(), body }],
         }
     }
 
@@ -309,7 +306,7 @@ impl Parser {
                 },
                 Some(token) => head.push(token),
                 None => {
-                    let span = at_span.join(keyword_span).unwrap_or(keyword_span);
+                    let span = SpanRange { first: at_span, last: keyword_span };
                     abort!(span, "missing `in` in `@for` loop");
                 },
             }
@@ -317,17 +314,17 @@ impl Parser {
         let body = loop {
             match self.next() {
                 Some(TokenTree::Group(ref block)) if block.delimiter() == Delimiter::Brace => {
-                    break self.block(block.stream(), block.span());
+                    break self.block(block.stream(), SpanRange::single_span(block.span()));
                 },
                 Some(token) => head.push(token),
                 None => {
-                    let span = at_span.join(keyword_span).unwrap_or(keyword_span);
+                    let span = SpanRange { first: at_span, last: keyword_span };
                     abort!(span, "expected body for this `@for`");
                 },
             }
         };
         ast::Markup::Special {
-            segments: vec![ast::Special { at_span, head: head.into_iter().collect(), body }],
+            segments: vec![ast::Special { at_span: SpanRange::single_span(at_span), head: head.into_iter().collect(), body }],
         }
     }
 
@@ -340,17 +337,17 @@ impl Parser {
         let (arms, arms_span) = loop {
             match self.next() {
                 Some(TokenTree::Group(ref body)) if body.delimiter() == Delimiter::Brace => {
-                    let span = body.span();
+                    let span = SpanRange::single_span(body.span());
                     break (self.with_input(body.stream()).match_arms(), span);
                 },
                 Some(token) => head.push(token),
                 None => {
-                    let span = at_span.join(keyword_span).unwrap_or(keyword_span);
+                    let span = SpanRange { first: at_span, last: keyword_span };
                     abort!(span, "expected body for this `@match`");
                 },
             }
         };
-        ast::Markup::Match { at_span, head: head.into_iter().collect(), arms, arms_span }
+        ast::Markup::Match { at_span: SpanRange::single_span(at_span), head: head.into_iter().collect(), arms, arms_span }
     }
 
     fn match_arms(&mut self) -> Vec<ast::MatchArm> {
@@ -389,7 +386,7 @@ impl Parser {
         let body = match self.next() {
             // $pat => { $stmts }
             Some(TokenTree::Group(ref body)) if body.delimiter() == Delimiter::Brace => {
-                let body = self.block(body.stream(), body.span());
+                let body = self.block(body.stream(), SpanRange::single_span(body.span()));
                 // Trailing commas are optional if the match arm is a braced block
                 if let Some(TokenTree::Punct(ref punct)) = self.peek() {
                     if punct.as_char() == ',' {
@@ -400,15 +397,13 @@ impl Parser {
             },
             // $pat => $expr
             Some(first_token) => {
-                let mut span = first_token.span();
+                let mut span = SpanRange::single_span(first_token.span());
                 let mut body = vec![first_token];
                 loop {
                     match self.next() {
                         Some(TokenTree::Punct(ref punct)) if punct.as_char() == ',' => break,
                         Some(token) => {
-                            if let Some(bigger_span) = span.join(token.span()) {
-                                span = bigger_span;
-                            }
+                            span.last = token.span();
                             body.push(token);
                         },
                         None => break,
@@ -441,8 +436,8 @@ impl Parser {
                     }
                 },
                 None => {
-                    let tokens_span = ast::span_tokens(tokens);
-                    let span = at_span.join(tokens_span).unwrap_or(tokens_span);
+                    let mut span = ast::span_tokens(tokens);
+                    span.first = at_span;
                     abort!(span, "unexpected end of `@let` expression");
                 }
             }
@@ -459,8 +454,8 @@ impl Parser {
                     }
                 },
                 None => {
-                    let tokens_span = ast::span_tokens(tokens);
-                    let span = at_span.join(tokens_span).unwrap_or(tokens_span);
+                    let mut span = ast::span_tokens(tokens);
+                    span.first = at_span;
                     abort!(
                         span,
                         "unexpected end of `@let` expression";
@@ -469,7 +464,7 @@ impl Parser {
                 },
             }
         }
-        ast::Markup::Let { at_span, tokens: tokens.into_iter().collect() }
+        ast::Markup::Let { at_span: SpanRange::single_span(at_span), tokens: tokens.into_iter().collect() }
     }
 
     /// Parses an element node.
@@ -486,7 +481,7 @@ impl Parser {
             if punct.as_char() == ';' || punct.as_char() == '/' => {
                 // Void element
                 self.advance();
-                ast::ElementBody::Void { semi_span: punct.span() }
+                ast::ElementBody::Void { semi_span: SpanRange::single_span(punct.span()) }
             },
             _ => {
                 match self.markup() {
@@ -546,20 +541,20 @@ impl Parser {
                     self.commit(attempt);
                     let name = self.class_or_id_name();
                     let toggler = self.attr_toggler();
-                    attrs.push(ast::Attr::Class { dot_span: punct.span(), name, toggler });
+                    attrs.push(ast::Attr::Class { dot_span: SpanRange::single_span(punct.span()), name, toggler });
                 },
                 // ID shorthand
                 (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '#' => {
                     self.commit(attempt);
                     let name = self.class_or_id_name();
-                    attrs.push(ast::Attr::Id { hash_span: punct.span(), name });
+                    attrs.push(ast::Attr::Id { hash_span: SpanRange::single_span(punct.span()), name });
                 },
                 // If it's not a valid attribute, backtrack and bail out
                 _ => break,
             }
         }
 
-        let mut attr_map: HashMap<String, Vec<Span>> = HashMap::new();
+        let mut attr_map: HashMap<String, Vec<SpanRange>> = HashMap::new();
         let mut has_class = false;
         for attr in &attrs {
             let name = match attr {
@@ -607,7 +602,7 @@ impl Parser {
                 self.advance();
                 Some(ast::Toggler {
                     cond: group.stream(),
-                    cond_span: group.span(),
+                    cond_span: SpanRange::single_span(group.span()),
                 })
             },
             _ => None,
@@ -657,7 +652,7 @@ impl Parser {
     }
 
     /// Parses the given token stream as a Maud expression.
-    fn block(&mut self, body: TokenStream, outer_span: Span) -> ast::Block {
+    fn block(&mut self, body: TokenStream, outer_span: SpanRange) -> ast::Block {
         let markups = self.with_input(body).markups();
         ast::Block { markups, outer_span }
     }
