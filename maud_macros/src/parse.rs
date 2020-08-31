@@ -86,7 +86,7 @@ impl Parser {
                 Some((
                     TokenTree::Punct(ref punct),
                     Some(TokenTree::Ident(ref ident)),
-                )) if punct.as_char() == '@' && ident.to_string() == "let" => {
+                )) if punct.as_char() == '@' && *ident == "let" => {
                     self.advance2();
                     let keyword = TokenTree::Ident(ident.clone());
                     result.push(self.let_expr(punct.span(), keyword));
@@ -234,13 +234,13 @@ impl Parser {
             Some((
                 TokenTree::Punct(ref punct),
                 Some(TokenTree::Ident(ref else_keyword)),
-            )) if punct.as_char() == '@' && else_keyword.to_string() == "else" => {
+            )) if punct.as_char() == '@' && *else_keyword == "else" => {
                 self.advance2();
                 let at_span = punct.span();
                 let else_keyword = TokenTree::Ident(else_keyword.clone());
                 match self.peek() {
                     // `@else if`
-                    Some(TokenTree::Ident(ref if_keyword)) if if_keyword.to_string() == "if" => {
+                    Some(TokenTree::Ident(ref if_keyword)) if *if_keyword == "if" => {
                         self.advance();
                         let if_keyword = TokenTree::Ident(if_keyword.clone());
                         self.if_expr(at_span, vec![else_keyword, if_keyword], segments)
@@ -300,7 +300,7 @@ impl Parser {
         let mut head = vec![keyword];
         loop {
             match self.next() {
-                Some(TokenTree::Ident(ref in_keyword)) if in_keyword.to_string() == "in" => {
+                Some(TokenTree::Ident(ref in_keyword)) if *in_keyword == "in" => {
                     head.push(TokenTree::Ident(in_keyword.clone()));
                     break;
                 },

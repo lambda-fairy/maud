@@ -36,7 +36,7 @@ fn expand(input: TokenStream) -> TokenStream {
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
     let size_hint = input.to_string().len();
-    let markups = parse::parse(input.into());
+    let markups = parse::parse(input);
     let stmts = generate::generate(markups, output_ident.clone());
     quote!({
         extern crate maud;
