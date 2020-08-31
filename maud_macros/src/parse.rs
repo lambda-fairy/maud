@@ -144,7 +144,7 @@ impl Parser {
             },
             // Element
             TokenTree::Ident(ident) => {
-                let _ident_string = ident.to_string();
+                let ident_string = ident.to_string();
                 // Is this a keyword that's missing a '@'?
                 match ident_string.as_str() {
                     "if" | "while" | "for" | "match" | "let" => {
