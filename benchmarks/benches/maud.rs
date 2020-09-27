@@ -1,5 +1,4 @@
 #![feature(test)]
-#![feature(proc_macro_hygiene)]
 
 use maud::html;
 

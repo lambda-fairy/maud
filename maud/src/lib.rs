@@ -43,7 +43,6 @@ pub use maud_macros::{html, html_debug};
 /// # Example
 ///
 /// ```rust
-/// # #![feature(proc_macro_hygiene)]
 /// use maud::{html, Markup, Render};
 ///
 /// /// Provides a shorthand for linking to a CSS stylesheet.
@@ -144,7 +143,6 @@ pub use maud_htmlescape::Escaper;
 /// A minimal web page:
 ///
 /// ```rust
-/// # #![feature(proc_macro_hygiene)]
 /// use maud::{DOCTYPE, html};
 ///
 /// let markup = html! {
