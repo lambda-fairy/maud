@@ -1,3 +1,6 @@
+// Diagnostics look slightly different on stable Rust
+#![cfg(unstable)]
+
 use trybuild::TestCases;
 
 #[test]
