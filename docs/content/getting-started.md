@@ -29,8 +29,6 @@ maud = "*"
 Then save the following to `src/main.rs`:
 
 ```rust
-#![feature(proc_macro_hygiene)]
-
 extern crate maud;
 use maud::html;
 
