@@ -43,3 +43,10 @@ jobs:
         local_dir: docs/site
         on:
           branch: master
+    - name: "Format"
+      before_script:
+        - rustup component add rustfmt
+      script:
+        - cargo fmt -- --check
+        - (cd benchmarks && cargo fmt -- --check)
+        - (cd docs && cargo fmt -- --check)
