@@ -1,0 +1,7 @@
+error: found keyword `if`
+ --> $DIR/keyword_names_without_@.rs:9:9
+  |
+9 |         if {}
+  |         ^^
+  |
+  = help: should this be a `@if`?

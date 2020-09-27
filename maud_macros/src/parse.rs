@@ -1,4 +1,4 @@
-use proc_macro::{
+use proc_macro2::{
     Delimiter,
     Ident,
     Literal,
@@ -7,15 +7,15 @@ use proc_macro::{
     TokenStream,
     TokenTree,
 };
+use proc_macro_error::{abort, abort_call_site, SpanRange};
 use std::collections::HashMap;
 use std::mem;
 
 use syn::{LitStr, parse_str};
 
 use crate::ast;
-use crate::ParseResult;
 
-pub fn parse(input: TokenStream) -> ParseResult<Vec<ast::Markup>> {
+pub fn parse(input: TokenStream) -> Vec<ast::Markup> {
     Parser::new(input).markups()
 }
 
@@ -77,7 +77,7 @@ impl Parser {
     }
 
     /// Parses and renders multiple blocks of markup.
-    fn markups(&mut self) -> ParseResult<Vec<ast::Markup>> {
+    fn markups(&mut self) -> Vec<ast::Markup> {
         let mut result = Vec::new();
         loop {
             match self.peek2() {
@@ -86,31 +86,30 @@ impl Parser {
                 Some((
                     TokenTree::Punct(ref punct),
                     Some(TokenTree::Ident(ref ident)),
-                )) if punct.as_char() == '@' && ident.to_string() == "let" => {
+                )) if punct.as_char() == '@' && *ident == "let" => {
                     self.advance2();
                     let keyword = TokenTree::Ident(ident.clone());
-                    result.push(self.let_expr(punct.span(), keyword)?);
+                    result.push(self.let_expr(punct.span(), keyword));
                 },
-                _ => result.push(self.markup()?),
+                _ => result.push(self.markup()),
             }
         }
-        Ok(result)
+        result
     }
 
     /// Parses and renders a single block of markup.
-    fn markup(&mut self) -> ParseResult<ast::Markup> {
+    fn markup(&mut self) -> ast::Markup {
         let token = match self.peek() {
             Some(token) => token,
             None => {
-                Span::call_site().error("unexpected end of input").emit();
-                return Err(());
+                abort_call_site!("unexpected end of input");
             },
         };
         let markup = match token {
             // Literal
             TokenTree::Literal(lit) => {
                 self.advance();
-                self.literal(&lit)?
+                self.literal(&lit)
             },
             // Special form
             TokenTree::Punct(ref punct) if punct.as_char() == '@' => {
@@ -122,29 +121,24 @@ impl Parser {
                         match ident.to_string().as_str() {
                             "if" => {
                                 let mut segments = Vec::new();
-                                self.if_expr(at_span, vec![keyword], &mut segments)?;
+                                self.if_expr(at_span, vec![keyword], &mut segments);
                                 ast::Markup::Special { segments }
                             },
-                            "while" => self.while_expr(at_span, keyword)?,
-                            "for" => self.for_expr(at_span, keyword)?,
-                            "match" => self.match_expr(at_span, keyword)?,
+                            "while" => self.while_expr(at_span, keyword),
+                            "for" => self.for_expr(at_span, keyword),
+                            "match" => self.match_expr(at_span, keyword),
                             "let" => {
-                                let ident_span = ident.span();
-                                let span = at_span.join(ident_span).unwrap_or(ident_span);
-                                span.error("`@let` only works inside a block").emit();
-                                self.let_expr(at_span, keyword)?
+                                let span = SpanRange { first: at_span, last: ident.span() };
+                                abort!(span, "`@let` only works inside a block");
                             },
                             other => {
-                                let ident_span = ident.span();
-                                let span = at_span.join(ident_span).unwrap_or(ident_span);
-                                span.error(format!("unknown keyword `@{}`", other)).emit();
-                                return Err(());
+                                let span = SpanRange { first: at_span, last: ident.span() };
+                                abort!(span, "unknown keyword `@{}`", other);
                             }
                         }
                     },
                     _ => {
-                        at_span.error("expected keyword after `@`").emit();
-                        return Err(());
+                        abort!(at_span, "expected keyword after `@`");
                     },
                 }
             },
@@ -154,53 +148,52 @@ impl Parser {
                 // Is this a keyword that's missing a '@'?
                 match ident_string.as_str() {
                     "if" | "while" | "for" | "match" | "let" => {
-                        ident.span()
-                            .warning(format!("found keyword `{0}` - should this be a `@{0}`?", ident_string))
-                            .emit();
+                        abort!(
+                            ident,
+                            "found keyword `{}`", ident_string;
+                            help = "should this be a `@{}`?", ident_string
+                        );
                     }
                     _ => {}
                 }
+
                 // `.try_namespaced_name()` should never fail as we've
                 // already seen an `Ident`
                 let name = self.try_namespaced_name().expect("identifier");
-                self.element(name)?
+                self.element(name)
             },
             // Div element shorthand
             TokenTree::Punct(ref punct) if punct.as_char() == '.' || punct.as_char() == '#' => {
                 let name = TokenTree::Ident(Ident::new("div", punct.span()));
-                self.element(name.into())?
+                self.element(name.into())
             },
             // Splice
             TokenTree::Group(ref group) if group.delimiter() == Delimiter::Parenthesis => {
                 self.advance();
-                ast::Markup::Splice { expr: group.stream(), outer_span: group.span() }
+                ast::Markup::Splice { expr: group.stream(), outer_span: SpanRange::single_span(group.span()) }
             }
             // Block
             TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace => {
                 self.advance();
-                ast::Markup::Block(self.block(group.stream(), group.span())?)
+                ast::Markup::Block(self.block(group.stream(), SpanRange::single_span(group.span())))
             },
             // ???
             token => {
-                token.span().error("invalid syntax").emit();
-                return Err(());
+                abort!(token, "invalid syntax");
             },
         };
-        Ok(markup)
+        markup
     }
 
     /// Parses and renders a literal string.
-    fn literal(&mut self, lit: &Literal) -> ParseResult<ast::Markup> {
+    fn literal(&mut self, lit: &Literal) -> ast::Markup {
         let content = parse_str::<LitStr>(&lit.to_string())
             .map(|l| l.value())
-            .unwrap_or_else(|_| {
-                lit.span().error("expected string").emit();
-                String::new()  // Insert a dummy value
-            });
-        Ok(ast::Markup::Literal {
+            .unwrap_or_else(|_| abort!(lit, "expected string"));
+        ast::Markup::Literal {
             content,
-            span: lit.span(),
-        })
+            span: SpanRange::single_span(lit.span()),
+        }
     }
 
     /// Parses an `@if` expression.
@@ -211,24 +204,23 @@ impl Parser {
         at_span: Span,
         prefix: Vec<TokenTree>,
         segments: &mut Vec<ast::Special>,
-    ) -> ParseResult<()> {
+    ) {
         let mut head = prefix;
         let body = loop {
             match self.next() {
                 Some(TokenTree::Group(ref block)) if block.delimiter() == Delimiter::Brace => {
-                    break self.block(block.stream(), block.span())?;
+                    break self.block(block.stream(), SpanRange::single_span(block.span()));
                 },
                 Some(token) => head.push(token),
                 None => {
-                    let head_span = ast::span_tokens(head);
-                    let span = at_span.join(head_span).unwrap_or(head_span);
-                    span.error("expected body for this `@if`").emit();
-                    return Err(());
+                    let mut span = ast::span_tokens(head);
+                    span.first = at_span;
+                    abort!(span, "expected body for this `@if`");
                 },
             }
         };
         segments.push(ast::Special {
-            at_span,
+            at_span: SpanRange::single_span(at_span),
             head: head.into_iter().collect(),
             body,
         });
@@ -238,18 +230,18 @@ impl Parser {
     /// Parses an optional `@else if` or `@else`.
     ///
     /// The leading `@else if` or `@else` should *not* already be consumed.
-    fn else_if_expr(&mut self, segments: &mut Vec<ast::Special>) -> ParseResult<()> {
+    fn else_if_expr(&mut self, segments: &mut Vec<ast::Special>) {
         match self.peek2() {
             Some((
                 TokenTree::Punct(ref punct),
                 Some(TokenTree::Ident(ref else_keyword)),
-            )) if punct.as_char() == '@' && else_keyword.to_string() == "else" => {
+            )) if punct.as_char() == '@' && *else_keyword == "else" => {
                 self.advance2();
                 let at_span = punct.span();
                 let else_keyword = TokenTree::Ident(else_keyword.clone());
                 match self.peek() {
                     // `@else if`
-                    Some(TokenTree::Ident(ref if_keyword)) if if_keyword.to_string() == "if" => {
+                    Some(TokenTree::Ident(ref if_keyword)) if *if_keyword == "if" => {
                         self.advance();
                         let if_keyword = TokenTree::Ident(if_keyword.clone());
                         self.if_expr(at_span, vec![else_keyword, if_keyword], segments)
@@ -258,123 +250,116 @@ impl Parser {
                     _ => {
                         match self.next() {
                             Some(TokenTree::Group(ref group)) if group.delimiter() == Delimiter::Brace => {
-                                let body = self.block(group.stream(), group.span())?;
+                                let body = self.block(group.stream(), SpanRange::single_span(group.span()));
                                 segments.push(ast::Special {
-                                    at_span,
+                                    at_span: SpanRange::single_span(at_span),
                                     head: vec![else_keyword].into_iter().collect(),
                                     body,
                                 });
-                                Ok(())
                             },
                             _ => {
-                                let else_span = else_keyword.span();
-                                let span = at_span.join(else_span).unwrap_or(else_span);
-                                span.error("expected body for this `@else`").emit();
-                                Err(())
+                                let span = SpanRange { first: at_span, last: else_keyword.span() };
+                                abort!(span, "expected body for this `@else`");
                             },
                         }
                     },
                 }
             },
             // We didn't find an `@else`; stop
-            _ => Ok(()),
+            _ => {},
         }
     }
 
     /// Parses and renders an `@while` expression.
     ///
     /// The leading `@while` should already be consumed.
-    fn while_expr(&mut self, at_span: Span, keyword: TokenTree) -> ParseResult<ast::Markup> {
+    fn while_expr(&mut self, at_span: Span, keyword: TokenTree) -> ast::Markup {
         let keyword_span = keyword.span();
         let mut head = vec![keyword];
         let body = loop {
             match self.next() {
                 Some(TokenTree::Group(ref block)) if block.delimiter() == Delimiter::Brace => {
-                    break self.block(block.stream(), block.span())?;
+                    break self.block(block.stream(), SpanRange::single_span(block.span()));
                 },
                 Some(token) => head.push(token),
                 None => {
-                    let span = at_span.join(keyword_span).unwrap_or(keyword_span);
-                    span.error("expected body for this `@while`").emit();
-                    return Err(());
+                    let span = SpanRange { first: at_span, last: keyword_span };
+                    abort!(span, "expected body for this `@while`");
                 },
             }
         };
-        Ok(ast::Markup::Special {
-            segments: vec![ast::Special { at_span, head: head.into_iter().collect(), body }],
-        })
+        ast::Markup::Special {
+            segments: vec![ast::Special { at_span: SpanRange::single_span(at_span), head: head.into_iter().collect(), body }],
+        }
     }
 
     /// Parses a `@for` expression.
     ///
     /// The leading `@for` should already be consumed.
-    fn for_expr(&mut self, at_span: Span, keyword: TokenTree) -> ParseResult<ast::Markup> {
+    fn for_expr(&mut self, at_span: Span, keyword: TokenTree) -> ast::Markup {
         let keyword_span = keyword.span();
         let mut head = vec![keyword];
         loop {
             match self.next() {
-                Some(TokenTree::Ident(ref in_keyword)) if in_keyword.to_string() == "in" => {
+                Some(TokenTree::Ident(ref in_keyword)) if *in_keyword == "in" => {
                     head.push(TokenTree::Ident(in_keyword.clone()));
                     break;
                 },
                 Some(token) => head.push(token),
                 None => {
-                    let span = at_span.join(keyword_span).unwrap_or(keyword_span);
-                    span.error("missing `in` in `@for` loop").emit();
-                    return Err(());
+                    let span = SpanRange { first: at_span, last: keyword_span };
+                    abort!(span, "missing `in` in `@for` loop");
                 },
             }
         }
         let body = loop {
             match self.next() {
                 Some(TokenTree::Group(ref block)) if block.delimiter() == Delimiter::Brace => {
-                    break self.block(block.stream(), block.span())?;
+                    break self.block(block.stream(), SpanRange::single_span(block.span()));
                 },
                 Some(token) => head.push(token),
                 None => {
-                    let span = at_span.join(keyword_span).unwrap_or(keyword_span);
-                    span.error("expected body for this `@for`").emit();
-                    return Err(());
+                    let span = SpanRange { first: at_span, last: keyword_span };
+                    abort!(span, "expected body for this `@for`");
                 },
             }
         };
-        Ok(ast::Markup::Special {
-            segments: vec![ast::Special { at_span, head: head.into_iter().collect(), body }],
-        })
+        ast::Markup::Special {
+            segments: vec![ast::Special { at_span: SpanRange::single_span(at_span), head: head.into_iter().collect(), body }],
+        }
     }
 
     /// Parses a `@match` expression.
     ///
     /// The leading `@match` should already be consumed.
-    fn match_expr(&mut self, at_span: Span, keyword: TokenTree) -> ParseResult<ast::Markup> {
+    fn match_expr(&mut self, at_span: Span, keyword: TokenTree) -> ast::Markup {
         let keyword_span = keyword.span();
         let mut head = vec![keyword];
         let (arms, arms_span) = loop {
             match self.next() {
                 Some(TokenTree::Group(ref body)) if body.delimiter() == Delimiter::Brace => {
-                    let span = body.span();
-                    break (self.with_input(body.stream()).match_arms()?, span);
+                    let span = SpanRange::single_span(body.span());
+                    break (self.with_input(body.stream()).match_arms(), span);
                 },
                 Some(token) => head.push(token),
                 None => {
-                    let span = at_span.join(keyword_span).unwrap_or(keyword_span);
-                    span.error("expected body for this `@match`").emit();
-                    return Err(());
+                    let span = SpanRange { first: at_span, last: keyword_span };
+                    abort!(span, "expected body for this `@match`");
                 },
             }
         };
-        Ok(ast::Markup::Match { at_span, head: head.into_iter().collect(), arms, arms_span })
+        ast::Markup::Match { at_span: SpanRange::single_span(at_span), head: head.into_iter().collect(), arms, arms_span }
     }
 
-    fn match_arms(&mut self) -> ParseResult<Vec<ast::MatchArm>> {
+    fn match_arms(&mut self) -> Vec<ast::MatchArm> {
         let mut arms = Vec::new();
-        while let Some(arm) = self.match_arm()? {
+        while let Some(arm) = self.match_arm() {
             arms.push(arm);
         }
-        Ok(arms)
+        arms
     }
 
-    fn match_arm(&mut self) -> ParseResult<Option<ast::MatchArm>> {
+    fn match_arm(&mut self) -> Option<ast::MatchArm> {
         let mut head = Vec::new();
         loop {
             match self.peek2() {
@@ -391,11 +376,10 @@ impl Parser {
                 },
                 None => {
                     if head.is_empty() {
-                        return Ok(None);
+                        return None;
                     } else {
                         let head_span = ast::span_tokens(head);
-                        head_span.error("unexpected end of @match pattern").emit();
-                        return Err(());
+                        abort!(head_span, "unexpected end of @match pattern");
                     }
                 },
             }
@@ -403,7 +387,7 @@ impl Parser {
         let body = match self.next() {
             // $pat => { $stmts }
             Some(TokenTree::Group(ref body)) if body.delimiter() == Delimiter::Brace => {
-                let body = self.block(body.stream(), body.span())?;
+                let body = self.block(body.stream(), SpanRange::single_span(body.span()));
                 // Trailing commas are optional if the match arm is a braced block
                 if let Some(TokenTree::Punct(ref punct)) = self.peek() {
                     if punct.as_char() == ',' {
@@ -414,35 +398,32 @@ impl Parser {
             },
             // $pat => $expr
             Some(first_token) => {
-                let mut span = first_token.span();
+                let mut span = SpanRange::single_span(first_token.span());
                 let mut body = vec![first_token];
                 loop {
                     match self.next() {
                         Some(TokenTree::Punct(ref punct)) if punct.as_char() == ',' => break,
                         Some(token) => {
-                            if let Some(bigger_span) = span.join(token.span()) {
-                                span = bigger_span;
-                            }
+                            span.last = token.span();
                             body.push(token);
                         },
                         None => break,
                     }
                 }
-                self.block(body.into_iter().collect(), span)?
+                self.block(body.into_iter().collect(), span)
             },
             None => {
                 let span = ast::span_tokens(head);
-                span.error("unexpected end of @match arm").emit();
-                return Err(());
+                abort!(span, "unexpected end of @match arm");
             },
         };
-        Ok(Some(ast::MatchArm { head: head.into_iter().collect(), body }))
+        Some(ast::MatchArm { head: head.into_iter().collect(), body })
     }
 
     /// Parses a `@let` expression.
     ///
     /// The leading `@let` should already be consumed.
-    fn let_expr(&mut self, at_span: Span, keyword: TokenTree) -> ParseResult<ast::Markup> {
+    fn let_expr(&mut self, at_span: Span, keyword: TokenTree) -> ast::Markup {
         let mut tokens = vec![keyword];
         loop {
             match self.next() {
@@ -456,10 +437,9 @@ impl Parser {
                     }
                 },
                 None => {
-                    let tokens_span = ast::span_tokens(tokens);
-                    let span = at_span.join(tokens_span).unwrap_or(tokens_span);
-                    span.error("unexpected end of `@let` expression").emit();
-                    return Err(());
+                    let mut span = ast::span_tokens(tokens);
+                    span.first = at_span;
+                    abort!(span, "unexpected end of `@let` expression");
                 }
             }
         }
@@ -475,58 +455,54 @@ impl Parser {
                     }
                 },
                 None => {
-                    let tokens_span = ast::span_tokens(tokens);
-                    let span = at_span.join(tokens_span).unwrap_or(tokens_span);
-                    span.error("unexpected end of `@let` expression (are you missing a semicolon?)")
-                        .emit();
-                    return Err(());
+                    let mut span = ast::span_tokens(tokens);
+                    span.first = at_span;
+                    abort!(
+                        span,
+                        "unexpected end of `@let` expression";
+                        help = "are you missing a semicolon?"
+                    );
                 },
             }
         }
-        Ok(ast::Markup::Let { at_span, tokens: tokens.into_iter().collect() })
+        ast::Markup::Let { at_span: SpanRange::single_span(at_span), tokens: tokens.into_iter().collect() }
     }
 
     /// Parses an element node.
     ///
     /// The element name should already be consumed.
-    fn element(&mut self, name: TokenStream) -> ParseResult<ast::Markup> {
+    fn element(&mut self, name: TokenStream) -> ast::Markup {
         if self.in_attr {
             let span = ast::span_tokens(name);
-            span.error("unexpected element, you silly bumpkin").emit();
-            return Err(());
+            abort!(span, "unexpected element, you silly bumpkin");
         }
-        let attrs = self.attrs()?;
+        let attrs = self.attrs();
         let body = match self.peek() {
             Some(TokenTree::Punct(ref punct))
             if punct.as_char() == ';' || punct.as_char() == '/' => {
                 // Void element
                 self.advance();
-                ast::ElementBody::Void { semi_span: punct.span() }
+                ast::ElementBody::Void { semi_span: SpanRange::single_span(punct.span()) }
             },
             _ => {
-                match self.markup()? {
+                match self.markup() {
                     ast::Markup::Block(block) => ast::ElementBody::Block { block },
                     markup => {
                         let markup_span = markup.span();
-                        markup_span
-                            .error("element body must be wrapped in braces")
-                            .help("see https://github.com/lambda-fairy/maud/pull/137 for details")
-                            .emit();
-                        ast::ElementBody::Block {
-                            block: ast::Block {
-                                markups: vec![markup],
-                                outer_span: markup_span,
-                            },
-                        }
+                        abort!(
+                            markup_span,
+                            "element body must be wrapped in braces";
+                            help = "see https://github.com/lambda-fairy/maud/pull/137 for details"
+                        );
                     },
                 }
             },
         };
-        Ok(ast::Markup::Element { name, attrs, body })
+        ast::Markup::Element { name, attrs, body }
     }
 
     /// Parses the attributes of an element.
-    fn attrs(&mut self) -> ParseResult<ast::Attrs> {
+    fn attrs(&mut self) -> ast::Attrs {
         let mut attrs = Vec::new();
         loop {
             let mut attempt = self.clone();
@@ -540,7 +516,7 @@ impl Parser {
                     {
                         // Parse a value under an attribute context
                         let in_attr = mem::replace(&mut self.in_attr, true);
-                        value = self.markup()?;
+                        value = self.markup();
                         self.in_attr = in_attr;
                     }
                     attrs.push(ast::Attr::Attribute {
@@ -564,22 +540,22 @@ impl Parser {
                 // Class shorthand
                 (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '.' => {
                     self.commit(attempt);
-                    let name = self.class_or_id_name()?;
+                    let name = self.class_or_id_name();
                     let toggler = self.attr_toggler();
-                    attrs.push(ast::Attr::Class { dot_span: punct.span(), name, toggler });
+                    attrs.push(ast::Attr::Class { dot_span: SpanRange::single_span(punct.span()), name, toggler });
                 },
                 // ID shorthand
                 (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '#' => {
                     self.commit(attempt);
-                    let name = self.class_or_id_name()?;
-                    attrs.push(ast::Attr::Id { hash_span: punct.span(), name });
+                    let name = self.class_or_id_name();
+                    attrs.push(ast::Attr::Id { hash_span: SpanRange::single_span(punct.span()), name });
                 },
                 // If it's not a valid attribute, backtrack and bail out
                 _ => break,
             }
         }
 
-        let mut attr_map: HashMap<String, Vec<Span>> = HashMap::new();
+        let mut attr_map: HashMap<String, Vec<SpanRange>> = HashMap::new();
         let mut has_class = false;
         for attr in &attrs {
             let name = match attr {
@@ -604,22 +580,17 @@ impl Parser {
             if spans.len() > 1 {
                 let mut spans = spans.into_iter();
                 let first_span = spans.next().expect("spans should be non-empty");
-                spans
-                    .fold(
-                        first_span.error(format!("duplicate attribute `{}`", name)),
-                        |acc, span| acc.span_note(span, format!("`{}` is duplicated here", name)),
-                    )
-                    .emit();
+                abort!(first_span, "duplicate attribute `{}`", name);
             }
         }
 
-        Ok(attrs)
+        attrs
     }
 
     /// Parses the name of a class or ID.
-    fn class_or_id_name(&mut self) -> ParseResult<ast::Markup> {
+    fn class_or_id_name(&mut self) -> ast::Markup {
         if let Some(symbol) = self.try_name() {
-            Ok(ast::Markup::Symbol { symbol })
+            ast::Markup::Symbol { symbol }
         } else {
             self.markup()
         }
@@ -632,7 +603,7 @@ impl Parser {
                 self.advance();
                 Some(ast::Toggler {
                     cond: group.stream(),
-                    cond_span: group.span(),
+                    cond_span: SpanRange::single_span(group.span()),
                 })
             },
             _ => None,
@@ -682,8 +653,8 @@ impl Parser {
     }
 
     /// Parses the given token stream as a Maud expression.
-    fn block(&mut self, body: TokenStream, outer_span: Span) -> ParseResult<ast::Block> {
-        let markups = self.with_input(body).markups()?;
-        Ok(ast::Block { markups, outer_span })
+    fn block(&mut self, body: TokenStream, outer_span: SpanRange) -> ast::Block {
+        let markups = self.with_input(body).markups();
+        ast::Block { markups, outer_span }
     }
 }
