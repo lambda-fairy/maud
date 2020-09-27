@@ -21,7 +21,8 @@ jobs:
     - name: "Stable"
       rust: stable
       script:
-        - cargo test --all --all-features
+        # Skip `--all-features` because stable Rocket isn't released yet
+        - cargo test --all
     - name: "Benchmarks"
       script:
         - (cd benchmarks && cargo test --benches)
