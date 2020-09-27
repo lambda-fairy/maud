@@ -1,5 +1,3 @@
-#![feature(proc_macro_hygiene)]
-
 use maud::{self, html};
 
 #[test]

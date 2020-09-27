@@ -1,5 +1,3 @@
-#![feature(proc_macro_hygiene)]
-
 use comrak::nodes::{AstNode, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink, NodeValue};
 use comrak::{self, Arena, ComrakOptions};
 use serde_json;
