@@ -107,6 +107,7 @@ fn colons_in_names() {
             r#"</pon-pon:controls-alpha>"#));
 }
 
+#[rustfmt::skip::macros(html)]
 #[test]
 fn hyphens_in_element_names() {
     let s = html!(custom-element {}).into_string();
