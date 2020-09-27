@@ -1,8 +1,8 @@
-use comrak::{self, ComrakOptions};
-use comrak::nodes::AstNode;
-use crate::Page;
 use crate::string_writer::StringWriter;
-use maud::{DOCTYPE, Markup, PreEscaped, Render, html};
+use crate::Page;
+use comrak::nodes::AstNode;
+use comrak::{self, ComrakOptions};
+use maud::{html, Markup, PreEscaped, Render, DOCTYPE};
 use std::str;
 
 struct Comrak<'a>(&'a AstNode<'a>, &'a ComrakOptions);
@@ -22,7 +22,12 @@ impl<'a> Render for ComrakRemovePTags<'a> {
         let mut buffer = String::new();
         comrak::format_html(self.0, self.1, &mut StringWriter(&mut buffer)).unwrap();
         assert!(buffer.starts_with("<p>") && buffer.ends_with("</p>\n"));
-        PreEscaped(buffer.trim_start_matches("<p>").trim_end_matches("</p>\n").to_string())
+        PreEscaped(
+            buffer
+                .trim_start_matches("<p>")
+                .trim_end_matches("</p>\n")
+                .to_string(),
+        )
     }
 }
 

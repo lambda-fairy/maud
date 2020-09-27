@@ -15,10 +15,22 @@ struct Entry {
 fn render_template(b: &mut test::Bencher) {
     let year = test::black_box("2015");
     let teams = test::black_box(vec![
-        Entry { name: "Jiangsu", score: 43 },
-        Entry { name: "Beijing", score: 27 },
-        Entry { name: "Guangzhou", score: 22 },
-        Entry { name: "Shandong", score: 12 },
+        Entry {
+            name: "Jiangsu",
+            score: 43,
+        },
+        Entry {
+            name: "Beijing",
+            score: 27,
+        },
+        Entry {
+            name: "Guangzhou",
+            score: 22,
+        },
+        Entry {
+            name: "Shandong",
+            score: 12,
+        },
     ]);
     b.iter(|| {
         html! {

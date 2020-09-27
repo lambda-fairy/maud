@@ -5,7 +5,8 @@ extern crate test;
 use askama::Template;
 
 #[derive(Template)]
-#[template(source = r#"
+#[template(
+    source = r#"
 <html>
   <head>
     <title>{{year}}</title>
@@ -20,29 +21,48 @@ use askama::Template;
     {% endfor %}
     </ul>
   </body>
-</html>"#, ext="html")]
+</html>"#,
+    ext = "html"
+)]
 
 struct BenchTemplate {
     year: &'static str,
-    teams: Vec<Entry>
+    teams: Vec<Entry>,
 }
 
 struct Entry {
     name: &'static str,
-    score: u16
+    score: u16,
 }
 
 #[bench]
 fn render_template(b: &mut test::Bencher) {
-    let teams = vec![Entry {name: "Jiangsu",   score: 43},
-                     Entry {name: "Beijing",   score: 27},
-                     Entry {name: "Guangzhou", score: 22},
-                     Entry {name: "Shandong",  score: 12}];
-    let hello = test::black_box(BenchTemplate{ year: "2015", teams });
+    let teams = vec![
+        Entry {
+            name: "Jiangsu",
+            score: 43,
+        },
+        Entry {
+            name: "Beijing",
+            score: 27,
+        },
+        Entry {
+            name: "Guangzhou",
+            score: 22,
+        },
+        Entry {
+            name: "Shandong",
+            score: 12,
+        },
+    ];
+    let hello = test::black_box(BenchTemplate {
+        year: "2015",
+        teams,
+    });
     b.iter(|| {
         // Instead of simply call hello.render().unwrap(), rendering to
         // a string with a good capacity gives a ~10% speed increase here
-       let mut s = String::with_capacity(500);
-       hello.render_into(&mut s).unwrap();
+        let mut s = String::with_capacity(500);
+        hello.render_into(&mut s).unwrap();
     });
 }

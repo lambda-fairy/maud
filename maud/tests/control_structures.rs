@@ -15,7 +15,8 @@ fn if_expr() {
             } @else {
                 "oh noes"
             }
-        }.into_string();
+        }
+        .into_string();
         assert_eq!(s, name);
     }
 }
@@ -25,13 +26,13 @@ fn if_expr_in_class() {
     for &(chocolate_milk, expected) in &[
         (0, r#"<p class="empty">Chocolate milk</p>"#),
         (1, r#"<p class="full">Chocolate milk</p>"#),
-    ]
-    {
+    ] {
         let s = html! {
             p.@if chocolate_milk == 0 { "empty" } @else { "full" } {
                 "Chocolate milk"
             }
-        }.into_string();
+        }
+        .into_string();
         assert_eq!(s, expected);
     }
 }
@@ -45,7 +46,8 @@ fn if_let() {
             } @else {
                 "oh noes"
             }
-        }.into_string();
+        }
+        .into_string();
         assert_eq!(s, output);
     }
 }
@@ -59,7 +61,8 @@ fn while_expr() {
                 li { (numbers.next().unwrap()) }
             }
         }
-    }.into_string();
+    }
+    .into_string();
     assert_eq!(s, "<ul><li>0</li><li>1</li><li>2</li></ul>");
 }
 
@@ -72,7 +75,8 @@ fn while_let_expr() {
                 li { (n) }
             }
         }
-    }.into_string();
+    }
+    .into_string();
     assert_eq!(s, "<ul><li>0</li><li>1</li><li>2</li></ul>");
 }
 
@@ -85,13 +89,18 @@ fn for_expr() {
                 li { (pony) }
             }
         }
-    }.into_string();
-    assert_eq!(s, concat!(
+    }
+    .into_string();
+    assert_eq!(
+        s,
+        concat!(
             "<ul>",
             "<li>Apple Bloom</li>",
             "<li>Scootaloo</li>",
             "<li>Sweetie Belle</li>",
-            "</ul>"));
+            "</ul>"
+        )
+    );
 }
 
 #[test]
@@ -106,7 +115,8 @@ fn match_expr() {
                     "oh noes"
                 },
             }
-        }.into_string();
+        }
+        .into_string();
         assert_eq!(s, output);
     }
 }
@@ -119,7 +129,8 @@ fn match_expr_without_delims() {
                 Some(value) => (value),
                 None => span { "oh noes" },
             }
-        }.into_string();
+        }
+        .into_string();
         assert_eq!(s, output);
     }
 }
@@ -132,7 +143,8 @@ fn match_no_trailing_comma() {
                 Some(value) => { (value) }
                 None => span { "oh noes" }
             }
-        }.into_string();
+        }
+        .into_string();
         assert_eq!(s, output);
     }
 }
@@ -146,21 +158,27 @@ fn match_expr_with_guards() {
                 Some(value) => (value),
                 None => "none",
             }
-        }.into_string();
+        }
+        .into_string();
         assert_eq!(s, output);
     }
 }
 
 #[test]
 fn match_in_attribute() {
-    for &(input, output) in &[(1, "<span class=\"one\">1</span>"), (2, "<span class=\"two\">2</span>"), (3, "<span class=\"many\">3</span>")] {
+    for &(input, output) in &[
+        (1, "<span class=\"one\">1</span>"),
+        (2, "<span class=\"two\">2</span>"),
+        (3, "<span class=\"many\">3</span>"),
+    ] {
         let s = html! {
             span class=@match input {
                 1 => "one",
                 2 => "two",
                 _ => "many",
             } { (input) }
-        }.into_string();
+        }
+        .into_string();
         assert_eq!(s, output);
     }
 }
@@ -170,7 +188,8 @@ fn let_expr() {
     let s = html! {
         @let x = 42;
         "I have " (x) " cupcakes!"
-    }.into_string();
+    }
+    .into_string();
     assert_eq!(s, "I have 42 cupcakes!");
 }
 
@@ -183,10 +202,12 @@ fn let_lexical_scope() {
             "Twilight thought I had " (x) " cupcakes, "
         }
         "but I only had " (x) "."
-    }.into_string();
-    assert_eq!(s, concat!(
-            "Twilight thought I had 99 cupcakes, ",
-            "but I only had 42."));
+    }
+    .into_string();
+    assert_eq!(
+        s,
+        concat!("Twilight thought I had 99 cupcakes, ", "but I only had 42.")
+    );
 }
 
 #[test]
@@ -194,6 +215,7 @@ fn let_type_ascription() {
     let s = html! {
         @let mut x: Box<dyn Iterator<Item=u32>> = Box::new(vec![42].into_iter());
         "I have " (x.next().unwrap()) " cupcakes!"
-    }.into_string();
+    }
+    .into_string();
     assert_eq!(s, "I have 42 cupcakes!");
 }
