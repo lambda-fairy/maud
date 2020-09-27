@@ -56,8 +56,8 @@ impl<'a> fmt::Write for Escaper<'a> {
 
 #[cfg(test)]
 mod test {
-    use std::fmt::Write;
     use crate::Escaper;
+    use std::fmt::Write;
 
     #[test]
     fn it_works() {

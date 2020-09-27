@@ -3,7 +3,7 @@
 
 extern crate test;
 
-use maud::{Markup, html};
+use maud::{html, Markup};
 
 #[derive(Debug)]
 struct Entry {
@@ -12,12 +12,12 @@ struct Entry {
 }
 
 mod btn {
-    use maud::{Markup, Render, html};
+    use maud::{html, Markup, Render};
 
     #[derive(Copy, Clone)]
     pub enum RequestMethod {
         Get,
-        Post
+        Post,
     }
 
     #[derive(Copy, Clone)]
@@ -77,24 +77,39 @@ fn layout<S: AsRef<str>>(title: S, inner: Markup) -> Markup {
 fn render_complicated_template(b: &mut test::Bencher) {
     let year = test::black_box("2015");
     let teams = test::black_box(vec![
-        Entry { name: "Jiangsu", score: 43 },
-        Entry { name: "Beijing", score: 27 },
-        Entry { name: "Guangzhou", score: 22 },
-        Entry { name: "Shandong", score: 12 },
+        Entry {
+            name: "Jiangsu",
+            score: 43,
+        },
+        Entry {
+            name: "Beijing",
+            score: 27,
+        },
+        Entry {
+            name: "Guangzhou",
+            score: 22,
+        },
+        Entry {
+            name: "Shandong",
+            score: 12,
+        },
     ]);
     b.iter(|| {
         use crate::btn::{Button, RequestMethod};
-        layout(format!("Homepage of {}", year), html! {
-            h1 { "Hello there!" }
+        layout(
+            format!("Homepage of {}", year),
+            html! {
+                h1 { "Hello there!" }
 
-            @for entry in &teams {
-                div {
-                    strong { (entry.name) }
-                    (Button::new("Edit", "edit"))
-                    (Button::new("Delete", "edit")
-                                .with_method(RequestMethod::Post))
+                @for entry in &teams {
+                    div {
+                        strong { (entry.name) }
+                        (Button::new("Edit", "edit"))
+                        (Button::new("Delete", "edit")
+                                    .with_method(RequestMethod::Post))
+                    }
                 }
-            }
-        })
+            },
+        )
     });
 }

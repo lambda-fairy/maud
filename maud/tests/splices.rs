@@ -25,7 +25,8 @@ fn blocks() {
             }
             result
         })
-    }).into_string();
+    })
+    .into_string();
     assert_eq!(s, "3628800");
 }
 
@@ -95,7 +96,8 @@ fn structs() {
     };
     let s = html!({
         "Name: " (pinkie.name) ". Rating: " (pinkie.repugnance())
-    }).into_string();
+    })
+    .into_string();
     assert_eq!(s, "Name: Pinkie Pie. Rating: 1");
 }
 

@@ -1,15 +1,7 @@
 use maud_htmlescape::Escaper;
-use proc_macro2::{
-    Delimiter,
-    Group,
-    Literal,
-    Span,
-    Ident,
-    TokenStream,
-    TokenTree,
-};
-use quote::quote;
+use proc_macro2::{Delimiter, Group, Ident, Literal, Span, TokenStream, TokenTree};
 use proc_macro_error::SpanRange;
+use quote::quote;
 
 use crate::ast::*;
 
@@ -40,13 +32,22 @@ impl Generator {
 
     fn markup(&self, markup: Markup, build: &mut Builder) {
         match markup {
-            Markup::Block(Block { markups, outer_span }) => {
-                if markups.iter().any(|markup| matches!(*markup, Markup::Let { .. })) {
-                    build.push_tokens(self.block(Block { markups, outer_span }));
+            Markup::Block(Block {
+                markups,
+                outer_span,
+            }) => {
+                if markups
+                    .iter()
+                    .any(|markup| matches!(*markup, Markup::Let { .. }))
+                {
+                    build.push_tokens(self.block(Block {
+                        markups,
+                        outer_span,
+                    }));
                 } else {
                     self.markups(markups, build);
                 }
-            },
+            }
             Markup::Literal { content, .. } => build.push_escaped(&content),
             Markup::Symbol { symbol } => self.name(symbol, build),
             Markup::Splice { expr, .. } => build.push_tokens(self.splice(expr)),
@@ -56,22 +57,30 @@ impl Generator {
                 for segment in segments {
                     build.push_tokens(self.special(segment));
                 }
-            },
-            Markup::Match { head, arms, arms_span, .. } => {
+            }
+            Markup::Match {
+                head,
+                arms,
+                arms_span,
+                ..
+            } => {
                 build.push_tokens({
-                    let body = arms
-                        .into_iter()
-                        .map(|arm| self.match_arm(arm))
-                        .collect();
+                    let body = arms.into_iter().map(|arm| self.match_arm(arm)).collect();
                     let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
                     body.set_span(arms_span.collapse());
                     quote!(#head #body)
                 });
-            },
+            }
         }
     }
 
-    fn block(&self, Block { markups, outer_span }: Block) -> TokenStream {
+    fn block(
+        &self,
+        Block {
+            markups,
+            outer_span,
+        }: Block,
+    ) -> TokenStream {
         let mut build = self.builder();
         self.markups(markups, &mut build);
         let mut block = TokenTree::Group(Group::new(Delimiter::Brace, build.finish()));
@@ -93,13 +102,7 @@ impl Generator {
         })
     }
 
-    fn element(
-        &self,
-        name: TokenStream,
-        attrs: Attrs,
-        body: ElementBody,
-        build: &mut Builder,
-    ) {
+    fn element(&self, name: TokenStream, attrs: Attrs, body: ElementBody, build: &mut Builder) {
         build.push_str("<");
         self.name(name.clone(), build);
         self.attrs(attrs, build);
@@ -113,7 +116,10 @@ impl Generator {
     }
 
     fn name(&self, name: TokenStream, build: &mut Builder) {
-        let string = name.into_iter().map(|token| token.to_string()).collect::<String>();
+        let string = name
+            .into_iter()
+            .map(|token| token.to_string())
+            .collect::<String>();
         build.push_escaped(&string);
     }
 
@@ -126,12 +132,14 @@ impl Generator {
                     build.push_str("=\"");
                     self.markup(value, build);
                     build.push_str("\"");
-                },
+                }
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
                     self.name(name, build);
-                },
-                AttrType::Empty { toggler: Some(toggler) } => {
+                }
+                AttrType::Empty {
+                    toggler: Some(toggler),
+                } => {
                     let head = desugar_toggler(toggler);
                     build.push_tokens({
                         let mut build = self.builder();
@@ -140,7 +148,7 @@ impl Generator {
                         let body = build.finish();
                         quote!(#head { #body })
                     })
-                },
+                }
             }
         }
     }
@@ -171,7 +179,7 @@ fn desugar_attrs(attrs: Attrs) -> Vec<Attribute> {
                 } else {
                     classes_static.push(name);
                 }
-            },
+            }
             Attr::Id { name, .. } => ids.push(name),
             Attr::Attribute { attribute } => attributes.push(attribute),
         }
@@ -201,7 +209,11 @@ fn desugar_classes_or_ids(
         };
         let head = desugar_toggler(toggler);
         markups.push(Markup::Special {
-            segments: vec![Special { at_span: SpanRange::call_site(), head, body }],
+            segments: vec![Special {
+                at_span: SpanRange::call_site(),
+                head,
+                body,
+            }],
         });
     }
     Some(Attribute {
@@ -228,7 +240,12 @@ fn prepend_leading_space(name: Markup, leading_space: &mut bool) -> Vec<Markup> 
     markups
 }
 
-fn desugar_toggler(Toggler { mut cond, cond_span }: Toggler) -> TokenStream {
+fn desugar_toggler(
+    Toggler {
+        mut cond,
+        cond_span,
+    }: Toggler,
+) -> TokenStream {
     // If the expression contains an opening brace `{`,
     // wrap it in parentheses to avoid parse errors
     if cond.clone().into_iter().any(is_braced_block) {

@@ -4,8 +4,8 @@
 
 extern crate test;
 
-use serde_json::value::{Map, Value as Json};
 use handlebars::{to_json, Handlebars};
+use serde_json::value::{Map, Value as Json};
 
 static SOURCE: &'static str = "<html>
   <head>
@@ -30,14 +30,12 @@ fn make_data() -> Map<String, Json> {
 
     let mut teams = Vec::new();
 
-    for &(name, score) in
-        &[
-            ("Jiangsu", 43u16),
-            ("Beijing", 27u16),
-            ("Guangzhou", 22u16),
-            ("Shandong", 12u16),
-        ]
-    {
+    for &(name, score) in &[
+        ("Jiangsu", 43u16),
+        ("Beijing", 27u16),
+        ("Guangzhou", 22u16),
+        ("Shandong", 12u16),
+    ] {
         let mut t = Map::new();
         t.insert("name".to_string(), to_json(&name));
         t.insert("score".to_string(), to_json(&score));
@@ -51,7 +49,8 @@ fn make_data() -> Map<String, Json> {
 #[bench]
 fn render_template(b: &mut test::Bencher) {
     let mut handlebars = Handlebars::new();
-    handlebars.register_template_string("table", SOURCE.to_string())
+    handlebars
+        .register_template_string("table", SOURCE.to_string())
         .expect("Invalid template format");
 
     let data = make_data();
