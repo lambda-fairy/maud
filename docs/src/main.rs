@@ -204,9 +204,8 @@ fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
 }
 
 fn comrak_options() -> ComrakOptions {
-    ComrakOptions {
-        ext_header_ids: Some("".to_string()),
-        unsafe_: true,
-        ..ComrakOptions::default()
-    }
+    let mut options = ComrakOptions::default();
+    options.extension.header_ids = Some("".to_string());
+    options.render.unsafe_ = true;
+    options
 }
