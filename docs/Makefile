@@ -16,7 +16,7 @@ all: $(html_files) site/styles.css
 
 $(builder): $(wildcard src/*)
 	$(call print_status,Cargo)
-	@ cargo build
+	@ cargo build --locked
 
 $(nav_json): $(md_files) $(builder)
 	$(call print_status,Table of contents)
