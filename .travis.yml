@@ -9,7 +9,7 @@ jobs:
         - |
           RUN_CLIPPY=true
           rustup component add clippy --toolchain=nightly || RUN_CLIPPY=false
-        - cargo test --all --all-features
+        - cargo test --workspace --all-features
         - |
           if $RUN_CLIPPY; then
             CLIPPY_STATUS=0
@@ -22,7 +22,7 @@ jobs:
       rust: stable
       script:
         # Skip `--all-features` because stable Rocket isn't released yet
-        - cargo test --all
+        - cargo test --workspace
     - name: "Benchmarks"
       script:
         - (cd benchmarks && cargo test --benches)
