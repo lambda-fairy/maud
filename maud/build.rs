@@ -1,8 +1,7 @@
-use rustc_version::{version_meta, Channel};
+use version_check;
 
 fn main() {
-    match version_meta().map(|v| v.channel).unwrap_or(Channel::Stable) {
-        Channel::Dev | Channel::Nightly => println!("cargo:rustc-cfg=unstable"),
-        Channel::Beta | Channel::Stable => {}
+    if version_check::is_feature_flaggable() == Some(true) {
+        println!("cargo:rustc-cfg=unstable");
     }
 }
