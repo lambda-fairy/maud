@@ -25,7 +25,7 @@ jobs:
         - cargo test --workspace
     - name: "Benchmarks"
       script:
-        - (cd benchmarks && cargo test --benches)
+        - (cd benchmarks && cargo test --benches --locked)
     - name: "Documentation"
       script:
         - (cd docs && make -j$(nproc))
