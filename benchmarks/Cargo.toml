@@ -4,9 +4,6 @@ version = "0.1.2"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 edition = "2018"
 
-[features]
-unstable = ["maud/unstable"]
-
 [dependencies]
 maud = { path = "../maud" }
 handlebars = "*"

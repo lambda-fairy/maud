@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "unstable", feature(min_specialization))]
+#![cfg_attr(unstable, feature(min_specialization))]
 
 //! A macro for writing HTML templates.
 //!
@@ -78,28 +78,28 @@ pub trait Render {
     }
 }
 
-#[cfg(not(feature = "unstable"))]
+#[cfg(not(unstable))]
 impl<T: fmt::Display + ?Sized> Render for T {
     fn render_to(&self, w: &mut String) {
         let _ = write!(Escaper::new(w), "{}", self);
     }
 }
 
-#[cfg(feature = "unstable")]
+#[cfg(unstable)]
 impl<T: fmt::Display + ?Sized> Render for T {
     default fn render_to(&self, w: &mut String) {
         let _ = write!(Escaper::new(w), "{}", self);
     }
 }
 
-#[cfg(feature = "unstable")]
+#[cfg(unstable)]
 impl Render for String {
     fn render_to(&self, w: &mut String) {
         let _ = Escaper::new(w).write_str(self);
     }
 }
 
-#[cfg(feature = "unstable")]
+#[cfg(unstable)]
 impl Render for str {
     fn render_to(&self, w: &mut String) {
         let _ = Escaper::new(w).write_str(self);
