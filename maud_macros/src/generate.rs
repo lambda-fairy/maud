@@ -91,14 +91,8 @@ impl Generator {
     fn splice(&self, expr: TokenStream) -> TokenStream {
         let output_ident = self.output_ident.clone();
         quote!({
-            // Create a local trait alias so that autoref works
-            trait Render: maud::Render {
-                fn __maud_render_to(&self, output_ident: &mut ::std::string::String) {
-                    maud::Render::render_to(self, output_ident);
-                }
-            }
-            impl<T: maud::Render> Render for T {}
-            #expr.__maud_render_to(&mut #output_ident);
+            use maud::render::{RenderInternal, RenderWrapper};
+            RenderWrapper(&#expr).__maud_render_to(&mut #output_ident);
         })
     }
 

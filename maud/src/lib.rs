@@ -1,5 +1,3 @@
-#![cfg_attr(unstable, feature(min_specialization))]
-
 //! A macro for writing HTML templates.
 //!
 //! This documentation only describes the runtime API. For a general
@@ -78,31 +76,45 @@ pub trait Render {
     }
 }
 
-#[cfg(not(unstable))]
 impl<T: fmt::Display + ?Sized> Render for T {
     fn render_to(&self, w: &mut String) {
         let _ = write!(Escaper::new(w), "{}", self);
     }
 }
 
-#[cfg(unstable)]
-impl<T: fmt::Display + ?Sized> Render for T {
-    default fn render_to(&self, w: &mut String) {
-        let _ = write!(Escaper::new(w), "{}", self);
-    }
-}
+/// Spicy hack to specialize `Render` for `T: AsRef<str>`.
+///
+/// The `std::fmt` machinery is rather heavyweight, both in code size and speed.
+/// It would be nice to skip this overhead for the common cases of `&str` and
+/// `String`. But the obvious solution uses *specialization*, which (as of this
+/// writing) requires Nightly. The [*inherent method specialization*][1] trick
+/// is less clear but works on Stable.
+///
+/// This module is an implementation detail and should not be used directly.
+///
+/// [1]: https://github.com/dtolnay/case-studies/issues/14
+#[doc(hidden)]
+pub mod render {
+    use crate::Render;
+    use maud_htmlescape::Escaper;
+    use std::fmt::Write;
 
-#[cfg(unstable)]
-impl Render for String {
-    fn render_to(&self, w: &mut String) {
-        let _ = Escaper::new(w).write_str(self);
+    pub trait RenderInternal {
+        fn __maud_render_to(&self, w: &mut String);
     }
-}
 
-#[cfg(unstable)]
-impl Render for str {
-    fn render_to(&self, w: &mut String) {
-        let _ = Escaper::new(w).write_str(self);
+    pub struct RenderWrapper<'a, T: ?Sized>(pub &'a T);
+
+    impl<'a, T: AsRef<str> + ?Sized> RenderWrapper<'a, T> {
+        pub fn __maud_render_to(&self, w: &mut String) {
+            let _ = Escaper::new(w).write_str(self.0.as_ref());
+        }
+    }
+
+    impl<'a, T: Render + ?Sized> RenderInternal for RenderWrapper<'a, T> {
+        fn __maud_render_to(&self, w: &mut String) {
+            self.0.render_to(w);
+        }
     }
 }
 

@@ -18,11 +18,6 @@ jobs:
             done
             (exit $CLIPPY_STATUS)
           fi
-    - name: "Stable"
-      rust: stable
-      script:
-        # Skip `--all-features` because stable Rocket isn't released yet
-        - cargo test --workspace
     - name: "Benchmarks"
       script:
         - (cd benchmarks && cargo test --benches --locked)

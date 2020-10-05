@@ -295,7 +295,6 @@ version = "0.22.0"
 dependencies = [
  "maud_htmlescape",
  "maud_macros",
- "version_check",
 ]
 
 [[package]]
