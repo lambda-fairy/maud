@@ -8,7 +8,7 @@ jobs:
         - |
           RUN_CLIPPY=true
           rustup component add clippy --toolchain=nightly || RUN_CLIPPY=false
-        - cargo test --workspace --all-features
+        - cargo test --workspace
         - |
           if $RUN_CLIPPY; then
             CLIPPY_STATUS=0
@@ -17,6 +17,11 @@ jobs:
             done
             (exit $CLIPPY_STATUS)
           fi
+    # Optional features (i.e. web framework integrations) take a long time to
+    # build and rarely break. Speed up CI by checking them separately.
+    - name: "All features"
+      script:
+        - cargo check --workspace --all-features
     - name: "Benchmarks"
       script:
         - (cd benchmarks && cargo test --benches --locked)
