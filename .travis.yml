@@ -25,10 +25,11 @@ jobs:
         - (cd docs && make -j$(nproc))
       deploy:
         provider: pages
-        cleanup: false
+        edge: true
         token: $GITHUB_TOKEN
         fqdn: maud.lambda.xyz
         local_dir: docs/site
+        keep_history: false
         on:
           branch: master
     - name: "Format"
