@@ -1,13 +1,17 @@
 # Getting started
 
-## Install nightly Rust
+## Which version of Rust?
 
-Maud requires the nightly version of Rust.
-If you're using `rustup`,
-see the [documentation][rustup]
-for how to install this version.
+While Maud works well
+on both stable and [nightly] versions
+of Rust,
+the error messages are slightly better
+on nightly.
+For this reason,
+it is recommended to develop using nightly Rust
+but test and deploy using stable.
 
-[rustup]: https://github.com/rust-lang/rustup.rs/blob/master/README.md#working-with-nightly-rust
+[nightly]: https://doc.rust-lang.org/book/appendix-07-nightly-rust.html
 
 ## Add Maud to your project
 
@@ -29,8 +33,6 @@ maud = "*"
 Then save the following to `src/main.rs`:
 
 ```rust
-#![feature(proc_macro_hygiene)]
-
 extern crate maud;
 use maud::html;
 
