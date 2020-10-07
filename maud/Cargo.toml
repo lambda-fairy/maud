@@ -33,3 +33,7 @@ travis-ci = { repository = "lambda-fairy/maud" }
 
 [package.metadata.docs.rs]
 all-features = true
+
+[[example]]
+name = "actix"
+required-features = ["actix-web"]
