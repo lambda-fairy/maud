@@ -32,8 +32,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             })
             .collect::<Vec<_>>();
         build_nav(&entries, &args[2])
-    } else if args.len() == 6 && &args[1] == "build-page" {
-        build_page(&args[2], &args[3], &args[4], &args[5])
+    } else if args.len() == 8 && &args[1] == "build-page" {
+        build_page(&args[2], &args[3], &args[4], &args[5], &args[6], &args[7])
     } else {
         Err("invalid arguments".into())
     }
@@ -67,6 +67,8 @@ fn build_page(
     slug: &str,
     input_path: &str,
     nav_path: &str,
+    version: &str,
+    hash: &str,
 ) -> Result<(), Box<dyn Error>> {
     let nav: Vec<(String, Option<String>)> = {
         let file = File::open(nav_path)?;
@@ -88,7 +90,7 @@ fn build_page(
         .collect::<Vec<_>>();
 
     let page = load_page(&arena, &options, input_path)?;
-    let markup = views::main(&options, slug, page, &nav);
+    let markup = views::main(&options, slug, page, &nav, version, hash);
 
     fs::create_dir_all(Path::new(output_path).parent().unwrap())?;
     fs::write(output_path, markup.into_string())?;

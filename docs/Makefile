@@ -5,6 +5,10 @@ slug_to_html = site/$(1).html
 
 builder := target/debug/docs
 nav_json := site/nav.json
+
+version := $(shell git describe)
+hash := $(shell git rev-parse HEAD)
+
 md_files := $(foreach slug,$(slugs),$(call slug_to_md,$(slug)))
 html_files := $(foreach slug,$(slugs),$(call slug_to_html,$(slug)))
 slugs_and_md_files := $(foreach slug,$(slugs),$(slug):$(call slug_to_md,$(slug)))
@@ -24,7 +28,7 @@ $(nav_json): $(md_files) $(builder)
 
 site/%.html: content/%.md $(nav_json) $(builder)
 	$(call print_status,Render $(*F))
-	@ $(builder) build-page $@ $(*F) $< $(nav_json)
+	@ $(builder) build-page $@ $(*F) $< $(nav_json) $(version) $(hash)
 
 site/styles.css: styles.css
 	$(call print_status,Copy stylesheet)
