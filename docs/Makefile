@@ -26,7 +26,7 @@ $(nav_json): $(md_files) $(builder)
 	$(call print_status,Table of contents)
 	@ $(builder) build-nav $@ $(slugs_and_md_files)
 
-site/%.html: content/%.md $(nav_json) $(version_txt) $(hash_txt) $(builder)
+site/%.html: content/%.md $(nav_json) $(builder)
 	$(call print_status,Render $(*F))
 	@ $(builder) build-page $@ $(*F) $< $(nav_json) $(version) $(hash)
 
