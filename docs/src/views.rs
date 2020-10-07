@@ -44,6 +44,8 @@ pub fn main<'a>(
     slug: &str,
     page: Page<'a>,
     nav: &[(&str, &'a AstNode<'a>)],
+    version: &str,
+    hash: &str,
 ) -> Markup {
     html! {
         (DOCTYPE)
@@ -104,6 +106,14 @@ pub fn main<'a>(
                 }
             }
             (Comrak(page.content, options))
+        }
+
+        footer {
+            p {
+                a href={ "https://github.com/lambda-fairy/maud/tree/" (hash) } {
+                    (version)
+                }
+            }
         }
     }
 }
