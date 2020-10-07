@@ -36,7 +36,7 @@ jobs:
         local_dir: docs/site
         keep_history: false
         on:
-          branch: master
+          tags: true
     - name: "Format"
       before_script:
         - rustup component add rustfmt
