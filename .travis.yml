@@ -21,7 +21,7 @@ jobs:
     # build and rarely break. Speed up CI by checking them separately.
     - name: "All features"
       script:
-        - cargo check --workspace --all-features
+        - cargo check --workspace --all-features --all-targets
     - name: "Benchmarks"
       script:
         - (cd benchmarks && cargo test --benches --locked)
