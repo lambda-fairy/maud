@@ -7,13 +7,6 @@
 
 #![doc(html_root_url = "https://docs.rs/maud/0.22.0")]
 
-#[cfg(feature = "actix-web")]
-extern crate actix_web_dep;
-#[cfg(feature = "iron")]
-extern crate iron;
-#[cfg(feature = "rocket")]
-extern crate rocket;
-
 use std::fmt::{self, Write};
 
 pub use maud_macros::{html, html_debug};
@@ -218,7 +211,7 @@ mod rocket_support {
 mod actix_support {
     use crate::PreEscaped;
     use actix_web_dep::{Error, HttpRequest, HttpResponse, Responder};
-    use futures::future::{ok, Ready};
+    use futures_util::future::{ok, Ready};
 
     impl Responder for PreEscaped<String> {
         type Error = Error;
