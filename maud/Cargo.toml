@@ -23,7 +23,7 @@ maud_macros = { version = "0.22.0", path = "../maud_macros" }
 iron = { version = ">= 0.5.1, < 0.7.0", optional = true }
 rocket = { version = ">= 0.3, < 0.5", optional = true }
 futures-util = { version = "0.3.0", optional = true, default-features = false }
-actix-web-dep = { package = "actix-web", version = ">=2, <4", optional = true, default-features = false }
+actix-web-dep = { package = "actix-web", version = ">= 2, < 4", optional = true, default-features = false }
 
 [dev-dependencies]
 trybuild = { version = "1.0.33", features = ["diff"] }
