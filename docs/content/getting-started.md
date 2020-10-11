@@ -8,7 +8,7 @@ of Rust,
 the error messages are slightly better
 on nightly.
 For this reason,
-it is recommended to develop using nightly Rust
+it is recommended to develop using nightly Rust,
 but test and deploy using stable.
 
 [nightly]: https://doc.rust-lang.org/book/appendix-07-nightly-rust.html

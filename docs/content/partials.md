@@ -33,11 +33,8 @@ pub fn page(title: &str, greeting_box: Markup) -> Markup {
     html! {
         // Add the header markup to the page
         (header(title))
-        body {
-            h1 { "Hello World" }
-            (greeting_box)
-        }
-        // Add the footer markup to the page
+        h1 { (title) }
+        (greeting_box)
         (footer())
     }
 }

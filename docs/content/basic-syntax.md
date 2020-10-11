@@ -79,9 +79,9 @@ Before version 0.18, Maud allowed the curly braces to be omitted. This syntax wa
 
 [#137]: https://github.com/lambda-fairy/maud/pull/137
 
-## Non-standard HTML ("custom") elements
+## Custom elements
 
-Maud is not restricted to writing well-known HTML elements like `h1`, `p`, `span`, etc. If you want to use [custom elements][custom-elements], you can.
+Maud also supports [custom elements].
 
 ```rust
 html! {
@@ -91,9 +91,9 @@ html! {
 }
 ```
 
-[custom-elements]: https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements
+[custom elements]: https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements
 
-## Non-empty attributes `id="yay"`
+## Non-empty attributes `title="yay"`
 
 ```rust
 html! {
@@ -142,6 +142,8 @@ html! {
 ```
 
 ## Classes and IDs `.foo` `#bar`
+
+TODO move into own file
 
 Add classes and IDs to an element using `.foo` and `#bar` syntax. The tag will default to `div` if an element begins with a class or ID. You can chain multiple classes and IDs together, and mix and match them with other attributes:
 
