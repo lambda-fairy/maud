@@ -1,10 +1,14 @@
 # Change Log
 
 ## [Unreleased]
+
+- [Added] Stable support 🎉
+  [#214](https://github.com/lambda-fairy/maud/issues/214)
 - [Changed] Add support for Actix Web 3.0.0. Actix Web 2.0.0 support is retained.
   [#228](https://github.com/lambda-fairy/maud/pull/228)
 
 ## [0.22.0] - 2020-06-20
+
 - [Changed] Update Actix to 2.0.0. Actix 1.0.0 is no longer supported.
   [#182](https://github.com/lambda-fairy/maud/pull/182)
 
