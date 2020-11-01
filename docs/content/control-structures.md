@@ -28,7 +28,7 @@ html! {
 }
 ```
 
-`@if let` is supported as well. It works as you'd expect:
+`@if let` is supported as well:
 
 ```rust
 let user = Some("Pinkie Pie");

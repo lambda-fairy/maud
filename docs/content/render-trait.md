@@ -1,6 +1,6 @@
 # The `Render` trait
 
-By default, a `(splice)` is rendered using the [`std::fmt::Display`][Display] trait, with any HTML special characters escaped automatically.
+By default, a [`(splice)`](splices-toggles.md) is rendered using the [`std::fmt::Display`][Display] trait, with any HTML special characters escaped automatically.
 
 To change this behavior, implement the [`Render`][Render] trait for your type. Then, when a value of this type is used in a template, Maud will call your custom code instead.
 
