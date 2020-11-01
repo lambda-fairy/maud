@@ -36,7 +36,7 @@ Rust has changed a lot since then,
 and some of those old assumptions
 might no longer hold today.
 So this decision could be revisited
-prior to 1.0.
+prior to the 1.0 release.
 
 ## Why is Maud written as a procedural macro? Can't it use `macro_rules!` instead?
 

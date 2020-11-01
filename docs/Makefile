@@ -1,4 +1,4 @@
-slugs := index getting-started basic-syntax dynamic-content partials control-structures traits web-frameworks faq
+slugs := index getting-started text-escaping elements-attributes splices-toggles control-structures partials render-trait web-frameworks faq
 
 slug_to_md = content/$(1).md
 slug_to_html = site/$(1).html

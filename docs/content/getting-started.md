@@ -1,18 +1,5 @@
 # Getting started
 
-## Which version of Rust?
-
-While Maud works well
-on both stable and [nightly] versions
-of Rust,
-the error messages are slightly better
-on nightly.
-For this reason,
-it is recommended to develop using nightly Rust,
-but test and deploy using stable.
-
-[nightly]: https://doc.rust-lang.org/book/appendix-07-nightly-rust.html
-
 ## Add Maud to your project
 
 Once Rust is set up,
@@ -33,7 +20,6 @@ maud = "*"
 Then save the following to `src/main.rs`:
 
 ```rust
-extern crate maud;
 use maud::html;
 
 fn main() {
@@ -56,3 +42,16 @@ Run this program with `cargo run`, and you should get the following:
 ```
 
 Congrats – you've written your first Maud program!
+
+## Which version of Rust?
+
+While Maud works well
+on both stable and [nightly] versions
+of Rust,
+the error messages are slightly better
+on nightly.
+For this reason,
+it is recommended to develop using nightly Rust,
+but test and deploy using stable.
+
+[nightly]: https://doc.rust-lang.org/book/appendix-07-nightly-rust.html

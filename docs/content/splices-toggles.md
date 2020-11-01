@@ -1,6 +1,8 @@
-# Dynamic content
+# Splices and toggles
 
-Use `(foo)` syntax to splice in the value of `foo` at runtime. Any HTML special characters are escaped by default.
+## Splices: `(foo)`
+
+Use `(foo)` syntax to insert the value of `foo` at runtime. Any HTML special characters are escaped by default.
 
 ```rust
 let best_pony = "Pinkie Pie";
@@ -27,7 +29,7 @@ html! {
 }
 ```
 
-## Splices in attributes
+### Splices in attributes
 
 Splices work in attributes as well.
 
@@ -51,11 +53,11 @@ html! {
 }
 ```
 
-## What can be spliced?
+### What can be spliced?
 
 You can splice any value that implements [`std::fmt::Display`][Display]. Most primitive types (such as `str` and `i32`) implement this trait, so they should work out of the box.
 
-To change this behavior for some type, you can implement the [`Render`][Render] trait by hand. The [`PreEscaped`][PreEscaped] wrapper type, which outputs its argument without escaping, works this way. See the [traits](./traits.md) section for details.
+To change this behavior for some type, you can implement the [`Render`][Render] trait by hand. The [`PreEscaped`][PreEscaped] wrapper type, which outputs its argument without escaping, works this way. See the [traits](render-trait.md) section for details.
 
 ```rust
 use maud::PreEscaped;
@@ -69,3 +71,29 @@ html! {
 [Display]: http://doc.rust-lang.org/std/fmt/trait.Display.html
 [Render]: https://docs.rs/maud/*/maud/trait.Render.html
 [PreEscaped]: https://docs.rs/maud/*/maud/struct.PreEscaped.html
+
+## Toggles: `[foo]`
+
+Use `[foo]` syntax to show or hide something based on a boolean expression `foo`.
+
+This works on empty attributes:
+
+```rust
+let allow_editing = true;
+html! {
+    p contenteditable?[allow_editing] {
+        "Edit me, I "
+        em { "dare" }
+        " you."
+    }
+}
+```
+
+And classes:
+
+```rust
+let cuteness = 95;
+html! {
+    p.cute[cuteness > 50] { "Squee!" }
+}
+```
