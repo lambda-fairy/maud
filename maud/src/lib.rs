@@ -5,7 +5,7 @@
 //!
 //! [book]: https://maud.lambda.xyz/
 
-#![doc(html_root_url = "https://docs.rs/maud/0.22.0")]
+#![doc(html_root_url = "https://docs.rs/maud/0.22.1")]
 
 use std::fmt::{self, Write};
 
