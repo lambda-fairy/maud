@@ -53,6 +53,20 @@ html! {
 }
 ```
 
+### Splices in classes and IDs
+
+Splices can also be used in classes and IDs.
+
+```rust
+let name = "rarity";
+let severity = "critical";
+html! {
+    aside#(name) {
+        p.{ "color-" (severity) } { "This is the worst! Possible! Thing!" }
+    }
+}
+```
+
 ### What can be spliced?
 
 You can splice any value that implements [`std::fmt::Display`][Display]. Most primitive types (such as `str` and `i32`) implement this trait, so they should work out of the box.
