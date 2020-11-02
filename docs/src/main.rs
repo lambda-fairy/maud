@@ -196,10 +196,9 @@ fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
                 literal.push('\n');
             }
             let html = highlighted_html_for_string(&literal, &ss, syntax, &theme);
-            data.value = NodeValue::HtmlBlock(NodeHtmlBlock {
-                block_type: 0,
-                literal: html.into_bytes(),
-            });
+            let mut html_block = NodeHtmlBlock::default();
+            html_block.literal = html.into_bytes();
+            data.value = NodeValue::HtmlBlock(html_block);
         }
     }
     Ok(())
