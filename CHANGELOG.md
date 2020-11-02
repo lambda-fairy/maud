@@ -1,6 +1,8 @@
 # Change Log
 
-## [Unreleased]
+## Unreleased
+
+## [0.22.1] - 2020-11-02
 
 - [Added] Stable support 🎉
   [#214](https://github.com/lambda-fairy/maud/issues/214)
@@ -235,7 +237,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.22.1...HEAD
+[0.22.1]: https://github.com/lambda-fairy/maud/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/lambda-fairy/maud/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/lambda-fairy/maud/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/lambda-fairy/maud/compare/v0.19.0...v0.20.0
