@@ -76,7 +76,7 @@ fn simple_attributes() {
 
 #[test]
 fn empty_attributes() {
-    let result = html! { div readonly? { input type="checkbox" checked?; } };
+    let result = html! { div readonly { input type="checkbox" checked; } };
     assert_eq!(
         result.into_string(),
         r#"<div readonly><input type="checkbox" checked></div>"#
@@ -87,10 +87,10 @@ fn empty_attributes() {
 fn toggle_empty_attributes() {
     let rocks = true;
     let result = html! {
-        input checked?[true];
-        input checked?[false];
-        input checked?[rocks];
-        input checked?[!rocks];
+        input checked[true];
+        input checked[false];
+        input checked[rocks];
+        input checked[!rocks];
     };
     assert_eq!(
         result.into_string(),
@@ -108,8 +108,14 @@ fn toggle_empty_attributes_braces() {
     struct Maud {
         rocks: bool,
     }
-    let result = html! { input checked?[Maud { rocks: true }.rocks]; };
+    let result = html! { input checked[Maud { rocks: true }.rocks]; };
     assert_eq!(result.into_string(), r#"<input checked>"#);
+}
+
+#[test]
+fn empty_attributes_question_mark() {
+    let result = html! { input checked? disabled?[true]; };
+    assert_eq!(result.into_string(), "<input checked disabled>");
 }
 
 #[test]
@@ -133,7 +139,7 @@ fn hyphens_in_element_names() {
 
 #[test]
 fn hyphens_in_attribute_names() {
-    let result = html! { this sentence-is="false" of-course? {} };
+    let result = html! { this sentence-is="false" of-course {} };
     assert_eq!(
         result.into_string(),
         r#"<this sentence-is="false" of-course></this>"#
@@ -281,7 +287,7 @@ fn div_shorthand_id() {
 
 #[test]
 fn div_shorthand_class_with_attrs() {
-    let result = html! { .awesome-class contenteditable? dir="rtl" #unique-id {} };
+    let result = html! { .awesome-class contenteditable dir="rtl" #unique-id {} };
     assert_eq!(
         result.into_string(),
         r#"<div class="awesome-class" id="unique-id" contenteditable dir="rtl"></div>"#
@@ -290,7 +296,7 @@ fn div_shorthand_class_with_attrs() {
 
 #[test]
 fn div_shorthand_id_with_attrs() {
-    let result = html! { #unique-id contenteditable? dir="rtl" .awesome-class {} };
+    let result = html! { #unique-id contenteditable dir="rtl" .awesome-class {} };
     assert_eq!(
         result.into_string(),
         r#"<div class="awesome-class" id="unique-id" contenteditable dir="rtl"></div>"#
