@@ -544,7 +544,7 @@ impl Parser {
                         }
                         attrs.push(ast::Attr::Attribute {
                             attribute: ast::Attribute {
-                                name: name,
+                                name,
                                 attr_type: ast::AttrType::Normal { value },
                             },
                         });
