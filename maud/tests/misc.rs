@@ -3,7 +3,7 @@ use maud::{self, html};
 #[test]
 fn issue_13() {
     let owned = String::from("yay");
-    let _ = html!((owned));
+    let _ = html! { (owned) };
     // Make sure the `html!` call didn't move it
     let _owned = owned;
 }
@@ -11,39 +11,44 @@ fn issue_13() {
 #[test]
 fn issue_21() {
     macro_rules! greet {
-        () => ({
+        () => {{
             let name = "Pinkie Pie";
-            html!(p { "Hello, " (name) "!" })
-        })
+            html! {
+                p { "Hello, " (name) "!" }
+            }
+        }};
     }
 
-    let s = greet!().into_string();
-    assert_eq!(s, "<p>Hello, Pinkie Pie!</p>");
+    assert_eq!(greet!().into_string(), "<p>Hello, Pinkie Pie!</p>");
 }
 
 #[test]
 fn issue_21_2() {
     macro_rules! greet {
-        ($name:expr) => ({
-            html!(p { "Hello, " ($name) "!" })
-        })
+        ($name:expr) => {{
+            html! {
+                p { "Hello, " ($name) "!" }
+            }
+        }};
     }
 
-    let s = greet!("Pinkie Pie").into_string();
-    assert_eq!(s, "<p>Hello, Pinkie Pie!</p>");
+    assert_eq!(
+        greet!("Pinkie Pie").into_string(),
+        "<p>Hello, Pinkie Pie!</p>"
+    );
 }
 
 #[test]
 fn issue_23() {
     macro_rules! wrapper {
         ($($x:tt)*) => {{
-            html!($($x)*)
+            html! { $($x)* }
         }}
     }
 
     let name = "Lyra";
-    let s = wrapper!(p { "Hi, " (name) "!" }).into_string();
-    assert_eq!(s, "<p>Hi, Lyra!</p>");
+    let result = wrapper!(p { "Hi, " (name) "!" });
+    assert_eq!(result.into_string(), "<p>Hi, Lyra!</p>");
 }
 
 #[test]
@@ -58,10 +63,10 @@ fn render_impl() {
     let r = R("pinkie");
     // Since `R` is not `Copy`, this shows that Maud will auto-ref splice
     // arguments to find a `Render` impl
-    let s1 = html!((r)).into_string();
-    let s2 = html!((r)).into_string();
-    assert_eq!(s1, "pinkie");
-    assert_eq!(s2, "pinkie");
+    let result_a = html! { (r) };
+    let result_b = html! { (r) };
+    assert_eq!(result_a.into_string(), "pinkie");
+    assert_eq!(result_b.into_string(), "pinkie");
 }
 
 #[test]
@@ -76,5 +81,5 @@ fn issue_97() {
         }
     }
 
-    assert_eq!(html!((Pinkie)).into_string(), "42");
+    assert_eq!(html! { (Pinkie) }.into_string(), "42");
 }

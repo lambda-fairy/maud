@@ -2,71 +2,71 @@ use maud::{html, Markup};
 
 #[test]
 fn literals() {
-    let s = html!("du\tcks" "-23" "3.14\n" "geese").into_string();
-    assert_eq!(s, "du\tcks-233.14\ngeese");
+    let result = html! { "du\tcks" "-23" "3.14\n" "geese" };
+    assert_eq!(result.into_string(), "du\tcks-233.14\ngeese");
 }
 
 #[test]
 fn escaping() {
-    let s = html!("<flim&flam>").into_string();
-    assert_eq!(s, "&lt;flim&amp;flam&gt;");
+    let result = html! { "<flim&flam>" };
+    assert_eq!(result.into_string(), "&lt;flim&amp;flam&gt;");
 }
 
 #[test]
 fn semicolons() {
-    let s = html! {
+    let result = html! {
         "one";
         "two";
         "three";
         ;;;;;;;;;;;;;;;;;;;;;;;;
         "four";
-    }
-    .into_string();
-    assert_eq!(s, "onetwothreefour");
+    };
+    assert_eq!(result.into_string(), "onetwothreefour");
 }
 
 #[test]
 fn blocks() {
-    let s = html! {
+    let result = html! {
         "hello"
         {
             " ducks" " geese"
         }
         " swans"
-    }
-    .into_string();
-    assert_eq!(s, "hello ducks geese swans");
+    };
+    assert_eq!(result.into_string(), "hello ducks geese swans");
 }
 
 #[test]
 fn simple_elements() {
-    let s = html!(p { b { "pickle" } "barrel" i { "kumquat" } }).into_string();
-    assert_eq!(s, "<p><b>pickle</b>barrel<i>kumquat</i></p>");
+    let result = html! { p { b { "pickle" } "barrel" i { "kumquat" } } };
+    assert_eq!(
+        result.into_string(),
+        "<p><b>pickle</b>barrel<i>kumquat</i></p>"
+    );
 }
 
 #[test]
 fn empty_elements() {
-    let s = html!("pinkie" br; "pie").into_string();
-    assert_eq!(s, "pinkie<br>pie");
+    let result = html! { "pinkie" br; "pie" };
+    assert_eq!(result.into_string(), "pinkie<br>pie");
 }
 
 #[test]
 fn empty_elements_slash() {
-    let s = html!("pinkie" br / "pie").into_string();
-    assert_eq!(s, "pinkie<br>pie");
+    let result = html! { "pinkie" br / "pie" };
+    assert_eq!(result.into_string(), "pinkie<br>pie");
 }
 
 #[test]
 fn simple_attributes() {
-    let s = html! {
+    let result = html! {
         link rel="stylesheet" href="styles.css";
         section id="midriff" {
             p class="hotpink" { "Hello!" }
         }
-    }
-    .into_string();
+    };
     assert_eq!(
-        s,
+        result.into_string(),
         concat!(
             r#"<link rel="stylesheet" href="styles.css">"#,
             r#"<section id="midriff"><p class="hotpink">Hello!</p></section>"#
@@ -76,22 +76,24 @@ fn simple_attributes() {
 
 #[test]
 fn empty_attributes() {
-    let s = html!(div readonly? { input type="checkbox" checked?; }).into_string();
-    assert_eq!(s, r#"<div readonly><input type="checkbox" checked></div>"#);
+    let result = html! { div readonly? { input type="checkbox" checked?; } };
+    assert_eq!(
+        result.into_string(),
+        r#"<div readonly><input type="checkbox" checked></div>"#
+    );
 }
 
 #[test]
 fn toggle_empty_attributes() {
     let rocks = true;
-    let s = html!({
+    let result = html! {
         input checked?[true];
         input checked?[false];
         input checked?[rocks];
         input checked?[!rocks];
-    })
-    .into_string();
+    };
     assert_eq!(
-        s,
+        result.into_string(),
         concat!(
             r#"<input checked>"#,
             r#"<input>"#,
@@ -106,15 +108,15 @@ fn toggle_empty_attributes_braces() {
     struct Maud {
         rocks: bool,
     }
-    let s = html!(input checked?[Maud { rocks: true }.rocks] /).into_string();
-    assert_eq!(s, r#"<input checked>"#);
+    let result = html! { input checked?[Maud { rocks: true }.rocks]; };
+    assert_eq!(result.into_string(), r#"<input checked>"#);
 }
 
 #[test]
 fn colons_in_names() {
-    let s = html!(pon-pon:controls-alpha { a on:click="yay()" { "Yay!" } }).into_string();
+    let result = html! { pon-pon:controls-alpha { a on:click="yay()" { "Yay!" } } };
     assert_eq!(
-        s,
+        result.into_string(),
         concat!(
             r#"<pon-pon:controls-alpha>"#,
             r#"<a on:click="yay()">Yay!</a>"#,
@@ -123,47 +125,64 @@ fn colons_in_names() {
     );
 }
 
-#[rustfmt::skip::macros(html)]
 #[test]
 fn hyphens_in_element_names() {
-    let s = html!(custom-element {}).into_string();
-    assert_eq!(s, "<custom-element></custom-element>");
+    let result = html! { custom-element {} };
+    assert_eq!(result.into_string(), "<custom-element></custom-element>");
 }
 
 #[test]
 fn hyphens_in_attribute_names() {
-    let s = html!(this sentence-is="false" of-course? {}).into_string();
-    assert_eq!(s, r#"<this sentence-is="false" of-course></this>"#);
+    let result = html! { this sentence-is="false" of-course? {} };
+    assert_eq!(
+        result.into_string(),
+        r#"<this sentence-is="false" of-course></this>"#
+    );
 }
 
 #[test]
 fn class_shorthand() {
-    let s = html!(p { "Hi, " span.name { "Lyra" } "!" }).into_string();
-    assert_eq!(s, r#"<p>Hi, <span class="name">Lyra</span>!</p>"#);
+    let result = html! { p { "Hi, " span.name { "Lyra" } "!" } };
+    assert_eq!(
+        result.into_string(),
+        r#"<p>Hi, <span class="name">Lyra</span>!</p>"#
+    );
 }
 
 #[test]
 fn class_shorthand_with_space() {
-    let s = html!(p { "Hi, " span .name { "Lyra" } "!" }).into_string();
-    assert_eq!(s, r#"<p>Hi, <span class="name">Lyra</span>!</p>"#);
+    let result = html! { p { "Hi, " span .name { "Lyra" } "!" } };
+    assert_eq!(
+        result.into_string(),
+        r#"<p>Hi, <span class="name">Lyra</span>!</p>"#
+    );
 }
 
 #[test]
 fn classes_shorthand() {
-    let s = html!(p { "Hi, " span.name.here { "Lyra" } "!" }).into_string();
-    assert_eq!(s, r#"<p>Hi, <span class="name here">Lyra</span>!</p>"#);
+    let result = html! { p { "Hi, " span.name.here { "Lyra" } "!" } };
+    assert_eq!(
+        result.into_string(),
+        r#"<p>Hi, <span class="name here">Lyra</span>!</p>"#
+    );
 }
 
 #[test]
 fn hyphens_in_class_names() {
-    let s = html!(p.rocks-these.are--my--rocks { "yes" }).into_string();
-    assert_eq!(s, r#"<p class="rocks-these are--my--rocks">yes</p>"#);
+    let result = html! { p.rocks-these.are--my--rocks { "yes" } };
+    assert_eq!(
+        result.into_string(),
+        r#"<p class="rocks-these are--my--rocks">yes</p>"#
+    );
 }
 
 #[test]
 fn class_string() {
-    let s = html!(h1."pinkie-123" { "Pinkie Pie" }).into_string();
-    assert_eq!(s, r#"<h1 class="pinkie-123">Pinkie Pie</h1>"#);
+    let result = html! { h1."pinkie-123" { "Pinkie Pie" } };
+    assert_eq!(
+        result.into_string(),
+        r#"<h1 class="pinkie-123">Pinkie Pie</h1>"#
+    );
 }
 
 #[test]
@@ -194,16 +213,16 @@ fn toggle_classes_braces() {
     struct Maud {
         rocks: bool,
     }
-    let s = html!(p.rocks[Maud { rocks: true }.rocks] { "Awesome!" }).into_string();
-    assert_eq!(s, r#"<p class="rocks">Awesome!</p>"#);
+    let result = html! { p.rocks[Maud { rocks: true }.rocks] { "Awesome!" } };
+    assert_eq!(result.into_string(), r#"<p class="rocks">Awesome!</p>"#);
 }
 
 #[test]
 fn toggle_classes_string() {
     let is_cupcake = true;
     let is_muffin = false;
-    let s = html!(p."cupcake"[is_cupcake]."is_muffin"[is_muffin] { "Testing!" }).into_string();
-    assert_eq!(s, r#"<p class="cupcake">Testing!</p>"#);
+    let result = html! { p."cupcake"[is_cupcake]."is_muffin"[is_muffin] { "Testing!" } };
+    assert_eq!(result.into_string(), r#"<p class="cupcake">Testing!</p>"#);
 }
 
 #[test]
@@ -223,51 +242,57 @@ fn mixed_classes() {
 
 #[test]
 fn id_shorthand() {
-    let s = html!(p { "Hi, " span#thing { "Lyra" } "!" }).into_string();
-    assert_eq!(s, r#"<p>Hi, <span id="thing">Lyra</span>!</p>"#);
+    let result = html! { p { "Hi, " span#thing { "Lyra" } "!" } };
+    assert_eq!(
+        result.into_string(),
+        r#"<p>Hi, <span id="thing">Lyra</span>!</p>"#
+    );
 }
 
 #[test]
 fn id_string() {
-    let s = html!(h1#"pinkie-123" { "Pinkie Pie" }).into_string();
-    assert_eq!(s, r#"<h1 id="pinkie-123">Pinkie Pie</h1>"#);
+    let result = html! { h1#"pinkie-123" { "Pinkie Pie" } };
+    assert_eq!(
+        result.into_string(),
+        r#"<h1 id="pinkie-123">Pinkie Pie</h1>"#
+    );
 }
 
 #[test]
 fn classes_attrs_ids_mixed_up() {
-    let s = html!(p { "Hi, " span.name.here lang="en" #thing { "Lyra" } "!" }).into_string();
+    let result = html! { p { "Hi, " span.name.here lang="en" #thing { "Lyra" } "!" } };
     assert_eq!(
-        s,
+        result.into_string(),
         r#"<p>Hi, <span class="name here" id="thing" lang="en">Lyra</span>!</p>"#
     );
 }
 
 #[test]
 fn div_shorthand_class() {
-    let s = html!(.awesome-class {}).into_string();
-    assert_eq!(s, r#"<div class="awesome-class"></div>"#);
+    let result = html! { .awesome-class {} };
+    assert_eq!(result.into_string(), r#"<div class="awesome-class"></div>"#);
 }
 
 #[test]
 fn div_shorthand_id() {
-    let s = html!(#unique-id {}).into_string();
-    assert_eq!(s, r#"<div id="unique-id"></div>"#);
+    let result = html! { #unique-id {} };
+    assert_eq!(result.into_string(), r#"<div id="unique-id"></div>"#);
 }
 
 #[test]
 fn div_shorthand_class_with_attrs() {
-    let s = html!(.awesome-class contenteditable? dir="rtl" #unique-id {}).into_string();
+    let result = html! { .awesome-class contenteditable? dir="rtl" #unique-id {} };
     assert_eq!(
-        s,
+        result.into_string(),
         r#"<div class="awesome-class" id="unique-id" contenteditable dir="rtl"></div>"#
     );
 }
 
 #[test]
 fn div_shorthand_id_with_attrs() {
-    let s = html!(#unique-id contenteditable? dir="rtl" .awesome-class {}).into_string();
+    let result = html! { #unique-id contenteditable? dir="rtl" .awesome-class {} };
     assert_eq!(
-        s,
+        result.into_string(),
         r#"<div class="awesome-class" id="unique-id" contenteditable dir="rtl"></div>"#
     );
 }

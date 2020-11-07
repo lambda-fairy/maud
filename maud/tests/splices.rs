@@ -2,20 +2,20 @@ use maud::html;
 
 #[test]
 fn literals() {
-    let s = html!(("<pinkie>")).into_string();
-    assert_eq!(s, "&lt;pinkie&gt;");
+    let result = html! { ("<pinkie>") };
+    assert_eq!(result.into_string(), "&lt;pinkie&gt;");
 }
 
 #[test]
 fn raw_literals() {
     use maud::PreEscaped;
-    let s = html!((PreEscaped("<pinkie>"))).into_string();
-    assert_eq!(s, "<pinkie>");
+    let result = html! { (PreEscaped("<pinkie>")) };
+    assert_eq!(result.into_string(), "<pinkie>");
 }
 
 #[test]
 fn blocks() {
-    let s = html!({
+    let result = html! {
         ({
             let mut result = 1i32;
             for i in 2..11 {
@@ -23,52 +23,54 @@ fn blocks() {
             }
             result
         })
-    })
-    .into_string();
-    assert_eq!(s, "3628800");
+    };
+    assert_eq!(result.into_string(), "3628800");
 }
 
 #[test]
 fn attributes() {
     let alt = "Pinkie Pie";
-    let s = html!(img src="pinkie.jpg" alt=(alt) /).into_string();
-    assert_eq!(s, r#"<img src="pinkie.jpg" alt="Pinkie Pie">"#);
+    let result = html! { img src="pinkie.jpg" alt=(alt) / };
+    assert_eq!(
+        result.into_string(),
+        r#"<img src="pinkie.jpg" alt="Pinkie Pie">"#
+    );
 }
 
 #[test]
 fn class_shorthand() {
     let pinkie_class = "pinkie";
-    let s = html!(p.(pinkie_class) { "Fun!" }).into_string();
-    assert_eq!(s, r#"<p class="pinkie">Fun!</p>"#);
+    let result = html! { p.(pinkie_class) { "Fun!" } };
+    assert_eq!(result.into_string(), r#"<p class="pinkie">Fun!</p>"#);
 }
 
 #[test]
 fn class_shorthand_block() {
     let class_prefix = "pinkie-";
-    let s = html!(p.{ (class_prefix) "123" } { "Fun!" }).into_string();
-    assert_eq!(s, r#"<p class="pinkie-123">Fun!</p>"#);
+    let result = html! { p.{ (class_prefix) "123" } { "Fun!" } };
+    assert_eq!(result.into_string(), r#"<p class="pinkie-123">Fun!</p>"#);
 }
 
 #[test]
 fn id_shorthand() {
     let pinkie_id = "pinkie";
-    let s = html!(p#(pinkie_id) { "Fun!" }).into_string();
-    assert_eq!(s, r#"<p id="pinkie">Fun!</p>"#);
+    let result = html! { p#(pinkie_id) { "Fun!" } };
+    assert_eq!(result.into_string(), r#"<p id="pinkie">Fun!</p>"#);
 }
 
 static BEST_PONY: &'static str = "Pinkie Pie";
 
 #[test]
 fn statics() {
-    let s = html!((BEST_PONY)).into_string();
-    assert_eq!(s, "Pinkie Pie");
+    let result = html! { (BEST_PONY) };
+    assert_eq!(result.into_string(), "Pinkie Pie");
 }
 
 #[test]
 fn locals() {
     let best_pony = "Pinkie Pie";
-    let s = html!((best_pony)).into_string();
-    assert_eq!(s, "Pinkie Pie");
+    let result = html! { (best_pony) };
+    assert_eq!(result.into_string(), "Pinkie Pie");
 }
 
 /// An example struct, for testing purposes only
@@ -92,18 +94,17 @@ fn structs() {
         name: "Pinkie Pie",
         adorableness: 9,
     };
-    let s = html!({
+    let result = html! {
         "Name: " (pinkie.name) ". Rating: " (pinkie.repugnance())
-    })
-    .into_string();
-    assert_eq!(s, "Name: Pinkie Pie. Rating: 1");
+    };
+    assert_eq!(result.into_string(), "Name: Pinkie Pie. Rating: 1");
 }
 
 #[test]
 fn tuple_accessors() {
     let a = ("ducks", "geese");
-    let s = html!((a.0)).into_string();
-    assert_eq!(s, "ducks");
+    let result = html! { (a.0) };
+    assert_eq!(result.into_string(), "ducks");
 }
 
 #[test]
@@ -113,13 +114,13 @@ fn splice_with_path() {
             "Maud"
         }
     }
-    let s = html!((inner::name())).into_string();
-    assert_eq!(s, "Maud");
+    let result = html! { (inner::name()) };
+    assert_eq!(result.into_string(), "Maud");
 }
 
 #[test]
 fn nested_macro_invocation() {
     let best_pony = "Pinkie Pie";
-    let s = html!((format!("{} is best pony", best_pony))).into_string();
-    assert_eq!(s, "Pinkie Pie is best pony");
+    let result = html! { (format!("{} is best pony", best_pony)) };
+    assert_eq!(result.into_string(), "Pinkie Pie is best pony");
 }
