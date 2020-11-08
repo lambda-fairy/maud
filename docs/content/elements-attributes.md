@@ -64,19 +64,23 @@ html! {
 }
 ```
 
-## Empty attributes: `checked?`
+## Empty attributes: `checked`
 
-Declare an empty attribute using a `?` suffix: `checked?`.
+Declare an empty attribute by omitting the value.
 
 ```rust
 html! {
     form {
-        input type="checkbox" name="cupcakes" checked?;
+        input type="checkbox" name="cupcakes" checked;
         " "
         label for="cupcakes" { "Do you like cupcakes?" }
     }
 }
 ```
+
+Before version 0.22.2, Maud required a `?` suffix on empty attributes: `checked?`. This is no longer necessary ([#238]), but still supported for backward compatibility.
+
+[#238]: https://github.com/lambda-fairy/maud/pull/238
 
 ## Classes and IDs: `.foo` `#bar`
 
