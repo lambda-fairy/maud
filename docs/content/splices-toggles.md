@@ -95,7 +95,7 @@ This works on empty attributes:
 ```rust
 let allow_editing = true;
 html! {
-    p contenteditable?[allow_editing] {
+    p contenteditable[allow_editing] {
         "Edit me, I "
         em { "dare" }
         " you."

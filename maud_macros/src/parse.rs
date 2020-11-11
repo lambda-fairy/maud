@@ -63,11 +63,6 @@ impl Parser {
         self.next();
     }
 
-    /// Overwrites the current parser state with the given parameter.
-    fn commit(&mut self, attempt: Parser) {
-        *self = attempt;
-    }
-
     /// Parses and renders multiple blocks of markup.
     fn markups(&mut self) -> Vec<ast::Markup> {
         let mut result = Vec::new();
@@ -534,60 +529,73 @@ impl Parser {
     fn attrs(&mut self) -> ast::Attrs {
         let mut attrs = Vec::new();
         loop {
-            let mut attempt = self.clone();
-            let maybe_name = attempt.try_namespaced_name();
-            let token_after = attempt.next();
-            match (maybe_name, token_after) {
-                // Non-empty attribute
-                (Some(ref name), Some(TokenTree::Punct(ref punct))) if punct.as_char() == '=' => {
-                    self.commit(attempt);
-                    let value;
-                    {
-                        // Parse a value under an attribute context
-                        let in_attr = mem::replace(&mut self.in_attr, true);
-                        value = self.markup();
-                        self.in_attr = in_attr;
+            if let Some(name) = self.try_namespaced_name() {
+                // Attribute
+                match self.peek() {
+                    // Non-empty attribute
+                    Some(TokenTree::Punct(ref punct)) if punct.as_char() == '=' => {
+                        self.advance();
+                        let value;
+                        {
+                            // Parse a value under an attribute context
+                            let in_attr = mem::replace(&mut self.in_attr, true);
+                            value = self.markup();
+                            self.in_attr = in_attr;
+                        }
+                        attrs.push(ast::Attr::Attribute {
+                            attribute: ast::Attribute {
+                                name,
+                                attr_type: ast::AttrType::Normal { value },
+                            },
+                        });
                     }
-                    attrs.push(ast::Attr::Attribute {
-                        attribute: ast::Attribute {
-                            name: name.clone(),
-                            attr_type: ast::AttrType::Normal { value },
-                        },
-                    });
+                    // Empty attribute (legacy syntax)
+                    Some(TokenTree::Punct(ref punct)) if punct.as_char() == '?' => {
+                        self.advance();
+                        let toggler = self.attr_toggler();
+                        attrs.push(ast::Attr::Attribute {
+                            attribute: ast::Attribute {
+                                name: name.clone(),
+                                attr_type: ast::AttrType::Empty { toggler },
+                            },
+                        });
+                    }
+                    // Empty attribute (new syntax)
+                    _ => {
+                        let toggler = self.attr_toggler();
+                        attrs.push(ast::Attr::Attribute {
+                            attribute: ast::Attribute {
+                                name: name.clone(),
+                                attr_type: ast::AttrType::Empty { toggler },
+                            },
+                        });
+                    }
                 }
-                // Empty attribute
-                (Some(ref name), Some(TokenTree::Punct(ref punct))) if punct.as_char() == '?' => {
-                    self.commit(attempt);
-                    let toggler = self.attr_toggler();
-                    attrs.push(ast::Attr::Attribute {
-                        attribute: ast::Attribute {
-                            name: name.clone(),
-                            attr_type: ast::AttrType::Empty { toggler },
-                        },
-                    });
+            } else {
+                match self.peek() {
+                    // Class shorthand
+                    Some(TokenTree::Punct(ref punct)) if punct.as_char() == '.' => {
+                        self.advance();
+                        let name = self.class_or_id_name();
+                        let toggler = self.attr_toggler();
+                        attrs.push(ast::Attr::Class {
+                            dot_span: SpanRange::single_span(punct.span()),
+                            name,
+                            toggler,
+                        });
+                    }
+                    // ID shorthand
+                    Some(TokenTree::Punct(ref punct)) if punct.as_char() == '#' => {
+                        self.advance();
+                        let name = self.class_or_id_name();
+                        attrs.push(ast::Attr::Id {
+                            hash_span: SpanRange::single_span(punct.span()),
+                            name,
+                        });
+                    }
+                    // If it's not a valid attribute, backtrack and bail out
+                    _ => break,
                 }
-                // Class shorthand
-                (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '.' => {
-                    self.commit(attempt);
-                    let name = self.class_or_id_name();
-                    let toggler = self.attr_toggler();
-                    attrs.push(ast::Attr::Class {
-                        dot_span: SpanRange::single_span(punct.span()),
-                        name,
-                        toggler,
-                    });
-                }
-                // ID shorthand
-                (None, Some(TokenTree::Punct(ref punct))) if punct.as_char() == '#' => {
-                    self.commit(attempt);
-                    let name = self.class_or_id_name();
-                    attrs.push(ast::Attr::Id {
-                        hash_span: SpanRange::single_span(punct.span()),
-                        name,
-                    });
-                }
-                // If it's not a valid attribute, backtrack and bail out
-                _ => break,
             }
         }
 
