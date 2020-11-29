@@ -1,14 +1,30 @@
 # Elements and attributes
 
-## Elements: `p`
+## Elements with contents: `p {}`
 
-Write an element using curly braces: `p { ... }`.
-
-Terminate a void element using a semicolon: `br;`. Note that the result will be rendered with HTML syntax – `<br>` not `<br />`.
+Write an element using curly braces:
 
 ```rust
 html! {
     h1 { "Poem" }
+    p {
+        strong { "Rock," }
+        " you are a rock."
+    }
+}
+```
+
+Before version 0.18, Maud allowed the curly braces to be omitted. This syntax was [removed][#137] and now causes an error instead.
+
+[#137]: https://github.com/lambda-fairy/maud/pull/137
+
+## Void elements: `br;`
+
+Terminate a void element using a semicolon:
+
+```rust
+html! {
+    link rel="stylesheet" href="poetry.css";
     p {
         "Rock, you are a rock."
         br;
@@ -21,27 +37,28 @@ html! {
 }
 ```
 
+The result will be rendered with HTML syntax – `<br>` not `<br />`.
+
 Maud also supports ending a void element with a slash: `br /`. This syntax is [deprecated][#96] and should not be used in new code.
 
 [#96]: https://github.com/lambda-fairy/maud/pull/96
 
-Before version 0.18, Maud allowed the curly braces to be omitted. This syntax was [removed][#137] and now causes an error instead.
+## Custom elements and `data` attributes
 
-[#137]: https://github.com/lambda-fairy/maud/pull/137
-
-## Custom elements
-
-Maud also supports [custom elements].
+Maud also supports elements and attributes with hyphens in them. This includes [custom elements], [data attributes], and [ARIA annotations].
 
 ```rust
 html! {
-    blog-post {
-        title { "My blog" }
+    article data-index="12345" {
+        h1 { "My blog" }
+        tag-cloud { "pinkie pie pony cute" }
     }
 }
 ```
 
 [custom elements]: https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements
+[data attributes]: https://css-tricks.com/a-complete-guide-to-data-attributes/
+[ARIA annotations]: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Annotations
 
 ## Non-empty attributes: `title="yay"`
 
@@ -92,6 +109,14 @@ html! {
 }
 ```
 
+The classes and IDs can be quoted. This is useful for names with numbers or symbols which otherwise wouldn't parse:
+
+```rust
+html! {
+    div."col-sm-2" { "Bootstrap column!" }
+}
+```
+
 ## Implicit `div` elements
 
 If the element name is omitted, but there is a class or ID, then it is assumed to be a `div`.
@@ -100,6 +125,7 @@ If the element name is omitted, but there is a class or ID, then it is assumed t
 html! {
     #main {
         "Main content!"
+        .tip { "Storing food in a refrigerator can make it 20% cooler." }
     }
 }
 ```
