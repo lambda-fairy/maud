@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## [Unreleased]
 
 - [Changed] Don't require `?` suffix for empty attributes. The old syntax is kept for backward compatibility.
   [#238](https://github.com/lambda-fairy/maud/pull/238)
