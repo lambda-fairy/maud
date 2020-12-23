@@ -28,9 +28,6 @@ actix-web-dep = { package = "actix-web", version = ">= 2, < 4", optional = true,
 [dev-dependencies]
 trybuild = { version = "1.0.33", features = ["diff"] }
 
-[badges]
-travis-ci = { repository = "lambda-fairy/maud" }
-
 [package.metadata.docs.rs]
 all-features = true
 
