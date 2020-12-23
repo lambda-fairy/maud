@@ -65,7 +65,9 @@ fn while_expr() {
 
 #[test]
 fn while_let_expr() {
-    let mut numbers = (0..3).into_iter();
+    let mut numbers = (0..3);
+
+    #[allow(clippy::while_let_on_iterator)]
     let result = html! {
         ul {
             @while let Some(n) = numbers.next() {
@@ -73,6 +75,7 @@ fn while_let_expr() {
             }
         }
     };
+
     assert_eq!(
         result.into_string(),
         "<ul><li>0</li><li>1</li><li>2</li></ul>"
