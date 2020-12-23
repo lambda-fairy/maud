@@ -49,7 +49,7 @@ fn if_let() {
 
 #[test]
 fn while_expr() {
-    let mut numbers = (0..3).into_iter().peekable();
+    let mut numbers = (0..3).peekable();
     let result = html! {
         ul {
             @while numbers.peek().is_some() {
@@ -65,7 +65,7 @@ fn while_expr() {
 
 #[test]
 fn while_let_expr() {
-    let mut numbers = (0..3);
+    let mut numbers = 0..3;
 
     #[allow(clippy::while_let_on_iterator)]
     let result = html! {
