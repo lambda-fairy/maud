@@ -9,8 +9,8 @@ on:
   - cron: '0 1 * * *'
 
 jobs:
-  test:
-    name: Test
+  main:
+    name: Main
     runs-on: ubuntu-latest
 
     steps:
@@ -30,8 +30,8 @@ jobs:
       run: cargo test --workspace
 
     - name: Check Clippy
-      # TODO(#209): Use `cargo clippy --workspace`
-      run: cargo clippy --all-targets -- -D warnings
+      # TODO(#209): Use `--all-targets`
+      run: cargo clippy --workspace -- -D warnings
 
   # Optional features (i.e. web framework integrations) take a long time to
   # build and rarely break. Speed up CI by checking them separately.
