@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+    - master
+  schedule:
+  - cron: '0 1 * * *'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        profile: minimal
+        components: clippy
+        override: true
+
+    - name: Run tests
+      run: cargo test --workspace
+
+    - name: Check Clippy
+      run: cargo clippy --workspace -- -D warnings
