@@ -26,11 +26,96 @@ jobs:
       with:
         toolchain: nightly
         profile: minimal
-        components: clippy
         override: true
+        components: clippy
 
     - name: Run tests
       run: cargo test --workspace
 
     - name: Check Clippy
-      run: cargo clippy --workspace -- -D warnings
+      run: cargo clippy --workspace --all-targets -- -D warnings
+
+  # Optional features (i.e. web framework integrations) take a long time to
+  # build and rarely break. Speed up CI by checking them separately.
+  all-features:
+    name: All features
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        profile: minimal
+        override: true
+
+    - name: Check build
+      run: cargo check --workspace --all-features --all-targets
+
+  benchmarks:
+    name: Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        profile: minimal
+        override: true
+
+    - name: Run benchmarks
+      run: cd benchmarks && cargo test --benches --locked
+
+  documentation:
+    name: Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        profile: minimal
+        override: true
+
+    - name: Build documentation
+      run: cd docs && make -j$(nproc)
+
+  rustfmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+        components: rustfmt
+
+    - name: Check formatting
+      run: |
+        cargo fmt -- --check
+        (cd benchmarks && cargo fmt -- --check)
+        (cd docs && cargo fmt -- --check)
+        # trybuild harnesses are technically not part of the Cargo project, so
+        # need to be checked separately
+        rustfmt --check maud/tests/warnings/*.rs
