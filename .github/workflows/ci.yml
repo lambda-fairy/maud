@@ -33,7 +33,8 @@ jobs:
       run: cargo test --workspace
 
     - name: Check Clippy
-      run: cargo clippy --workspace --all-targets -- -D warnings
+      # TODO(#209): Use `cargo clippy --workspace`
+      run: cargo clippy --all-targets -- -D warnings
 
   # Optional features (i.e. web framework integrations) take a long time to
   # build and rarely break. Speed up CI by checking them separately.
@@ -83,6 +84,9 @@ jobs:
 
     - name: Check out repository
       uses: actions/checkout@v2
+      with:
+        # Documentation build uses `git describe` which requires history
+        fetch-depth: 0
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
@@ -106,6 +110,8 @@ jobs:
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
+        # rustfmt is often missing on nightly. Since there's little benefit to
+        # using the nightly version, use the more reliable stable build instead.
         toolchain: stable
         profile: minimal
         override: true
