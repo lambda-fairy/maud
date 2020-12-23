@@ -20,6 +20,3 @@ proc-macro-error = "1.0.0"
 [lib]
 name = "maud_macros"
 proc-macro = true
-
-[badges]
-travis-ci = { repository = "lambda-fairy/maud" }
