@@ -30,7 +30,7 @@ fn blocks() {
 #[test]
 fn attributes() {
     let alt = "Pinkie Pie";
-    let result = html! { img src="pinkie.jpg" alt=(alt) / };
+    let result = html! { img src="pinkie.jpg" alt=(alt); };
     assert_eq!(
         result.into_string(),
         r#"<img src="pinkie.jpg" alt="Pinkie Pie">"#
@@ -58,7 +58,7 @@ fn id_shorthand() {
     assert_eq!(result.into_string(), r#"<p id="pinkie">Fun!</p>"#);
 }
 
-static BEST_PONY: &'static str = "Pinkie Pie";
+static BEST_PONY: &str = "Pinkie Pie";
 
 #[test]
 fn statics() {

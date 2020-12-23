@@ -30,8 +30,7 @@ jobs:
       run: cargo test --workspace
 
     - name: Check Clippy
-      # TODO(#209): Use `--all-targets`
-      run: cargo clippy --workspace -- -D warnings
+      run: cargo clippy --workspace --all-targets -- -D warnings
 
   # Optional features (i.e. web framework integrations) take a long time to
   # build and rarely break. Speed up CI by checking them separately.
