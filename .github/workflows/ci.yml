@@ -8,9 +8,6 @@ on:
   schedule:
   - cron: '0 1 * * *'
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
   test:
     name: Test
