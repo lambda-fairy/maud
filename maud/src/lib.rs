@@ -133,9 +133,9 @@ impl<T: AsRef<str> + Into<String>> PreEscaped<T> {
     }
 }
 
-impl<T: AsRef<str> + Into<String>> Into<String> for PreEscaped<T> {
-    fn into(self) -> String {
-        self.into_string()
+impl<T: AsRef<str> + Into<String>> From<PreEscaped<T>> for String {
+    fn from(value: PreEscaped<T>) -> String {
+        value.into_string()
     }
 }
 
