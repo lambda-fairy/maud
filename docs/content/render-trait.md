@@ -63,10 +63,10 @@ use pulldown_cmark::{Parser, html};
 struct Markdown<T: AsRef<str>>(T);
 
 impl<T: AsRef<str>> Render for Markdown<T> {
-    fn render(self, buffer: &mut String) {
+    fn render(&self) -> Markup {
         // Generate raw HTML
         let mut unsafe_html = String::new();
-        let parser = Parser::new(self.0.as_str());
+        let parser = Parser::new(self.0.as_ref());
         html::push_html(&mut unsafe_html, parser);
         // Sanitize it with ammonia
         let safe_html = ammonia::clean(&unsafe_html);
