@@ -8,6 +8,9 @@ make clean
 make -j$nproc
 
 cd site
+
+echo maud.lambda.xyz > CNAME
+
 git init
 git add .
 git commit -m 'Deploy'
