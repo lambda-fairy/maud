@@ -56,7 +56,7 @@ We also use the [`ammonia`][ammonia] library, which sanitizes the resulting mark
 extern crate ammonia;
 extern crate pulldown_cmark;
 
-use maud::{PreEscaped, Render};
+use maud::{Markup, PreEscaped, Render};
 use pulldown_cmark::{Parser, html};
 
 /// Renders a block of Markdown using `pulldown-cmark`.
