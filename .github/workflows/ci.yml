@@ -27,7 +27,7 @@ jobs:
         components: clippy
 
     - name: Run tests
-      run: cargo test --workspace
+      run: cargo test --workspace --all-targets
 
     - name: Check Clippy
       run: cargo clippy --workspace --all-targets -- -D warnings
@@ -52,25 +52,6 @@ jobs:
 
     - name: Check build
       run: cargo check --workspace --all-features --all-targets
-
-  benchmarks:
-    name: Benchmarks
-    runs-on: ubuntu-latest
-
-    steps:
-
-    - name: Check out repository
-      uses: actions/checkout@v2
-
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        profile: minimal
-        override: true
-
-    - name: Run benchmarks
-      run: cd benchmarks && cargo test --benches --locked
 
   # Please keep this in sync with `publish-docs.yml`
   documentation:
