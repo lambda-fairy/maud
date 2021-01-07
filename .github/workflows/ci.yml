@@ -72,6 +72,7 @@ jobs:
     - name: Run benchmarks
       run: cd benchmarks && cargo test --benches --locked
 
+  # Please keep this in sync with `publish-docs.yml`
   documentation:
     name: Documentation
     runs-on: ubuntu-latest
