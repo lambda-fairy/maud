@@ -18,7 +18,7 @@ jobs:
     - name: Check out repository
       uses: actions/checkout@v2
       with:
-        ref: '{{ github.event.inputs.ref }}'
+        ref: '${{ github.event.inputs.ref }}'
         # Documentation build uses `git describe` which requires history
         fetch-depth: 0
 
