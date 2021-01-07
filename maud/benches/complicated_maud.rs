@@ -50,7 +50,7 @@ mod btn {
                 RequestMethod::Post => {
                     html! {
                         form method="POST" action=(self.path) {
-                            input.btn type="submit" value=(self.label) /
+                            input.btn type="submit" value=(self.label);
                         }
                     }
                 }

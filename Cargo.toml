@@ -5,6 +5,5 @@ members = [
     "maud",
 ]
 exclude = [
-    "benchmarks",
     "docs",
 ]
