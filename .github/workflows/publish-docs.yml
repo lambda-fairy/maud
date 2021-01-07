@@ -1,0 +1,41 @@
+name: Publish docs
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git revision'
+        default: 'master'
+        required: true
+
+jobs:
+  main:
+    name: Main
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Check out repository
+      uses: actions/checkout@v2
+      with:
+        ref: '{{ github.event.inputs.ref }}'
+        # Documentation build uses `git describe` which requires history
+        fetch-depth: 0
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        profile: minimal
+        override: true
+
+    - name: Build documentation
+      run: cd docs && make -j$(nproc)
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: docs/site
+        cname: maud.lambda.xyz
+        force_orphan: true
