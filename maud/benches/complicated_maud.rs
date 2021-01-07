@@ -29,8 +29,8 @@ mod btn {
     impl<'a> Button<'a> {
         pub fn new(label: &'a str, path: &'a str) -> Button<'a> {
             Button {
-                label: label,
-                path: path,
+                label,
+                path,
                 req_meth: RequestMethod::Get,
             }
         }
