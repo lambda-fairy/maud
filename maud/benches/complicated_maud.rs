@@ -29,8 +29,8 @@ mod btn {
     impl<'a> Button<'a> {
         pub fn new(label: &'a str, path: &'a str) -> Button<'a> {
             Button {
-                label: label,
-                path: path,
+                label,
+                path,
                 req_meth: RequestMethod::Get,
             }
         }
@@ -50,7 +50,7 @@ mod btn {
                 RequestMethod::Post => {
                     html! {
                         form method="POST" action=(self.path) {
-                            input.btn type="submit" value=(self.label) /
+                            input.btn type="submit" value=(self.label);
                         }
                     }
                 }
