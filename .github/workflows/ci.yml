@@ -98,7 +98,6 @@ jobs:
     - name: Check formatting
       run: |
         cargo fmt -- --check
-        (cd benchmarks && cargo fmt -- --check)
         (cd docs && cargo fmt -- --check)
         # trybuild harnesses are technically not part of the Cargo project, so
         # need to be checked separately
