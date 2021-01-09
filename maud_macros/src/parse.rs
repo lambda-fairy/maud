@@ -497,7 +497,7 @@ impl Parser {
     fn element(&mut self, name: TokenStream) -> ast::Markup {
         if self.in_attr {
             let span = ast::span_tokens(name);
-            abort!(span, "unexpected element, you silly bumpkin");
+            abort!(span, "unexpected element");
         }
         let attrs = self.attrs();
         let body = match self.peek() {
