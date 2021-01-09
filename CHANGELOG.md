@@ -2,7 +2,9 @@
 
 ## [Unreleased]
 
-- [Changed] Don't require `?` suffix for empty attributes. The old syntax is kept for backward compatibility.
+## [0.22.2] - 2021-01-09
+
+- [Added] Don't require `?` suffix for empty attributes. The old syntax is kept for backward compatibility.
   [#238](https://github.com/lambda-fairy/maud/pull/238)
 - [Changed] Generalize `impl Into<String> for PreEscaped<T>` to `impl From<PreEscaped<T>> for String`.
   [#248](https://github.com/lambda-fairy/maud/pull/248)
@@ -244,7 +246,8 @@
 - [Fixed] Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.22.1...HEAD
+[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.22.2...HEAD
+[0.22.2]: https://github.com/lambda-fairy/maud/compare/v0.22.1...v0.22.2
 [0.22.1]: https://github.com/lambda-fairy/maud/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/lambda-fairy/maud/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/lambda-fairy/maud/compare/v0.20.0...v0.21.0
