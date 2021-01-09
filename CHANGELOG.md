@@ -6,6 +6,8 @@
   [#238](https://github.com/lambda-fairy/maud/pull/238)
 - [Changed] Generalize `impl Into<String> for PreEscaped<T>` to `impl From<PreEscaped<T>> for String`.
   [#248](https://github.com/lambda-fairy/maud/pull/248)
+- [Fixed] Use `Span::mixed_site` directly from proc-macro2
+  [#254](https://github.com/lambda-fairy/maud/pull/254)
 
 ## [0.22.1] - 2020-11-02
 
