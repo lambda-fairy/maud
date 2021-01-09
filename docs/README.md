@@ -69,12 +69,13 @@ when hacking on the site generator itself.
 
 ## Deployment
 
-The documentation is automatically built
-and uploaded to GitHub pages
-on every commit to `master`.
+The documentation is built
+and uploaded to GitHub Pages
+using [GitHub Actions][config].
 
-However,
-if you wish to deploy the docs manually,
-then you can do that by running `./deploy.sh`.
-You will need push access to the Maud repository
-to do this.
+The workflow is run automatically on a new release.
+For changes not tied to a release (e.g. typo fixes),
+a maintainer can trigger it manually –
+please ask if you'd like this.
+
+[config]: ../.github/workflows/publish-docs.yml

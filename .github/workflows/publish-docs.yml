@@ -1,6 +1,9 @@
 name: Publish docs
 
 on:
+  release:
+    types: [published]
+
   workflow_dispatch:
     inputs:
       ref:
