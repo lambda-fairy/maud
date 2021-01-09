@@ -12,5 +12,5 @@
 4. `cd docs && cargo update`
 5. Commit to a new branch `release-X.Y.Z`, open a PR, fix issues, merge
 6. [Create a release](https://github.com/lambda-fairy/maud/releases/new)
-7. `cargo publish`
-8. [Publish documentation](https://github.com/lambda-fairy/maud/actions?query=workflow%3A%22Publish+docs%22)
+7. [Verify that documentation was published](https://github.com/lambda-fairy/maud/actions?query=workflow%3A%22Publish+docs%22) (this should have been triggered by the release)
+8. `cargo publish`
