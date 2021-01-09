@@ -4,7 +4,7 @@
 
 ## [0.22.2] - 2021-01-09
 
-- [Changed] Don't require `?` suffix for empty attributes. The old syntax is kept for backward compatibility.
+- [Added] Don't require `?` suffix for empty attributes. The old syntax is kept for backward compatibility.
   [#238](https://github.com/lambda-fairy/maud/pull/238)
 - [Changed] Generalize `impl Into<String> for PreEscaped<T>` to `impl From<PreEscaped<T>> for String`.
   [#248](https://github.com/lambda-fairy/maud/pull/248)
