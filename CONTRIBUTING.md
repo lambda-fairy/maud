@@ -2,16 +2,14 @@
 
 Great to see that you want to help out! Here are some tips for getting started:
 
-* If you're just starting out, I suggest tackling some [easy issues] first.
-
 * Please leave a comment on the issue you're working on, so that other people don't duplicate work.
 
-* Most contributions should include tests – see the [existing test code] for how to write these.
+* Most contributions should include [tests] and a [changelog entry].
 
-* Documentation on the proc macro interface can be found on [docs.rust-lang.org][proc_macro].
+* Want to work on documentation? See the [docs readme] for advice on that.
 
 Have fun! ☺️
 
-[easy issues]: https://github.com/lambda-fairy/maud/issues?q=is%3Aissue+is%3Aopen+label%3A%22difficulty%3A+easy%22
-[existing test code]: https://github.com/lambda-fairy/maud/tree/master/maud/tests
-[proc_macro]: https://doc.rust-lang.org/nightly/proc_macro/
+[tests]: maud/tests
+[changelog entry]: CHANGELOG.md
+[docs readme]: docs/README.md
