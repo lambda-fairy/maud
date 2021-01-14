@@ -6,4 +6,5 @@ members = [
 ]
 exclude = [
     "docs",
+    "doctest",
 ]

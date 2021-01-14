@@ -20,7 +20,7 @@ maud = { version = "*", features = ["actix-web"] }
 
 Actix request handlers can use a `Markup` that implements the `actix_web::Responder` trait.
 
-```rust
+```rust,no_run
 use maud::{html, Markup};
 use actix_web::{web, App, HttpServer};
 
@@ -53,7 +53,7 @@ maud = { version = "*", features = ["iron"] }
 
 With this feature enabled, you can then build a `Response` from a `Markup` object directly. Here's an example application using Iron and Maud:
 
-```rust
+```rust,no_run
 use iron::prelude::*;
 use iron::status;
 use maud::html;
@@ -86,7 +86,7 @@ maud = { version = "*", features = ["rocket"] }
 
 This adds a `Responder` implementation for the `Markup` type, so you can return the result directly:
 
-```rust
+```rust,no_run
 use maud::{html, Markup};
 use rocket::{get, routes};
 use std::borrow::Cow;
@@ -108,7 +108,7 @@ fn main() {
 
 Unlike with the other frameworks, Rouille doesn't need any extra features at all! Calling `Response::html` on the rendered `Markup` will Just Work®.
 
-```rust
+```rust,no_run
 use maud::html;
 use rouille::{Response, router};
 

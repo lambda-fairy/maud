@@ -1,0 +1,14 @@
+[package]
+name = "doctest"
+version = "0.1.0"
+authors = ["Chris Wong <lambda.fairy@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+actix-web = "3"
+iron = "0.6"
+maud = { path = "../maud", features = ["actix-web", "iron", "rocket"] }
+rocket = "0.4"
+
+[lib]
+path = "lib.rs"

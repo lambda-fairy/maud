@@ -26,32 +26,13 @@ jobs:
         override: true
         components: clippy
 
+    # Do *not* use `--all-features` here, as the optional dependencies take a
+    # long time to build, and will be tested in the "examples" job anyway
     - name: Run tests
       run: cargo test --workspace --all-targets
 
     - name: Check Clippy
       run: cargo clippy --workspace --all-targets -- -D warnings
-
-  # Optional features (i.e. web framework integrations) take a long time to
-  # build and rarely break. Speed up CI by checking them separately.
-  all-features:
-    name: All features
-    runs-on: ubuntu-latest
-
-    steps:
-
-    - name: Check out repository
-      uses: actions/checkout@v2
-
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        profile: minimal
-        override: true
-
-    - name: Check build
-      run: cargo check --workspace --all-features --all-targets
 
   # Please keep this in sync with `publish-docs.yml`
   documentation:
@@ -75,6 +56,25 @@ jobs:
 
     - name: Build documentation
       run: cd docs && make -j$(nproc)
+
+  examples:
+    name: Examples
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        profile: minimal
+        override: true
+
+    - name: Doctest
+      run: cd doctest && cargo test
 
   rustfmt:
     name: Rustfmt
