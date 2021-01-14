@@ -3,6 +3,7 @@
 # A macro for writing HTML
 
 ```rust
+# let _ = maud::
 html! {
     h1 { "Hello, world!" }
     p.intro {
@@ -11,6 +12,7 @@ html! {
         " template language."
     }
 }
+# ;
 ```
 
 Maud is an HTML [template engine] for Rust. It's implemented as a macro, `html!`, which compiles your markup to specialized Rust code. This unique approach makes Maud templates blazing fast, super type-safe, and easy to deploy.

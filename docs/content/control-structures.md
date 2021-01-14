@@ -12,6 +12,7 @@ enum Princess { Celestia, Luna, Cadance, TwilightSparkle }
 
 let user = Princess::Celestia;
 
+# let _ = maud::
 html! {
     @if user == Princess::Luna {
         h1 { "Super secret woona to-do list" }
@@ -26,12 +27,14 @@ html! {
         p { "Nothing to see here; move along." }
     }
 }
+# ;
 ```
 
 `@if let` is supported as well:
 
 ```rust
 let user = Some("Pinkie Pie");
+# let _ = maud::
 html! {
     p {
         "Hello, "
@@ -43,6 +46,7 @@ html! {
         "!"
     }
 }
+# ;
 ```
 
 ## Looping with `@for`
@@ -51,6 +55,7 @@ Use `@for .. in ..` to loop over the elements of an iterator.
 
 ```rust
 let names = ["Applejack", "Rarity", "Fluttershy"];
+# let _ = maud::
 html! {
     p { "My favorite ponies are:" }
     ol {
@@ -59,6 +64,7 @@ html! {
         }
     }
 }
+# ;
 ```
 
 ## Declaring variables with `@let`
@@ -67,6 +73,7 @@ Declare a new variable within a template using `@let`. This can be useful when w
 
 ```rust
 let names = ["Applejack", "Rarity", "Fluttershy"];
+# let _ = maud::
 html! {
     @for name in &names {
         @let first_letter = name.chars().next().unwrap();
@@ -79,6 +86,7 @@ html! {
         }
     }
 }
+# ;
 ```
 
 ## Matching with `@match`
@@ -90,6 +98,7 @@ enum Princess { Celestia, Luna, Cadance, TwilightSparkle }
 
 let user = Princess::Celestia;
 
+# let _ = maud::
 html! {
     @match user {
         Princess::Luna => {
@@ -106,4 +115,5 @@ html! {
         _ => p { "Nothing to see here; move along." }
     }
 }
+# ;
 ```

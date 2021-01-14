@@ -5,9 +5,11 @@
 Literal strings use the same syntax as Rust. Wrap them in double quotes, and use a backslash for escapes.
 
 ```rust
+# let _ = maud::
 html! {
     "Oatmeal, are you crazy?"
 }
+# ;
 ```
 
 ## Raw strings
@@ -15,6 +17,7 @@ html! {
 If the string is long, or contains many special characters, then it may be worth using [raw strings] instead:
 
 ```rust
+# let _ = maud::
 html! {
     pre {
         r#"
@@ -27,6 +30,7 @@ html! {
         "#
     }
 }
+# ;
 ```
 
 [raw strings]: https://doc.rust-lang.org/reference/tokens.html#raw-string-literals
@@ -37,10 +41,12 @@ By default, HTML special characters are escaped automatically. Wrap the string i
 
 ```rust
 use maud::PreEscaped;
+# let _ = maud::
 html! {
     "<script>alert(\"XSS\")</script>"                // &lt;script&gt;...
     (PreEscaped("<script>alert(\"XSS\")</script>"))  // <script>...
 }
+# ;
 ```
 
 ## The `DOCTYPE` constant
@@ -49,7 +55,9 @@ If you want to add a `<!DOCTYPE html>` declaration to your page, you may use the
 
 ```rust
 use maud::DOCTYPE;
+# let _ = maud::
 html! {
     (DOCTYPE)  // <!DOCTYPE html>
 }
+# ;
 ```
