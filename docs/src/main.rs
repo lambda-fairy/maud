@@ -7,6 +7,7 @@ use std::fs::{self, File};
 use std::io::{self, BufReader};
 use std::mem;
 use std::path::Path;
+use std::str::{self, Utf8Error};
 use std::string::FromUtf8Error;
 use syntect::highlighting::{Color, ThemeSet};
 use syntect::html::highlighted_html_for_string;
@@ -108,6 +109,8 @@ fn load_page<'a>(
     lower_headings(page.content);
     rewrite_md_links(page.content)
         .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+    strip_hidden_code(page.content)
+        .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
     highlight_code(page.content).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
 
     Ok(page)
@@ -171,6 +174,38 @@ fn rewrite_md_links<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
         }
     }
     Ok(())
+}
+
+fn strip_hidden_code<'a>(root: &'a AstNode<'a>) -> Result<(), Utf8Error> {
+    for node in root.descendants() {
+        let mut data = node.data.borrow_mut();
+        if let NodeValue::CodeBlock(NodeCodeBlock { info, literal, .. }) = &mut data.value {
+            let info = str::from_utf8(info)?;
+            if !code_block_is_rust(info) {
+                continue;
+            }
+            *literal = strip_hidden_code_inner(str::from_utf8(literal)?).into_bytes();
+        }
+    }
+    Ok(())
+}
+
+fn code_block_is_rust(info: &str) -> bool {
+    info.split(",")
+        .map(str::trim)
+        .find(|s| *s == "rust")
+        .is_some()
+}
+
+fn strip_hidden_code_inner(literal: &str) -> String {
+    let lines = literal
+        .split("\n")
+        .filter(|line| {
+            let line = line.trim();
+            line != "#" && !line.starts_with("# ")
+        })
+        .collect::<Vec<_>>();
+    lines.join("\n")
 }
 
 fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
