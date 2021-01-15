@@ -26,7 +26,7 @@ Arbitrary Rust code can be included in a splice by using a [block](https://doc.r
 # struct Bar;
 # impl Bar { fn format(self, _: &str) -> &str { "" } }
 # fn something_convertible_to_foo() -> Option<Foo> { Some(Foo) }
-# fn test() {
+# fn test() -> Option<()> {
 # let _ = maud::
 html! {
     p {
