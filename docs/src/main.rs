@@ -103,15 +103,13 @@ fn load_page<'a>(
     arena: &'a Arena<AstNode<'a>>,
     options: &ComrakOptions,
     path: impl AsRef<Path>,
-) -> io::Result<Page<'a>> {
+) -> Result<Page<'a>, Box<dyn Error>> {
     let page = load_page_raw(arena, options, path)?;
 
     lower_headings(page.content);
-    rewrite_md_links(page.content)
-        .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
-    strip_hidden_code(page.content)
-        .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
-    highlight_code(page.content).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+    rewrite_md_links(page.content)?;
+    strip_hidden_code(page.content)?;
+    highlight_code(page.content)?;
 
     Ok(page)
 }
@@ -176,25 +174,18 @@ fn rewrite_md_links<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
     Ok(())
 }
 
-fn strip_hidden_code<'a>(root: &'a AstNode<'a>) -> Result<(), Utf8Error> {
+fn strip_hidden_code<'a>(root: &'a AstNode<'a>) -> Result<(), Box<dyn Error>> {
     for node in root.descendants() {
         let mut data = node.data.borrow_mut();
         if let NodeValue::CodeBlock(NodeCodeBlock { info, literal, .. }) = &mut data.value {
-            let info = str::from_utf8(info)?;
-            if !code_block_is_rust(info) {
+            let info = parse_code_block_info(info)?;
+            if !info.contains(&"rust") {
                 continue;
             }
             *literal = strip_hidden_code_inner(str::from_utf8(literal)?).into_bytes();
         }
     }
     Ok(())
-}
-
-fn code_block_is_rust(info: &str) -> bool {
-    info.split(",")
-        .map(str::trim)
-        .find(|s| *s == "rust")
-        .is_some()
 }
 
 fn strip_hidden_code_inner(literal: &str) -> String {
@@ -208,7 +199,7 @@ fn strip_hidden_code_inner(literal: &str) -> String {
     lines.join("\n")
 }
 
-fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
+fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), Box<dyn Error>> {
     let ss = SyntaxSet::load_defaults_newlines();
     let ts = ThemeSet::load_defaults();
     let mut theme = ts.themes["InspiredGitHub"].clone();
@@ -221,9 +212,11 @@ fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
     for node in root.descendants() {
         let mut data = node.data.borrow_mut();
         if let NodeValue::CodeBlock(NodeCodeBlock { info, literal, .. }) = &mut data.value {
-            let info = String::from_utf8(mem::replace(info, Vec::new()))?;
-            let syntax = ss
-                .find_syntax_by_token(&info)
+            let info = parse_code_block_info(info)?;
+            let syntax = info
+                .into_iter()
+                .filter_map(|token| ss.find_syntax_by_token(&token))
+                .next()
                 .unwrap_or_else(|| ss.find_syntax_plain_text());
             let mut literal = String::from_utf8(mem::replace(literal, Vec::new()))?;
             if !literal.ends_with('\n') {
@@ -237,6 +230,10 @@ fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
         }
     }
     Ok(())
+}
+
+fn parse_code_block_info(info: &[u8]) -> Result<Vec<&str>, Utf8Error> {
+    str::from_utf8(info).map(|info| info.split(",").map(str::trim).collect())
 }
 
 fn comrak_options() -> ComrakOptions {
