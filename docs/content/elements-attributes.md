@@ -5,6 +5,7 @@
 Write an element using curly braces:
 
 ```rust
+# let _ = maud::
 html! {
     h1 { "Poem" }
     p {
@@ -12,6 +13,7 @@ html! {
         " you are a rock."
     }
 }
+# ;
 ```
 
 Before version 0.18, Maud allowed the curly braces to be omitted. This syntax was [removed][#137] and now causes an error instead.
@@ -23,6 +25,7 @@ Before version 0.18, Maud allowed the curly braces to be omitted. This syntax wa
 Terminate a void element using a semicolon:
 
 ```rust
+# let _ = maud::
 html! {
     link rel="stylesheet" href="poetry.css";
     p {
@@ -35,6 +38,7 @@ html! {
         "Rock."
     }
 }
+# ;
 ```
 
 The result will be rendered with HTML syntax – `<br>` not `<br />`.
@@ -48,12 +52,14 @@ Maud also supports ending a void element with a slash: `br /`. This syntax is [d
 Maud also supports elements and attributes with hyphens in them. This includes [custom elements], [data attributes], and [ARIA annotations].
 
 ```rust
+# let _ = maud::
 html! {
     article data-index="12345" {
         h1 { "My blog" }
         tag-cloud { "pinkie pie pony cute" }
     }
 }
+# ;
 ```
 
 [custom elements]: https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements
@@ -65,6 +71,7 @@ html! {
 Add attributes using the syntax: `attr="value"`. You can attach any number of attributes to an element. The values must be quoted: they are parsed as string literals.
 
 ```rust
+# let _ = maud::
 html! {
     ul {
         li {
@@ -79,6 +86,7 @@ html! {
         }
     }
 }
+# ;
 ```
 
 ## Empty attributes: `checked`
@@ -86,6 +94,7 @@ html! {
 Declare an empty attribute by omitting the value.
 
 ```rust
+# let _ = maud::
 html! {
     form {
         input type="checkbox" name="cupcakes" checked;
@@ -93,6 +102,7 @@ html! {
         label for="cupcakes" { "Do you like cupcakes?" }
     }
 }
+# ;
 ```
 
 Before version 0.22.2, Maud required a `?` suffix on empty attributes: `checked?`. This is no longer necessary ([#238]), but still supported for backward compatibility.
@@ -104,17 +114,21 @@ Before version 0.22.2, Maud required a `?` suffix on empty attributes: `checked?
 Add classes and IDs to an element using `.foo` and `#bar` syntax. You can chain multiple classes and IDs together, and mix and match them with other attributes:
 
 ```rust
+# let _ = maud::
 html! {
     input#cannon.big.scary.bright-red type="button" value="Launch Party Cannon";
 }
+# ;
 ```
 
 The classes and IDs can be quoted. This is useful for names with numbers or symbols which otherwise wouldn't parse:
 
 ```rust
+# let _ = maud::
 html! {
     div."col-sm-2" { "Bootstrap column!" }
 }
+# ;
 ```
 
 ## Implicit `div` elements
@@ -122,10 +136,12 @@ html! {
 If the element name is omitted, but there is a class or ID, then it is assumed to be a `div`.
 
 ```rust
+# let _ = maud::
 html! {
     #main {
         "Main content!"
         .tip { "Storing food in a refrigerator can make it 20% cooler." }
     }
 }
+# ;
 ```

@@ -7,6 +7,7 @@ Use `(foo)` syntax to insert the value of `foo` at runtime. Any HTML special cha
 ```rust
 let best_pony = "Pinkie Pie";
 let numbers = [1, 2, 3, 4];
+# let _ = maud::
 html! {
     p { "Hi, " (best_pony) "!" }
     p {
@@ -14,11 +15,19 @@ html! {
         "and the first one is " (numbers[0])
     }
 }
+# ;
 ```
 
 Arbitrary Rust code can be included in a splice by using a [block](https://doc.rust-lang.org/reference.html#block-expressions). This can be helpful for complex expressions that would be difficult to read otherwise.
 
 ```rust
+# struct Foo;
+# impl Foo { fn time(self) -> Bar { Bar } }
+# struct Bar;
+# impl Bar { fn format(self, _: &str) -> &str { "" } }
+# fn something_convertible_to_foo() -> Option<Foo> { Some(Foo) }
+# fn test() -> Option<()> {
+# let _ = maud::
 html! {
     p {
         ({
@@ -27,6 +36,9 @@ html! {
         })
     }
 }
+# ;
+# Some(())
+# }
 ```
 
 ### Splices in attributes
@@ -35,22 +47,26 @@ Splices work in attributes as well.
 
 ```rust
 let secret_message = "Surprise!";
+# let _ = maud::
 html! {
     p title=(secret_message) {
         "Nothing to see here, move along."
     }
 }
+# ;
 ```
 
 To concatenate multiple values within an attribute, wrap the whole thing in braces. This syntax is useful for building URLs.
 
 ```rust
 const GITHUB: &'static str = "https://github.com";
+# let _ = maud::
 html! {
     a href={ (GITHUB) "/lambda-fairy/maud" } {
         "Fork me on GitHub"
     }
 }
+# ;
 ```
 
 ### Splices in classes and IDs
@@ -60,11 +76,13 @@ Splices can also be used in classes and IDs.
 ```rust
 let name = "rarity";
 let severity = "critical";
+# let _ = maud::
 html! {
     aside#(name) {
         p.{ "color-" (severity) } { "This is the worst! Possible! Thing!" }
     }
 }
+# ;
 ```
 
 ### What can be spliced?
@@ -76,10 +94,12 @@ To change this behavior for some type, you can implement the [`Render`][Render] 
 ```rust
 use maud::PreEscaped;
 let post = "<p>Pre-escaped</p>";
+# let _ = maud::
 html! {
     h1 { "My super duper blog post" }
     (PreEscaped(post))
 }
+# ;
 ```
 
 [Display]: http://doc.rust-lang.org/std/fmt/trait.Display.html
@@ -94,6 +114,7 @@ This works on empty attributes:
 
 ```rust
 let allow_editing = true;
+# let _ = maud::
 html! {
     p contenteditable[allow_editing] {
         "Edit me, I "
@@ -101,13 +122,16 @@ html! {
         " you."
     }
 }
+# ;
 ```
 
 And classes:
 
 ```rust
 let cuteness = 95;
+# let _ = maud::
 html! {
     p.cute[cuteness > 50] { "Squee!" }
 }
+# ;
 ```

@@ -44,6 +44,8 @@ Using the `page` function will return the markup for the whole page.
 Here's an example:
 
 ```rust
+# use maud::{html, Markup};
+# fn page(title: &str, greeting_box: Markup) -> Markup { greeting_box }
 page("Hello!", html! {
     div { "Greetings, Maud." }
 });

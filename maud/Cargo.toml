@@ -30,7 +30,3 @@ trybuild = { version = "1.0.33", features = ["diff"] }
 
 [package.metadata.docs.rs]
 all-features = true
-
-[[example]]
-name = "actix"
-required-features = ["actix-web"]

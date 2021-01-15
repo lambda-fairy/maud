@@ -20,23 +20,28 @@ maud = { version = "*", features = ["actix-web"] }
 
 Actix request handlers can use a `Markup` that implements the `actix_web::Responder` trait.
 
-```rust
+```rust,no_run
+use actix_web::{get, App, HttpServer, Result as AwResult};
 use maud::{html, Markup};
-use actix_web::{web, App, HttpServer};
+use std::io;
 
-fn index(params: web::Path<(String, u32)>) -> Markup {
-    html! {
-        h1 { "Hello " (params.0) " with id " (params.1) "!" }
-    }
+#[get("/")]
+async fn index() -> AwResult<Markup> {
+    Ok(html! {
+        html {
+            body {
+                h1 { "Hello World!" }
+            }
+        }
+    })
 }
 
-fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
-        App::new()
-            .route("/user/{name}/{id}", web::get().to(index))
-    })
-    .bind("127.0.0.1:8080")?
-    .run()
+#[actix_web::main]
+async fn main() -> io::Result<()> {
+    HttpServer::new(|| App::new().service(index))
+        .bind(("127.0.0.1", 8080))?
+        .run()
+        .await
 }
 ```
 
@@ -53,7 +58,7 @@ maud = { version = "*", features = ["iron"] }
 
 With this feature enabled, you can then build a `Response` from a `Markup` object directly. Here's an example application using Iron and Maud:
 
-```rust
+```rust,no_run
 use iron::prelude::*;
 use iron::status;
 use maud::html;
@@ -86,7 +91,9 @@ maud = { version = "*", features = ["rocket"] }
 
 This adds a `Responder` implementation for the `Markup` type, so you can return the result directly:
 
-```rust
+```rust,no_run
+#![feature(decl_macro)]
+
 use maud::{html, Markup};
 use rocket::{get, routes};
 use std::borrow::Cow;
@@ -108,7 +115,7 @@ fn main() {
 
 Unlike with the other frameworks, Rouille doesn't need any extra features at all! Calling `Response::html` on the rendered `Markup` will Just Work®.
 
-```rust
+```rust,no_run
 use maud::html;
 use rouille::{Response, router};
 
@@ -116,10 +123,10 @@ fn main() {
     rouille::start_server("localhost:8000", move |request| {
         router!(request,
             (GET) (/{name: String}) => {
-                html! {
+                Response::html(html! {
                     h1 { "Hello, " (name) "!" }
                     p { "Nice to meet you!" }
-                }
+                })
             },
             _ => Response::empty_404()
         )
