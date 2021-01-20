@@ -192,16 +192,16 @@ mod iron_support {
 #[cfg(feature = "rocket")]
 mod rocket_support {
     use crate::PreEscaped;
-    use rocket::http::{ContentType, Status};
+    use rocket::http::ContentType;
     use rocket::request::Request;
-    use rocket::response::{Responder, Response};
+    use rocket::response::{self, Responder, Response};
     use std::io::Cursor;
 
-    impl Responder<'static> for PreEscaped<String> {
-        fn respond_to(self, _: &Request) -> Result<Response<'static>, Status> {
+    impl<'r, 'o: 'r> Responder<'r, 'o> for PreEscaped<String> {
+        fn respond_to(self, _: &'r Request<'_>) -> response::Result<'o> {
             Response::build()
                 .header(ContentType::HTML)
-                .sized_body(Cursor::new(self.0))
+                .sized_body(self.0.len(), Cursor::new(self.0))
                 .ok()
         }
     }
