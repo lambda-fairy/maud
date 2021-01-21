@@ -10,7 +10,7 @@ ammonia = "3"
 iron = "0.6"
 maud = { path = "../maud", features = ["actix-web", "iron", "rocket"] }
 pulldown-cmark = "0.8"
-rocket = "0.4"
+rocket = { git = "https://github.com/SergioBenitez/Rocket", rev = "c24f15c18f02319be83af4f3c1951dc220b52c5e" }
 rouille = "3"
 
 [lib]
