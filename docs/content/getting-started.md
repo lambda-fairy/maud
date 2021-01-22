@@ -31,11 +31,15 @@ fn main() {
 }
 ```
 
-`html!` takes a single argument: a template using Maud's custom syntax. This call expands to an expression of type [`Markup`][Markup], which can then be converted to a `String` using `.into_string()`.
+`html!` takes a single argument:
+a template using Maud's custom syntax.
+This call expands to an expression of type [`Markup`][Markup],
+which can then be converted to a `String` using `.into_string()`.
 
 [Markup]: https://docs.rs/maud/*/maud/type.Markup.html
 
-Run this program with `cargo run`, and you should get the following:
+Run this program with `cargo run`,
+and you should get the following:
 
 ```html
 <p>Hi, Lyra!</p>

@@ -1,6 +1,7 @@
 # Web framework integration
 
-Maud includes support for these web frameworks: [Actix], [Iron], [Rocket], and [Rouille].
+Maud includes support for these web frameworks:
+[Actix], [Iron], [Rocket], and [Rouille].
 
 [Actix]: https://actix.rs/
 [Iron]: http://ironframework.io
@@ -18,7 +19,8 @@ maud = { version = "*", features = ["actix-web"] }
 # ...
 ```
 
-Actix request handlers can use a `Markup` that implements the `actix_web::Responder` trait.
+Actix request handlers can use a `Markup`
+that implements the `actix_web::Responder` trait.
 
 ```rust,no_run
 use actix_web::{get, App, HttpServer, Result as AwResult};
@@ -56,7 +58,9 @@ maud = { version = "*", features = ["iron"] }
 # ...
 ```
 
-With this feature enabled, you can then build a `Response` from a `Markup` object directly. Here's an example application using Iron and Maud:
+With this feature enabled,
+you can then build a `Response` from a `Markup` object directly.
+Here's an example application using Iron and Maud:
 
 ```rust,no_run
 use iron::prelude::*;
@@ -76,11 +80,13 @@ fn main() {
 }
 ```
 
-`Markup` will set the content type of the response automatically, so you don't need to add it yourself.
+`Markup` will set the content type of the response automatically,
+so you don't need to add it yourself.
 
 # Rocket
 
-Rocket works in a similar way, except using the `rocket` feature:
+Rocket works in a similar way,
+except using the `rocket` feature:
 
 ```toml
 # ...
@@ -89,7 +95,8 @@ maud = { version = "*", features = ["rocket"] }
 # ...
 ```
 
-This adds a `Responder` implementation for the `Markup` type, so you can return the result directly:
+This adds a `Responder` implementation for the `Markup` type,
+so you can return the result directly:
 
 ```rust,no_run
 #![feature(decl_macro)]
@@ -113,7 +120,9 @@ fn main() {
 
 # Rouille
 
-Unlike with the other frameworks, Rouille doesn't need any extra features at all! Calling `Response::html` on the rendered `Markup` will Just Work®.
+Unlike with the other frameworks,
+Rouille doesn't need any extra features at all!
+Calling `Response::html` on the rendered `Markup` will Just Work®.
 
 ```rust,no_run
 use maud::html;
