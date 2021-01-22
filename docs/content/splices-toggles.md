@@ -2,7 +2,8 @@
 
 ## Splices: `(foo)`
 
-Use `(foo)` syntax to insert the value of `foo` at runtime. Any HTML special characters are escaped by default.
+Use `(foo)` syntax to insert the value of `foo` at runtime.
+Any HTML special characters are escaped by default.
 
 ```rust
 let best_pony = "Pinkie Pie";
@@ -18,7 +19,9 @@ html! {
 # ;
 ```
 
-Arbitrary Rust code can be included in a splice by using a [block](https://doc.rust-lang.org/reference.html#block-expressions). This can be helpful for complex expressions that would be difficult to read otherwise.
+Arbitrary Rust code can be included in a splice by using a [block].
+This can be helpful for complex expressions
+that would be difficult to read otherwise.
 
 ```rust
 # struct Foo;
@@ -41,6 +44,8 @@ html! {
 # }
 ```
 
+[block]: https://doc.rust-lang.org/reference.html#block-expressions
+
 ### Splices in attributes
 
 Splices work in attributes as well.
@@ -56,7 +61,9 @@ html! {
 # ;
 ```
 
-To concatenate multiple values within an attribute, wrap the whole thing in braces. This syntax is useful for building URLs.
+To concatenate multiple values within an attribute,
+wrap the whole thing in braces.
+This syntax is useful for building URLs.
 
 ```rust
 const GITHUB: &'static str = "https://github.com";
@@ -87,9 +94,16 @@ html! {
 
 ### What can be spliced?
 
-You can splice any value that implements [`std::fmt::Display`][Display]. Most primitive types (such as `str` and `i32`) implement this trait, so they should work out of the box.
+You can splice any value that implements [`std::fmt::Display`][Display].
+Most primitive types (such as `str` and `i32`) implement this trait,
+so they should work out of the box.
 
-To change this behavior for some type, you can implement the [`Render`][Render] trait by hand. The [`PreEscaped`][PreEscaped] wrapper type, which outputs its argument without escaping, works this way. See the [traits](render-trait.md) section for details.
+To change this behavior for some type,
+you can implement the [`Render`][Render] trait by hand.
+The [`PreEscaped`][PreEscaped] wrapper type,
+which outputs its argument without escaping,
+works this way.
+See the [traits](render-trait.md) section for details.
 
 ```rust
 use maud::PreEscaped;
@@ -108,7 +122,8 @@ html! {
 
 ## Toggles: `[foo]`
 
-Use `[foo]` syntax to show or hide something based on a boolean expression `foo`.
+Use `[foo]` syntax to show or hide something
+based on a boolean expression `foo`.
 
 This works on empty attributes:
 

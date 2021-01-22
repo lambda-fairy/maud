@@ -16,7 +16,10 @@ html! {
 # ;
 ```
 
-Before version 0.18, Maud allowed the curly braces to be omitted. This syntax was [removed][#137] and now causes an error instead.
+Before version 0.18,
+Maud allowed the curly braces to be omitted.
+This syntax was [removed][#137]
+and now causes an error instead.
 
 [#137]: https://github.com/lambda-fairy/maud/pull/137
 
@@ -41,15 +44,20 @@ html! {
 # ;
 ```
 
-The result will be rendered with HTML syntax – `<br>` not `<br />`.
+The result will be rendered with HTML syntax –
+`<br>` not `<br />`.
 
-Maud also supports ending a void element with a slash: `br /`. This syntax is [deprecated][#96] and should not be used in new code.
+Maud also supports ending a void element with a slash:
+`br /`.
+This syntax is [deprecated][#96]
+and should not be used in new code.
 
 [#96]: https://github.com/lambda-fairy/maud/pull/96
 
 ## Custom elements and `data` attributes
 
-Maud also supports elements and attributes with hyphens in them. This includes [custom elements], [data attributes], and [ARIA annotations].
+Maud also supports elements and attributes with hyphens in them.
+This includes [custom elements], [data attributes], and [ARIA annotations].
 
 ```rust
 # let _ = maud::
@@ -68,7 +76,11 @@ html! {
 
 ## Non-empty attributes: `title="yay"`
 
-Add attributes using the syntax: `attr="value"`. You can attach any number of attributes to an element. The values must be quoted: they are parsed as string literals.
+Add attributes using the syntax:
+`attr="value"`.
+You can attach any number of attributes to an element.
+The values must be quoted:
+they are parsed as string literals.
 
 ```rust
 # let _ = maud::
@@ -105,13 +117,20 @@ html! {
 # ;
 ```
 
-Before version 0.22.2, Maud required a `?` suffix on empty attributes: `checked?`. This is no longer necessary ([#238]), but still supported for backward compatibility.
+Before version 0.22.2,
+Maud required a `?` suffix on empty attributes:
+`checked?`.
+This is no longer necessary ([#238]),
+but still supported for backward compatibility.
 
 [#238]: https://github.com/lambda-fairy/maud/pull/238
 
 ## Classes and IDs: `.foo` `#bar`
 
-Add classes and IDs to an element using `.foo` and `#bar` syntax. You can chain multiple classes and IDs together, and mix and match them with other attributes:
+Add classes and IDs to an element
+using `.foo` and `#bar` syntax.
+You can chain multiple classes and IDs together,
+and mix and match them with other attributes:
 
 ```rust
 # let _ = maud::
@@ -121,7 +140,9 @@ html! {
 # ;
 ```
 
-The classes and IDs can be quoted. This is useful for names with numbers or symbols which otherwise wouldn't parse:
+The classes and IDs can be quoted.
+This is useful for names with numbers or symbols
+which otherwise wouldn't parse:
 
 ```rust
 # let _ = maud::
@@ -133,7 +154,9 @@ html! {
 
 ## Implicit `div` elements
 
-If the element name is omitted, but there is a class or ID, then it is assumed to be a `div`.
+If the element name is omitted,
+but there is a class or ID,
+then it is assumed to be a `div`.
 
 ```rust
 # let _ = maud::
