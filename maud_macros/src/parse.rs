@@ -526,7 +526,7 @@ impl Parser {
     }
 
     /// Parses the attributes of an element.
-    fn attrs(&mut self) -> ast::Attrs {
+    fn attrs(&mut self) -> Vec<ast::Attr> {
         let mut attrs = Vec::new();
         loop {
             if let Some(name) = self.try_namespaced_name() {
