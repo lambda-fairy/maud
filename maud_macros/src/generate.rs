@@ -96,7 +96,7 @@ impl Generator {
         })
     }
 
-    fn element(&self, name: TokenStream, attrs: Attrs, body: ElementBody, build: &mut Builder) {
+    fn element(&self, name: TokenStream, attrs: Vec<Attr>, body: ElementBody, build: &mut Builder) {
         build.push_str("<");
         self.name(name.clone(), build);
         self.attrs(attrs, build);
@@ -117,7 +117,7 @@ impl Generator {
         build.push_escaped(&string);
     }
 
-    fn attrs(&self, attrs: Attrs, build: &mut Builder) {
+    fn attrs(&self, attrs: Vec<Attr>, build: &mut Builder) {
         for Attribute { name, attr_type } in desugar_attrs(attrs) {
             match attr_type {
                 AttrType::Normal { value } => {
@@ -160,7 +160,7 @@ impl Generator {
 
 ////////////////////////////////////////////////////////
 
-fn desugar_attrs(attrs: Attrs) -> Vec<Attribute> {
+fn desugar_attrs(attrs: Vec<Attr>) -> Vec<Attribute> {
     let mut classes_static = vec![];
     let mut classes_toggled = vec![];
     let mut ids = vec![];

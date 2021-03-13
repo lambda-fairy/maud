@@ -17,7 +17,7 @@ pub enum Markup {
     },
     Element {
         name: TokenStream,
-        attrs: Attrs,
+        attrs: Vec<Attr>,
         body: ElementBody,
     },
     Let {
@@ -59,8 +59,6 @@ impl Markup {
         }
     }
 }
-
-pub type Attrs = Vec<Attr>;
 
 #[derive(Debug)]
 pub enum Attr {
