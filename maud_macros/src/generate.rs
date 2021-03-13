@@ -32,6 +32,7 @@ impl Generator {
 
     fn markup(&self, markup: Markup, build: &mut Builder) {
         match markup {
+            Markup::ParseError { .. } => {}
             Markup::Block(Block {
                 markups,
                 outer_span,
@@ -110,11 +111,7 @@ impl Generator {
     }
 
     fn name(&self, name: TokenStream, build: &mut Builder) {
-        let string = name
-            .into_iter()
-            .map(|token| token.to_string())
-            .collect::<String>();
-        build.push_escaped(&string);
+        build.push_escaped(&name_to_string(name));
     }
 
     fn attrs(&self, attrs: Vec<Attr>, build: &mut Builder) {

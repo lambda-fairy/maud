@@ -1,9 +1,8 @@
 use proc_macro2::{Delimiter, Ident, Literal, Spacing, Span, TokenStream, TokenTree};
-use proc_macro_error::{abort, abort_call_site, SpanRange};
+use proc_macro_error::{abort, abort_call_site, emit_error, SpanRange};
 use std::collections::HashMap;
-use std::mem;
 
-use syn::{parse_str, LitStr};
+use syn::Lit;
 
 use crate::ast;
 
@@ -13,8 +12,8 @@ pub fn parse(input: TokenStream) -> Vec<ast::Markup> {
 
 #[derive(Clone)]
 struct Parser {
-    /// Indicates whether we're inside an attribute node.
-    in_attr: bool,
+    /// If we're inside an attribute, then this contains the attribute name.
+    current_attr: Option<String>,
     input: <TokenStream as IntoIterator>::IntoIter,
 }
 
@@ -29,14 +28,14 @@ impl Iterator for Parser {
 impl Parser {
     fn new(input: TokenStream) -> Parser {
         Parser {
-            in_attr: false,
+            current_attr: None,
             input: input.into_iter(),
         }
     }
 
     fn with_input(&self, input: TokenStream) -> Parser {
         Parser {
-            in_attr: self.in_attr,
+            current_attr: self.current_attr.clone(),
             input: input.into_iter(),
         }
     }
@@ -93,9 +92,9 @@ impl Parser {
         };
         let markup = match token {
             // Literal
-            TokenTree::Literal(lit) => {
+            TokenTree::Literal(literal) => {
                 self.advance();
-                self.literal(&lit)
+                self.literal(literal)
             }
             // Special form
             TokenTree::Punct(ref punct) if punct.as_char() == '@' => {
@@ -137,7 +136,6 @@ impl Parser {
             // Element
             TokenTree::Ident(ident) => {
                 let ident_string = ident.to_string();
-                // Is this a keyword that's missing a '@'?
                 match ident_string.as_str() {
                     "if" | "while" | "for" | "match" | "let" => {
                         abort!(
@@ -145,6 +143,21 @@ impl Parser {
                             "found keyword `{}`", ident_string;
                             help = "should this be a `@{}`?", ident_string
                         );
+                    }
+                    "true" | "false" => {
+                        if let Some(attr_name) = &self.current_attr {
+                            emit_error!(
+                                ident,
+                                r#"attribute value must be a string"#;
+                                help = "to declare an empty attribute, omit the equals sign: `{}`",
+                                attr_name;
+                                help = "to toggle the attribute, use square brackets: `{}[some_boolean_flag]`",
+                                attr_name;
+                            );
+                            return ast::Markup::ParseError {
+                                span: SpanRange::single_span(ident.span()),
+                            };
+                        }
                     }
                     _ => {}
                 }
@@ -181,13 +194,32 @@ impl Parser {
     }
 
     /// Parses a literal string.
-    fn literal(&mut self, lit: &Literal) -> ast::Markup {
-        let content = parse_str::<LitStr>(&lit.to_string())
-            .map(|l| l.value())
-            .unwrap_or_else(|_| abort!(lit, "expected string"));
-        ast::Markup::Literal {
-            content,
-            span: SpanRange::single_span(lit.span()),
+    fn literal(&mut self, literal: Literal) -> ast::Markup {
+        match Lit::new(literal.clone()) {
+            Lit::Str(lit_str) => {
+                return ast::Markup::Literal {
+                    content: lit_str.value(),
+                    span: SpanRange::single_span(literal.span()),
+                }
+            }
+            // Boolean literals are idents, so `Lit::Bool` is handled in
+            // `markup`, not here.
+            Lit::Int(..) | Lit::Float(..) => {
+                emit_error!(literal, r#"literal must be double-quoted: `"{}"`"#, literal);
+            }
+            Lit::Char(lit_char) => {
+                emit_error!(
+                    literal,
+                    r#"literal must be double-quoted: `"{}"`"#,
+                    lit_char.value(),
+                );
+            }
+            _ => {
+                emit_error!(literal, "expected string");
+            }
+        }
+        ast::Markup::ParseError {
+            span: SpanRange::single_span(literal.span()),
         }
     }
 
@@ -495,7 +527,7 @@ impl Parser {
     ///
     /// The element name should already be consumed.
     fn element(&mut self, name: TokenStream) -> ast::Markup {
-        if self.in_attr {
+        if self.current_attr.is_some() {
             let span = ast::span_tokens(name);
             abort!(span, "unexpected element");
         }
@@ -535,13 +567,11 @@ impl Parser {
                     // Non-empty attribute
                     Some(TokenTree::Punct(ref punct)) if punct.as_char() == '=' => {
                         self.advance();
-                        let value;
-                        {
-                            // Parse a value under an attribute context
-                            let in_attr = mem::replace(&mut self.in_attr, true);
-                            value = self.markup();
-                            self.in_attr = in_attr;
-                        }
+                        // Parse a value under an attribute context
+                        assert!(self.current_attr.is_none());
+                        self.current_attr = Some(ast::name_to_string(name.clone()));
+                        let value = self.markup();
+                        self.current_attr = None;
                         attrs.push(ast::Attr::Attribute {
                             attribute: ast::Attribute {
                                 name,
