@@ -63,7 +63,7 @@ impl Parser {
         self.next();
     }
 
-    /// Parses and renders multiple blocks of markup.
+    /// Parses multiple blocks of markup.
     fn markups(&mut self) -> Vec<ast::Markup> {
         let mut result = Vec::new();
         loop {
@@ -83,7 +83,7 @@ impl Parser {
         result
     }
 
-    /// Parses and renders a single block of markup.
+    /// Parses a single block of markup.
     fn markup(&mut self) -> ast::Markup {
         let token = match self.peek() {
             Some(token) => token,
@@ -180,7 +180,7 @@ impl Parser {
         markup
     }
 
-    /// Parses and renders a literal string.
+    /// Parses a literal string.
     fn literal(&mut self, lit: &Literal) -> ast::Markup {
         let content = parse_str::<LitStr>(&lit.to_string())
             .map(|l| l.value())
@@ -263,7 +263,7 @@ impl Parser {
         }
     }
 
-    /// Parses and renders an `@while` expression.
+    /// Parses an `@while` expression.
     ///
     /// The leading `@while` should already be consumed.
     fn while_expr(&mut self, at_span: Span, keyword: TokenTree) -> ast::Markup {
