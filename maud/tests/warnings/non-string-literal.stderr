@@ -1,0 +1,5 @@
+error: expected string
+ --> $DIR/non-string-literal.rs:5:9
+  |
+5 |         42
+  |         ^^
