@@ -1,0 +1,9 @@
+error: unexpected end of input
+ --> $DIR/element-missing-body.rs:4:5
+  |
+4 | /     html! {
+5 | |         p
+6 | |     };
+  | |______^
+  |
+  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
