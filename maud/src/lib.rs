@@ -223,3 +223,17 @@ mod actix_support {
         }
     }
 }
+
+#[cfg(feature = "actix-web-4")]
+mod actix_support {
+    use crate::PreEscaped;
+    use actix_web_4_dep::{Error, HttpRequest, HttpResponse, Responder};
+
+    impl Responder for PreEscaped<String> {
+        fn respond_to(self, _req: &HttpRequest) -> HttpResponse {
+            HttpResponse::Ok()
+                .content_type("text/html; charset=utf-8")
+                .body(self.0)
+        }
+    }
+}
