@@ -99,14 +99,11 @@ This adds a `Responder` implementation for the `Markup` type,
 so you can return the result directly:
 
 ```rust,no_run
-#![feature(decl_macro)]
-
 use maud::{html, Markup};
 use rocket::{get, routes};
-use std::borrow::Cow;
 
 #[get("/<name>")]
-fn hello<'a>(name: Cow<'a, str>) -> Markup {
+fn hello(name: &str) -> Markup {
     html! {
         h1 { "Hello, " (name) "!" }
         p { "Nice to meet you!" }
