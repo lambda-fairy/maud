@@ -6,4 +6,4 @@ error: unexpected end of input
 6 | |     };
   | |______^
   |
-  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the macro `html` (in Nightly builds, run with -Z macro-backtrace for more info)
