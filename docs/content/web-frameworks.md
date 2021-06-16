@@ -1,12 +1,13 @@
 # Web framework integration
 
 Maud includes support for these web frameworks:
-[Actix], [Iron], [Rocket], and [Rouille].
+[Actix], [Iron], [Rocket], [Rouille], and [Warp].
 
 [Actix]: https://actix.rs/
 [Iron]: http://ironframework.io
 [Rocket]: https://rocket.rs/
 [Rouille]: https://github.com/tomaka/rouille
+[Warp]: https://github.com/seanmonstar/warp
 
 # Actix
 
@@ -120,7 +121,6 @@ fn main() {
 
 # Rouille
 
-Unlike with the other frameworks,
 Rouille doesn't need any extra features at all!
 Calling `Response::html` on the rendered `Markup` will Just Work®.
 
@@ -140,5 +140,55 @@ fn main() {
             _ => Response::empty_404()
         )
     });
+}
+```
+
+# Warp
+
+Warp also doesn't need any extra features!
+Just call `String::from` on the rendered `Markup` .
+
+```rust,no_run
+use maud::{DOCTYPE, html, PreEscaped};
+use warp::Filter;
+
+#[tokio::main]
+async fn main() {
+    let hello_routes =
+        warp::get()
+        .and(
+            // GET /hello/warp => 200 OK with body "(...)Hello, warp!(...)"
+            warp::path!("hello" / String)
+                .map(|name: String| hello_markup(&name))
+                .map(|body| warp::reply::html(body))
+            // or GET /hello => 200 OK with body "(...)Hello, there!(...)"
+            .or(warp::path!("hello")
+                .map(||     hello_markup("there"))
+                .map(|body| warp::reply::html(body))
+            )
+        );
+
+    warp::serve(hello_routes)
+        .run(([127, 0, 0, 1], 3030))
+        .await;
+}
+
+fn hello_markup(name: &str) -> String {
+    String::from(html! {
+        (DOCTYPE)
+        html {
+            head {
+                style {(PreEscaped(r#"
+                    body {
+                        padding: 20px 20px;
+                        background-color: yellow;
+                    }
+                "#))}
+            }
+            body {
+                p { "Hello, " (name) "!" }
+            }
+        }
+    })
 }
 ```
