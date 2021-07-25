@@ -6,7 +6,7 @@
 
 #![doc(html_root_url = "https://docs.rs/maud_htmlescape/0.17.0")]
 
-use std::fmt;
+use core::fmt;
 
 /// An adapter that escapes HTML special characters.
 ///

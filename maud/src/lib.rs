@@ -1,3 +1,5 @@
+#![no_std]
+
 //! A macro for writing HTML templates.
 //!
 //! This documentation only describes the runtime API. For a general
@@ -7,7 +9,15 @@
 
 #![doc(html_root_url = "https://docs.rs/maud/0.22.2")]
 
-use std::fmt::{self, Write};
+// the `iron` and `rocket` features needs `std`.
+#[cfg(any(feature = "iron", feature = "rocket"))]
+#[macro_use]
+extern crate std;
+
+extern crate alloc;
+
+use alloc::string::String;
+use core::fmt::{self, Write};
 
 pub use maud_macros::{html, html_debug};
 
@@ -89,8 +99,9 @@ impl<T: fmt::Display + ?Sized> Render for T {
 #[doc(hidden)]
 pub mod render {
     use crate::Render;
+    use alloc::string::String;
+    use core::fmt::Write;
     use maud_htmlescape::Escaper;
-    use std::fmt::Write;
 
     pub trait RenderInternal {
         fn __maud_render_to(&self, w: &mut String);
@@ -168,6 +179,8 @@ pub const DOCTYPE: PreEscaped<&'static str> = PreEscaped("<!DOCTYPE html>");
 #[cfg(feature = "iron")]
 mod iron_support {
     use crate::PreEscaped;
+    use alloc::boxed::Box;
+    use alloc::string::String;
     use iron::headers::ContentType;
     use iron::modifier::{Modifier, Set};
     use iron::modifiers::Header;
@@ -192,6 +205,7 @@ mod iron_support {
 #[cfg(feature = "rocket")]
 mod rocket_support {
     use crate::PreEscaped;
+    use alloc::string::String;
     use rocket::http::{ContentType, Status};
     use rocket::request::Request;
     use rocket::response::{Responder, Response};
@@ -211,6 +225,7 @@ mod rocket_support {
 mod actix_support {
     use crate::PreEscaped;
     use actix_web_dep::{Error, HttpRequest, HttpResponse, Responder};
+    use alloc::string::String;
     use futures_util::future::{ok, Ready};
 
     impl Responder for PreEscaped<String> {

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Support `no_std` + `alloc`.
+  [#278](https://github.com/lambda-fairy/maud/issues/278)
+
 ## [0.22.2] - 2021-01-09
 
 - Don't require `?` suffix for empty attributes. The old syntax is kept for backward compatibility.
