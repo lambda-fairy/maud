@@ -35,9 +35,9 @@ fn expand(input: TokenStream) -> TokenStream {
     let markups = parse::parse(input);
     let stmts = generate::generate(markups, output_ident.clone());
     quote!({
-        extern crate maud;
         extern crate alloc;
-        let mut #output_ident = alloc::string::String::with_capacity(#size_hint);
+        extern crate maud;
+        let mut #output_ident = ::alloc::string::String::with_capacity(#size_hint);
         #stmts
         maud::PreEscaped(#output_ident)
     })
