@@ -9,11 +9,6 @@
 
 #![doc(html_root_url = "https://docs.rs/maud/0.22.2")]
 
-// the `iron` and `rocket` features needs `std`.
-#[cfg(any(feature = "iron", feature = "rocket"))]
-#[macro_use]
-extern crate std;
-
 extern crate alloc;
 
 use alloc::string::String;
@@ -178,6 +173,8 @@ pub const DOCTYPE: PreEscaped<&'static str> = PreEscaped("<!DOCTYPE html>");
 
 #[cfg(feature = "iron")]
 mod iron_support {
+    extern crate std;
+
     use crate::PreEscaped;
     use alloc::boxed::Box;
     use alloc::string::String;
@@ -204,6 +201,8 @@ mod iron_support {
 
 #[cfg(feature = "rocket")]
 mod rocket_support {
+    extern crate std;
+
     use crate::PreEscaped;
     use alloc::string::String;
     use rocket::http::{ContentType, Status};
