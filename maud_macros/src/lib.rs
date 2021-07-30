@@ -37,7 +37,7 @@ fn expand(input: TokenStream) -> TokenStream {
     quote!({
         extern crate alloc;
         extern crate maud;
-        let mut #output_ident = ::alloc::string::String::with_capacity(#size_hint);
+        let mut #output_ident = alloc::string::String::with_capacity(#size_hint);
         #stmts
         maud::PreEscaped(#output_ident)
     })
