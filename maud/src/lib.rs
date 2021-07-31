@@ -237,3 +237,19 @@ mod actix_support {
         }
     }
 }
+
+#[cfg(feature = "tide")]
+mod tide_support {
+    use crate::PreEscaped;
+    use alloc::{format, string::String};
+    use tide::{http::mime, Response, StatusCode};
+
+    impl From<PreEscaped<String>> for Response {
+        fn from(markup: PreEscaped<String>) -> Response {
+            Response::builder(StatusCode::Ok)
+                .body(format!("{}", markup.0))
+                .content_type(mime::HTML)
+                .build()
+        }
+    }
+}

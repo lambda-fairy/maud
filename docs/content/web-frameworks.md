@@ -142,3 +142,37 @@ fn main() {
     });
 }
 ```
+
+# Tide
+
+Tide support is available with the "tide" feature:
+
+```toml
+# ...
+[dependencies]
+maud = { version = "*", features = ["tide"] }
+# ...
+```
+
+This adds an implementation of `From<PreEscaped<String>>` for the `Response` struct.
+Once provided, callers may return results of `html!` directly as responses:
+
+```rust,no_run
+use maud::html;
+use tide::Request;
+use tide::prelude::*;
+
+#[async_std::main]
+async fn main() -> tide::Result<()> {
+    let mut app = tide::new();
+    app.at("/hello/:name").get(|req: Request<()>| async {
+        let name: String = req.param("name")?.parse()?;
+        Ok(html! {
+            h1 { "Hello, " (name) "!" }
+            p { "Nice to meet you!" }
+        })
+    });
+    app.listen("127.0.0.1:8080").await?;
+    Ok(())
+}
+```
