@@ -1,12 +1,13 @@
 # Web framework integration
 
 Maud includes support for these web frameworks:
-[Actix], [Iron], [Rocket], and [Rouille].
+[Actix], [Iron], [Rocket], [Rouille], and [Tide].
 
 [Actix]: https://actix.rs/
 [Iron]: http://ironframework.io
 [Rocket]: https://rocket.rs/
 [Rouille]: https://github.com/tomaka/rouille
+[Tide]: https://docs.rs/tide/
 
 # Actix
 
