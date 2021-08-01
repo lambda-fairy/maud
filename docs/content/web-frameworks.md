@@ -166,7 +166,7 @@ use tide::prelude::*;
 #[async_std::main]
 async fn main() -> tide::Result<()> {
     let mut app = tide::new();
-    app.at("/hello/:name").get(|req: Request<()>| async {
+    app.at("/hello/:name").get(|req: Request<()>| async move {
         let name: String = req.param("name")?.parse()?;
         Ok(html! {
             h1 { "Hello, " (name) "!" }
