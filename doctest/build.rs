@@ -10,7 +10,6 @@ fn main() {
 
     let mut buffer = r#"// Automatically @generated – do not edit
 
-#![feature(extended_key_value_attributes)]
 "#.to_string();
 
     for entry in fs::read_dir(DOCS_DIR).unwrap() {
