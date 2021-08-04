@@ -4,6 +4,8 @@
 
 - Support `no_std` + `alloc`.
   [#278](https://github.com/lambda-fairy/maud/issues/278)
+- Provide Tide support.
+  [#280](https://github.com/lambda-fairy/maud/pull/280) 
 
 ## [0.22.2] - 2021-01-09
 
