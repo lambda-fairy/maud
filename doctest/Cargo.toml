@@ -8,10 +8,15 @@ edition = "2018"
 actix-web = "3"
 ammonia = "3"
 iron = "0.6"
-maud = { path = "../maud", features = ["actix-web", "iron", "rocket"] }
+maud = { path = "../maud", features = ["actix-web", "iron", "rocket", "tide"] }
 pulldown-cmark = "0.8"
 rocket = "0.4"
 rouille = "3"
+tide = "0.16"
+
+[dependencies.async-std]
+version = "1.9.0"
+features = ["attributes"]
 
 [lib]
 path = "lib.rs"
