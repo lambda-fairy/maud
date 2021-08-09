@@ -253,3 +253,26 @@ mod tide_support {
         }
     }
 }
+
+#[cfg(feature = "axum")]
+mod axum_support {
+    use crate::PreEscaped;
+    use alloc::string::String;
+    use axum::{
+        body::Body,
+        http::{HeaderValue, Response, StatusCode},
+        response::IntoResponse,
+    };
+
+    impl IntoResponse for PreEscaped<String> {
+        fn into_response(self) -> Response<axum::body::Body> {
+            let mut res = Response::new(Body::from(self.0));
+            *res.status_mut() = StatusCode::OK;
+            res.headers_mut().insert(
+                axum::http::header::CONTENT_TYPE,
+                HeaderValue::from_static("text/html; charset=utf-8"),
+            );
+            res
+        }
+    }
+}
