@@ -260,7 +260,7 @@ mod axum_support {
     use alloc::string::String;
     use axum::{
         body::Body,
-        http::{HeaderValue, Response, StatusCode},
+        http::{header, HeaderValue, Response, StatusCode},
         response::IntoResponse,
     };
 
@@ -269,7 +269,7 @@ mod axum_support {
             let mut res = Response::new(Body::from(self.0));
             *res.status_mut() = StatusCode::OK;
             res.headers_mut().insert(
-                axum::http::header::CONTENT_TYPE,
+                header::CONTENT_TYPE,
                 HeaderValue::from_static("text/html; charset=utf-8"),
             );
             res
