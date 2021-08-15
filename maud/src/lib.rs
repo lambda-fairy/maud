@@ -265,7 +265,7 @@ mod axum_support {
     };
 
     impl IntoResponse for PreEscaped<String> {
-        fn into_response(self) -> Response<axum::body::Body> {
+        fn into_response(self) -> Response<Body> {
             let mut res = Response::new(Body::from(self.0));
             *res.status_mut() = StatusCode::OK;
             res.headers_mut().insert(
