@@ -164,13 +164,16 @@ fn desugar_attrs(attrs: Vec<Attr>) -> Vec<Attribute> {
     let mut attributes = vec![];
     for attr in attrs {
         match attr {
-            Attr::Class { name, toggler, .. } => {
-                if let Some(toggler) = toggler {
-                    classes_toggled.push((name, toggler));
-                } else {
-                    classes_static.push(name);
-                }
-            }
+            Attr::Class {
+                name,
+                toggler: Some(toggler),
+                ..
+            } => classes_toggled.push((name, toggler)),
+            Attr::Class {
+                name,
+                toggler: None,
+                ..
+            } => classes_static.push(name),
             Attr::Id { name, .. } => ids.push(name),
             Attr::Attribute { attribute } => attributes.push(attribute),
         }
