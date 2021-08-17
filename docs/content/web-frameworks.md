@@ -177,3 +177,40 @@ async fn main() -> tide::Result<()> {
     Ok(())
 }
 ```
+
+# Axum
+
+Axum support is available with the "axum" feature:
+
+```toml
+# ...
+[dependencies]
+maud = { version = "*", features = ["axum"] }
+# ...
+```
+
+This adds an implementation of `IntoResponse` for `Markup`/`PreEscaped<String>`.
+This then allows you to use it directly as a response!
+
+```rust,no_run
+use maud::{html, Markup};
+use axum::prelude::*;
+
+async fn hello_world() -> Markup {
+    html! { 
+        h1 { "Hello, World!" } 
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    // build our application with a single route
+    let app = route("/", get(hello_world));
+
+    // run it with hyper on localhost:3000
+    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
+}
+```
