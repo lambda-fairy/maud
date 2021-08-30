@@ -542,7 +542,7 @@ impl Parser {
                     semi_span: SpanRange::single_span(punct.span()),
                 }
             }
-            _ => match self.markup() {
+            Some(_) => match self.markup() {
                 ast::Markup::Block(block) => ast::ElementBody::Block { block },
                 markup => {
                     let markup_span = markup.span();
@@ -553,6 +553,7 @@ impl Parser {
                     );
                 }
             },
+            None => abort_call_site!("expected `;`, found end of macro"),
         };
         ast::Markup::Element { name, attrs, body }
     }
