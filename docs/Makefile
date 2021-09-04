@@ -21,7 +21,7 @@ print_status = @ printf ' \033[1;35m♦ %s\033[0m\n' '$(1)'
 all: $(html_files) site/styles.css
 
 $(build_nav) $(build_page): target/debug/%: $(shell find src)
-	$(call print_status,Cargo $@)
+	$(call print_status,Cargo $(@F))
 	@ cargo build --bin $(@F) --locked
 
 $(nav_json): $(md_files) $(build_nav)
