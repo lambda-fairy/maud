@@ -3,7 +3,9 @@ slugs := index getting-started text-escaping elements-attributes splices-toggles
 slug_to_md = content/$(1).md
 slug_to_html = site/$(1).html
 
-builder := target/debug/docs
+build_nav := target/debug/build_nav
+build_page := target/debug/build_page
+
 nav_json := site/nav.json
 
 version := $(shell git describe)
@@ -18,17 +20,17 @@ print_status = @ printf ' \e[1;35m♦ %s\e[0m\n' '$(1)'
 .PHONY: all
 all: $(html_files) site/styles.css
 
-$(builder): $(wildcard src/*)
-	$(call print_status,Cargo)
-	@ cargo build --locked
+$(build_nav) $(build_page): target/debug/%: $(shell find src)
+	$(call print_status,Cargo $@)
+	@ cargo build --bin $(@F) --locked
 
-$(nav_json): $(md_files) $(builder)
+$(nav_json): $(md_files) $(build_nav)
 	$(call print_status,Table of contents)
-	@ $(builder) build-nav $@ $(slugs_and_md_files)
+	@ $(build_nav) $@ $(slugs_and_md_files)
 
-site/%.html: content/%.md $(nav_json) $(builder)
+site/%.html: content/%.md $(nav_json) $(build_page)
 	$(call print_status,Render $(*F))
-	@ $(builder) build-page $@ $(*F) $< $(nav_json) $(version) $(hash)
+	@ $(build_page) $@ $(*F) $< $(nav_json) $(version) $(hash)
 
 site/styles.css: styles.css
 	$(call print_status,Copy stylesheet)
