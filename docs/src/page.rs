@@ -1,9 +1,8 @@
-use comrak::nodes::{AstNode, NodeHeading, NodeValue};
-use comrak::{Arena, ComrakOptions};
-use std::fs;
-use std::io;
-use std::lazy::SyncLazy;
-use std::path::Path;
+use comrak::{
+    nodes::{AstNode, NodeHeading, NodeValue},
+    Arena, ComrakOptions,
+};
+use std::{fs, io, lazy::SyncLazy, path::Path};
 
 pub struct Page<'a> {
     pub title: Option<&'a AstNode<'a>>,

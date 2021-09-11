@@ -2,8 +2,10 @@ use comrak::nodes::AstNode;
 use maud::{html, Markup, PreEscaped, Render, DOCTYPE};
 use std::str;
 
-use crate::page::{Page, COMRAK_OPTIONS};
-use crate::string_writer::StringWriter;
+use crate::{
+    page::{Page, COMRAK_OPTIONS},
+    string_writer::StringWriter,
+};
 
 struct Comrak<'a>(&'a AstNode<'a>);
 
