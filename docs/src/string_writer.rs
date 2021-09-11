@@ -1,5 +1,4 @@
-use std::io;
-use std::str;
+use std::{io, str};
 
 pub struct StringWriter<'a>(pub &'a mut String);
 

@@ -176,12 +176,13 @@ mod iron_support {
     extern crate std;
 
     use crate::PreEscaped;
-    use alloc::boxed::Box;
-    use alloc::string::String;
-    use iron::headers::ContentType;
-    use iron::modifier::{Modifier, Set};
-    use iron::modifiers::Header;
-    use iron::response::{Response, WriteBody};
+    use alloc::{boxed::Box, string::String};
+    use iron::{
+        headers::ContentType,
+        modifier::{Modifier, Set},
+        modifiers::Header,
+        response::{Response, WriteBody},
+    };
     use std::io;
 
     impl Modifier<Response> for PreEscaped<String> {
@@ -205,9 +206,11 @@ mod rocket_support {
 
     use crate::PreEscaped;
     use alloc::string::String;
-    use rocket::http::{ContentType, Status};
-    use rocket::request::Request;
-    use rocket::response::{Responder, Response};
+    use rocket::{
+        http::{ContentType, Status},
+        request::Request,
+        response::{Responder, Response},
+    };
     use std::io::Cursor;
 
     impl Responder<'static> for PreEscaped<String> {

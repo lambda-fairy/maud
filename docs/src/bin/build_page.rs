@@ -1,19 +1,28 @@
-use comrak::nodes::{AstNode, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink, NodeValue};
-use comrak::{self, Arena};
-use docs::page::{Page, COMRAK_OPTIONS};
-use docs::views;
+use comrak::{
+    self,
+    nodes::{AstNode, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink, NodeValue},
+    Arena,
+};
+use docs::{
+    page::{Page, COMRAK_OPTIONS},
+    views,
+};
 use serde_json;
-use std::env;
-use std::error::Error;
-use std::fs::{self, File};
-use std::io::BufReader;
-use std::mem;
-use std::path::Path;
-use std::str::{self, Utf8Error};
-use std::string::FromUtf8Error;
-use syntect::highlighting::{Color, ThemeSet};
-use syntect::html::highlighted_html_for_string;
-use syntect::parsing::SyntaxSet;
+use std::{
+    env,
+    error::Error,
+    fs::{self, File},
+    io::BufReader,
+    mem,
+    path::Path,
+    str::{self, Utf8Error},
+    string::FromUtf8Error,
+};
+use syntect::{
+    highlighting::{Color, ThemeSet},
+    html::highlighted_html_for_string,
+    parsing::SyntaxSet,
+};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = env::args().collect::<Vec<_>>();

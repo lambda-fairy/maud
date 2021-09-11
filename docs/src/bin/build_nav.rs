@@ -1,14 +1,10 @@
-use comrak::nodes::AstNode;
-use comrak::{self, Arena};
-use docs::page::{Page, COMRAK_OPTIONS};
-use docs::string_writer::StringWriter;
+use comrak::{self, nodes::AstNode, Arena};
+use docs::{
+    page::{Page, COMRAK_OPTIONS},
+    string_writer::StringWriter,
+};
 use serde_json;
-use std::env;
-use std::error::Error;
-use std::fs;
-use std::io;
-use std::path::Path;
-use std::str;
+use std::{env, error::Error, fs, io, path::Path, str};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = env::args().collect::<Vec<_>>();
