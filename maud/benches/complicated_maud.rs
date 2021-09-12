@@ -102,7 +102,7 @@ fn render_complicated_template(b: &mut test::Bencher) {
 
                 @for entry in &teams {
                     div {
-                        strong { (entry.name) }
+                        strong { (entry.name) ": " (entry.score) }
                         (Button::new("Edit", "edit"))
                         (Button::new("Delete", "edit")
                                     .with_method(RequestMethod::Post))
