@@ -75,7 +75,7 @@ jobs:
 
     - name: Doctest
       # https://github.com/rust-lang/cargo/issues/9919
-      run: cd doctest && CARGO_HTTP_MULTIPLEXING=false cargo test
+      run: cd doctest && CARGO_HTTP_MULTIPLEXING=false cargo check
 
   rustfmt:
     name: Rustfmt
