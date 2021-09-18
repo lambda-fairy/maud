@@ -58,7 +58,7 @@ jobs:
       run: cd docs && make -j$(nproc)
 
   examples:
-    name: Examples (check-only)
+    name: Examples
     runs-on: ubuntu-latest
 
     steps:
