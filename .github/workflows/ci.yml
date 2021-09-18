@@ -74,7 +74,8 @@ jobs:
         override: true
 
     - name: Doctest
-      run: cd doctest && cargo test
+      # https://github.com/rust-lang/cargo/issues/9919
+      run: cd doctest && CARGO_HTTP_MULTIPLEXING=false cargo test
 
   rustfmt:
     name: Rustfmt
