@@ -27,4 +27,4 @@ jobs:
         override: true
 
     - name: Doctest
-      run: cd doctest && CARGO_HTTP_MULTIPLEXING=false cargo test
+      run: cd doctest && cargo test --verbose
