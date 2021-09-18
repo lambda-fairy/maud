@@ -33,7 +33,10 @@ jobs:
         override: true
 
     - name: Build documentation
-      run: cd docs && make -j$(nproc)
+      run: |
+        # https://github.com/rust-lang/cargo/issues/9919
+        export CARGO_HTTP_MULTIPLEXING=false
+        cd docs && make -j$(nproc)
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
