@@ -55,7 +55,10 @@ jobs:
         override: true
 
     - name: Build documentation
-      run: cd docs && make -j$(nproc)
+      run: |
+        # https://github.com/rust-lang/cargo/issues/9919
+        export CARGO_HTTP_MULTIPLEXING=false
+        cd docs && make -j$(nproc)
 
   examples:
     name: Examples
@@ -74,8 +77,10 @@ jobs:
         override: true
 
     - name: Doctest
-      # https://github.com/rust-lang/cargo/issues/9919
-      run: cd doctest && CARGO_HTTP_MULTIPLEXING=false cargo check
+      run: |
+        # https://github.com/rust-lang/cargo/issues/9919
+        export CARGO_HTTP_MULTIPLEXING=false
+        cd doctest && cargo check
 
   rustfmt:
     name: Rustfmt
