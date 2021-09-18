@@ -12,7 +12,7 @@ maud = { path = "../maud", features = ["actix-web", "iron", "rocket", "tide", "a
 pulldown-cmark = "0.8"
 rocket = { version = "0.4", default-features = false }
 rouille = "3"
-tide = { version = "0.16", default-features = false }
+tide = { version = "0.16", default-features = false, features = ["h1-server"] }
 tokio = { version = "1.9.0", features = ["rt", "macros", "rt-multi-thread"] }
 axum = { version = "0.1.3", default-features = false }
 
