@@ -9,53 +9,6 @@ on:
   - cron: '0 1 * * *'
 
 jobs:
-  main:
-    name: Main
-    runs-on: ubuntu-latest
-
-    steps:
-
-    - name: Check out repository
-      uses: actions/checkout@v2
-
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        profile: minimal
-        override: true
-        components: clippy
-
-    # Do *not* use `--all-features` here, as the optional dependencies take a
-    # long time to build, and will be tested in the "examples" job anyway
-    - name: Run tests
-      run: cargo test --workspace --all-targets
-
-    - name: Check Clippy
-      run: cargo clippy --workspace --all-targets -- -D warnings
-
-  # Please keep this in sync with `publish-docs.yml`
-  documentation:
-    name: Documentation
-    runs-on: ubuntu-latest
-
-    steps:
-
-    - name: Check out repository
-      uses: actions/checkout@v2
-      with:
-        # Documentation build uses `git describe` which requires history
-        fetch-depth: 0
-
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        profile: minimal
-        override: true
-
-    - name: Build documentation
-      run: cd docs && make -j$(nproc)
 
   examples:
     name: Examples
@@ -75,30 +28,3 @@ jobs:
 
     - name: Doctest
       run: cd doctest && cargo test
-
-  rustfmt:
-    name: Rustfmt
-    runs-on: ubuntu-latest
-
-    steps:
-
-    - name: Check out repository
-      uses: actions/checkout@v2
-
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        # rustfmt is often missing on nightly. Since there's little benefit to
-        # using the nightly version, use the more reliable stable build instead.
-        toolchain: stable
-        profile: minimal
-        override: true
-        components: rustfmt
-
-    - name: Check formatting
-      run: |
-        cargo fmt -- --check
-        (cd docs && cargo fmt -- --check)
-        # trybuild harnesses are technically not part of the Cargo project, so
-        # need to be checked separately
-        rustfmt --check maud/tests/warnings/*.rs
