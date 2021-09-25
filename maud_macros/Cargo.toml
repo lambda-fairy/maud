@@ -14,7 +14,7 @@ edition = "2018"
 syn = "1.0.8"
 maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
 quote = "1.0.7"
-proc-macro2 = "1.0.19"
+proc-macro2 = ">=1.0.23,<1.0.29"
 proc-macro-error = "1.0.0"
 
 [lib]
