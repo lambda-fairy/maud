@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.22.3] - 2021-09-27
+
 - Support `no_std` + `alloc`.
   [#278](https://github.com/lambda-fairy/maud/issues/278)
 - Provide Tide support.
@@ -253,7 +255,8 @@
 - Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.22.2...HEAD
+[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.22.3...HEAD
+[0.22.3]: https://github.com/lambda-fairy/maud/compare/v0.22.2...v0.22.3
 [0.22.2]: https://github.com/lambda-fairy/maud/compare/v0.22.1...v0.22.2
 [0.22.1]: https://github.com/lambda-fairy/maud/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/lambda-fairy/maud/compare/v0.21.0...v0.22.0
