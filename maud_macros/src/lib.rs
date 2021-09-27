@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/maud_macros/0.22.2")]
+#![doc(html_root_url = "https://docs.rs/maud_macros/0.22.3")]
 // TokenStream values are reference counted, and the mental overhead of tracking
 // lifetimes outweighs the marginal gains from explicit borrowing
 #![allow(clippy::needless_pass_by_value)]
