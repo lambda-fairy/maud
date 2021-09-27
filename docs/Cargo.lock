@@ -301,7 +301,7 @@ dependencies = [
 
 [[package]]
 name = "maud_htmlescape"
-version = "0.17.0"
+version = "0.17.1"
 
 [[package]]
 name = "maud_macros"

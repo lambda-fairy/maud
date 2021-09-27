@@ -18,7 +18,7 @@ default = []
 actix-web = ["actix-web-dep", "futures-util"]
 
 [dependencies]
-maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
+maud_htmlescape = { version = "0.17.1", path = "../maud_htmlescape" }
 maud_macros = { version = "0.22.3", path = "../maud_macros" }
 iron = { version = ">= 0.5.1, < 0.7.0", optional = true }
 rocket = { version = ">= 0.3, < 0.5", optional = true }
