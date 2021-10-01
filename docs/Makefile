@@ -8,7 +8,7 @@ build_page := target/debug/build_page
 
 nav_json := site/nav.json
 
-version := $(shell git describe)
+version := $(shell git describe --tags)
 hash := $(shell git rev-parse HEAD)
 
 md_files := $(foreach slug,$(slugs),$(call slug_to_md,$(slug)))
