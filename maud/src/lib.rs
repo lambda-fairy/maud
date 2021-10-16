@@ -268,6 +268,9 @@ mod axum_support {
     };
 
     impl IntoResponse for PreEscaped<String> {
+        type Body = Body;
+        type BodyError = <Self::Body as axum::body::HttpBody>::Error;
+
         fn into_response(self) -> Response<Body> {
             let mut res = Response::new(Body::from(self.0));
             *res.status_mut() = StatusCode::OK;

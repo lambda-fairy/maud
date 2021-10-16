@@ -14,7 +14,7 @@ rocket = "0.4"
 rouille = "3"
 tide = "0.16"
 tokio = { version = "1.9.0", features = ["rt", "macros", "rt-multi-thread"] }
-axum = "0.1.3"
+axum = "0.2"
 
 [dependencies.async-std]
 version = "1.9.0"

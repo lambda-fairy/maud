@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Update to support axum 0.2
+  [#303](https://github.com/lambda-fairy/maud/pull/303)
+
 ## [0.22.3] - 2021-09-27
 
 - Support `no_std` + `alloc`.
