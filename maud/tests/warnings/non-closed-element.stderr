@@ -4,6 +4,6 @@ error: expected `;`, found end of macro
 4 | /     html! {
 5 | |         p
 6 | |     };
-  | |______^
+  | |_____^
   |
   = note: this error originates in the macro `html` (in Nightly builds, run with -Z macro-backtrace for more info)
