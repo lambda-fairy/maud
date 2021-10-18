@@ -223,6 +223,29 @@ mod rocket_support {
     }
 }
 
+#[cfg(feature = "rocket5")]
+mod rocket5_support {
+    extern crate std;
+
+    use crate::PreEscaped;
+    use alloc::string::String;
+    use rocket5::{
+        http::{ContentType, Status},
+        request::Request,
+        response::{Responder, Response},
+    };
+    use std::io::Cursor;
+
+    impl<'r> Responder<'r, 'static> for PreEscaped<String> {
+        fn respond_to(self, _: &'r Request) -> Result<Response<'static>, Status> {
+            Response::build()
+                .header(ContentType::HTML)
+                .sized_body(self.0.len(), Cursor::new(self.0))
+                .ok()
+        }
+    }
+}
+
 #[cfg(feature = "actix-web")]
 mod actix_support {
     use crate::PreEscaped;
