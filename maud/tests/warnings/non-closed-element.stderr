@@ -1,9 +1,9 @@
-error: unexpected end of input
- --> $DIR/element-missing-body.rs:4:5
+error: expected `;`, found end of macro
+ --> $DIR/non-closed-element.rs:4:5
   |
 4 | /     html! {
 5 | |         p
 6 | |     };
-  | |______^
+  | |_____^
   |
   = note: this error originates in the macro `html` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -1,3 +1,5 @@
+#![no_std]
+
 //! A macro for writing HTML templates.
 //!
 //! This documentation only describes the runtime API. For a general
@@ -5,9 +7,12 @@
 //!
 //! [book]: https://maud.lambda.xyz/
 
-#![doc(html_root_url = "https://docs.rs/maud/0.22.2")]
+#![doc(html_root_url = "https://docs.rs/maud/0.22.3")]
 
-use std::fmt::{self, Write};
+extern crate alloc;
+
+use alloc::string::String;
+use core::fmt::{self, Write};
 
 pub use maud_macros::{html, html_debug};
 
@@ -89,8 +94,9 @@ impl<T: fmt::Display + ?Sized> Render for T {
 #[doc(hidden)]
 pub mod render {
     use crate::Render;
+    use alloc::string::String;
+    use core::fmt::Write;
     use maud_htmlescape::Escaper;
-    use std::fmt::Write;
 
     pub trait RenderInternal {
         fn __maud_render_to(&self, w: &mut String);
@@ -167,11 +173,16 @@ pub const DOCTYPE: PreEscaped<&'static str> = PreEscaped("<!DOCTYPE html>");
 
 #[cfg(feature = "iron")]
 mod iron_support {
+    extern crate std;
+
     use crate::PreEscaped;
-    use iron::headers::ContentType;
-    use iron::modifier::{Modifier, Set};
-    use iron::modifiers::Header;
-    use iron::response::{Response, WriteBody};
+    use alloc::{boxed::Box, string::String};
+    use iron::{
+        headers::ContentType,
+        modifier::{Modifier, Set},
+        modifiers::Header,
+        response::{Response, WriteBody},
+    };
     use std::io;
 
     impl Modifier<Response> for PreEscaped<String> {
@@ -191,10 +202,15 @@ mod iron_support {
 
 #[cfg(feature = "rocket")]
 mod rocket_support {
+    extern crate std;
+
     use crate::PreEscaped;
-    use rocket::http::ContentType;
-    use rocket::request::Request;
-    use rocket::response::{self, Responder, Response};
+    use alloc::string::String;
+    use rocket::{
+        http::{ContentType, Status},
+        request::Request,
+        response::{Responder, Response},
+    };
     use std::io::Cursor;
 
     impl<'r, 'o: 'r> Responder<'r, 'o> for PreEscaped<String> {
@@ -211,6 +227,7 @@ mod rocket_support {
 mod actix_support {
     use crate::PreEscaped;
     use actix_web_dep::{Error, HttpRequest, HttpResponse, Responder};
+    use alloc::string::String;
     use futures_util::future::{ok, Ready};
 
     impl Responder for PreEscaped<String> {
@@ -220,6 +237,48 @@ mod actix_support {
             ok(HttpResponse::Ok()
                 .content_type("text/html; charset=utf-8")
                 .body(self.0))
+        }
+    }
+}
+
+#[cfg(feature = "tide")]
+mod tide_support {
+    use crate::PreEscaped;
+    use alloc::string::String;
+    use tide::{http::mime, Response, StatusCode};
+
+    impl From<PreEscaped<String>> for Response {
+        fn from(markup: PreEscaped<String>) -> Response {
+            Response::builder(StatusCode::Ok)
+                .body(markup.into_string())
+                .content_type(mime::HTML)
+                .build()
+        }
+    }
+}
+
+#[cfg(feature = "axum")]
+mod axum_support {
+    use crate::PreEscaped;
+    use alloc::string::String;
+    use axum::{
+        body::Body,
+        http::{header, HeaderValue, Response, StatusCode},
+        response::IntoResponse,
+    };
+
+    impl IntoResponse for PreEscaped<String> {
+        type Body = Body;
+        type BodyError = <Self::Body as axum::body::HttpBody>::Error;
+
+        fn into_response(self) -> Response<Body> {
+            let mut res = Response::new(Body::from(self.0));
+            *res.status_mut() = StatusCode::OK;
+            res.headers_mut().insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("text/html; charset=utf-8"),
+            );
+            res
         }
     }
 }

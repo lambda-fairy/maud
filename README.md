@@ -17,6 +17,6 @@ For more info on Maud,
 see the [official book][book].
 
 [book]: https://maud.lambda.xyz/
-[booksrc]: https://github.com/lambda-fairy/maud/tree/master/docs
+[booksrc]: https://github.com/lambda-fairy/maud/tree/main/docs
 [apiref]: https://docs.rs/maud/
-[changelog]: https://github.com/lambda-fairy/maud/blob/master/CHANGELOG.md
+[changelog]: https://github.com/lambda-fairy/maud/blob/main/CHANGELOG.md

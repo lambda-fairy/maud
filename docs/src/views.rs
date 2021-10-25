@@ -1,26 +1,28 @@
-use crate::string_writer::StringWriter;
-use crate::Page;
 use comrak::nodes::AstNode;
-use comrak::{self, ComrakOptions};
 use maud::{html, Markup, PreEscaped, Render, DOCTYPE};
 use std::str;
 
-struct Comrak<'a>(&'a AstNode<'a>, &'a ComrakOptions);
+use crate::{
+    page::{Page, COMRAK_OPTIONS},
+    string_writer::StringWriter,
+};
+
+struct Comrak<'a>(&'a AstNode<'a>);
 
 impl<'a> Render for Comrak<'a> {
     fn render_to(&self, buffer: &mut String) {
-        comrak::format_html(self.0, self.1, &mut StringWriter(buffer)).unwrap();
+        comrak::format_html(self.0, &COMRAK_OPTIONS, &mut StringWriter(buffer)).unwrap();
     }
 }
 
 /// Hack! Comrak wraps a single line of input in `<p>` tags, which is great in
 /// general but not suitable for links in the navigation bar.
-struct ComrakRemovePTags<'a>(&'a AstNode<'a>, &'a ComrakOptions);
+struct ComrakRemovePTags<'a>(&'a AstNode<'a>);
 
 impl<'a> Render for ComrakRemovePTags<'a> {
     fn render(&self) -> Markup {
         let mut buffer = String::new();
-        comrak::format_html(self.0, self.1, &mut StringWriter(&mut buffer)).unwrap();
+        comrak::format_html(self.0, &COMRAK_OPTIONS, &mut StringWriter(&mut buffer)).unwrap();
         assert!(buffer.starts_with("<p>") && buffer.ends_with("</p>\n"));
         PreEscaped(
             buffer
@@ -31,16 +33,15 @@ impl<'a> Render for ComrakRemovePTags<'a> {
     }
 }
 
-struct ComrakText<'a>(&'a AstNode<'a>, &'a ComrakOptions);
+struct ComrakText<'a>(&'a AstNode<'a>);
 
 impl<'a> Render for ComrakText<'a> {
     fn render_to(&self, buffer: &mut String) {
-        comrak::format_commonmark(self.0, self.1, &mut StringWriter(buffer)).unwrap();
+        comrak::format_commonmark(self.0, &COMRAK_OPTIONS, &mut StringWriter(buffer)).unwrap();
     }
 }
 
 pub fn main<'a>(
-    options: &'a ComrakOptions,
     slug: &str,
     page: Page<'a>,
     nav: &[(&str, &'a AstNode<'a>)],
@@ -52,7 +53,7 @@ pub fn main<'a>(
         meta charset="utf-8";
         title {
             @if let Some(title) = page.title {
-                (ComrakText(title, options))
+                (ComrakText(title))
                 " \u{2013} "
             }
             "Maud, a macro for writing HTML"
@@ -75,11 +76,11 @@ pub fn main<'a>(
                     li {
                         @if other_slug == slug {
                             b {
-                                (ComrakRemovePTags(other_title, options))
+                                (ComrakRemovePTags(other_title))
                             }
                         } @else {
                             a href={ (other_slug) ".html" } {
-                                (ComrakRemovePTags(other_title, options))
+                                (ComrakRemovePTags(other_title))
                             }
                         }
                     }
@@ -102,10 +103,10 @@ pub fn main<'a>(
         main {
             @if let Some(title) = page.title {
                 h2 {
-                    (Comrak(title, options))
+                    (Comrak(title))
                 }
             }
-            (Comrak(page.content, options))
+            (Comrak(page.content))
         }
 
         footer {

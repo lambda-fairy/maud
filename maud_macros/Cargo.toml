@@ -1,7 +1,7 @@
 [package]
 name = "maud_macros"
 # When releasing a new version, please update html_root_url in src/lib.rs
-version = "0.22.2"
+version = "0.22.3"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 license = "MIT/Apache-2.0"
 documentation = "https://docs.rs/maud_macros/"
@@ -14,7 +14,7 @@ edition = "2018"
 syn = "1.0.8"
 maud_htmlescape = { version = "0.17.0", path = "../maud_htmlescape" }
 quote = "1.0.7"
-proc-macro2 = "1.0.19"
+proc-macro2 = "1.0.23"
 proc-macro-error = "1.0.0"
 
 [lib]

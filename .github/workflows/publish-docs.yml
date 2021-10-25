@@ -8,7 +8,7 @@ on:
     inputs:
       ref:
         description: 'Git revision'
-        default: 'master'
+        default: 'main'
         required: true
 
 jobs:

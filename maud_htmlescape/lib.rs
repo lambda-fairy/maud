@@ -1,12 +1,17 @@
+#![cfg_attr(not(test), no_std)]
+
 //! Internal support code used by the [Maud] template engine.
 //!
 //! You should not need to depend on this crate directly.
 //!
 //! [Maud]: https://maud.lambda.xyz
 
-#![doc(html_root_url = "https://docs.rs/maud_htmlescape/0.17.0")]
+#![doc(html_root_url = "https://docs.rs/maud_htmlescape/0.17.1")]
 
-use std::fmt;
+extern crate alloc;
+
+use alloc::string::String;
+use core::fmt;
 
 /// An adapter that escapes HTML special characters.
 ///

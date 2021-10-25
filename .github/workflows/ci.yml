@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-    - master
+    - main
   schedule:
   - cron: '0 1 * * *'
 
@@ -74,7 +74,7 @@ jobs:
         override: true
 
     - name: Doctest
-      run: cd doctest && cargo test
+      run: cd doctest && cargo check
 
   rustfmt:
     name: Rustfmt
