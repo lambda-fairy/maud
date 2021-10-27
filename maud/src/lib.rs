@@ -207,7 +207,7 @@ mod rocket_support {
     use crate::PreEscaped;
     use alloc::string::String;
     use rocket::{
-        http::{ContentType, Status},
+        http::ContentType,
         request::Request,
         response::{self, Responder, Response},
     };
