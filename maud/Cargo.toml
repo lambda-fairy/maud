@@ -21,7 +21,7 @@ actix-web = ["actix-web-dep", "futures-util"]
 maud_htmlescape = { version = "0.17.1", path = "../maud_htmlescape" }
 maud_macros = { version = "0.22.3", path = "../maud_macros" }
 iron = { version = ">= 0.5.1, < 0.7.0", optional = true }
-rocket = { git = "https://github.com/SergioBenitez/Rocket", rev = "v0.5.0-rc.1", optional = true }
+rocket = { version = "0.5.0-rc.1", optional = true }
 futures-util = { version = "0.3.0", optional = true, default-features = false }
 actix-web-dep = { package = "actix-web", version = ">= 2, < 4", optional = true, default-features = false }
 tide = { version = "0.16.0", optional = true, default-features = false }
