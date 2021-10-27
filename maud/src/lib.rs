@@ -209,7 +209,7 @@ mod rocket_support {
     use rocket::{
         http::{ContentType, Status},
         request::Request,
-        response::{Responder, Response},
+        response::{self, Responder, Response},
     };
     use std::io::Cursor;
 
