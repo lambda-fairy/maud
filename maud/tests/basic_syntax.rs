@@ -119,6 +119,40 @@ fn empty_attributes_question_mark() {
 }
 
 #[test]
+fn optional_attribute_some() {
+    let result = html! { input value=[Some("value")]; };
+    assert_eq!(result.into_string(), r#"<input value="value">"#);
+}
+
+#[test]
+fn optional_attribute_none() {
+    let result = html! { input value=[None as Option<&str>]; };
+    assert_eq!(result.into_string(), r#"<input>"#);
+}
+
+#[test]
+fn optional_attribute_non_string_some() {
+    let result = html! { input value=[Some(42)]; };
+    assert_eq!(result.into_string(), r#"<input value="42">"#);
+}
+
+#[test]
+fn optional_attribute_variable() {
+    let result = html! {
+        @let x = Some(42);
+        input value=[x];
+    };
+    assert_eq!(result.into_string(), r#"<input value="42">"#);
+}
+
+#[test]
+fn optional_attribute_inner_value_evaluated_only_once() {
+    let mut count = 0;
+    html! { input value=[{ count += 1; Some("picklebarrelkumquat") }]; };
+    assert_eq!(count, 1);
+}
+
+#[test]
 fn colons_in_names() {
     let result = html! { pon-pon:controls-alpha { a on:click="yay()" { "Yay!" } } };
     assert_eq!(

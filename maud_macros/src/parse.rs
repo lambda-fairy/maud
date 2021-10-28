@@ -571,13 +571,16 @@ impl Parser {
                         // Parse a value under an attribute context
                         assert!(self.current_attr.is_none());
                         self.current_attr = Some(ast::name_to_string(name.clone()));
-                        let value = self.markup();
+                        let attr_type = match self.attr_toggler() {
+                            Some(toggler) => ast::AttrType::Optional { toggler },
+                            None => {
+                                let value = self.markup();
+                                ast::AttrType::Normal { value }
+                            }
+                        };
                         self.current_attr = None;
                         attrs.push(ast::Attr::Attribute {
-                            attribute: ast::Attribute {
-                                name,
-                                attr_type: ast::AttrType::Normal { value },
-                            },
+                            attribute: ast::Attribute { name, attr_type },
                         });
                     }
                     // Empty attribute (legacy syntax)

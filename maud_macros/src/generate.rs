@@ -124,6 +124,22 @@ impl Generator {
                     self.markup(value, build);
                     build.push_str("\"");
                 }
+                AttrType::Optional { toggler } => build.push_tokens({
+                    // `inner_value` is the unpacked Some() from `toggler.cond`, see below.
+                    let markup = Markup::Splice {
+                        expr: quote!(inner_value),
+                        outer_span: toggler.cond_span,
+                    };
+                    let mut build = self.builder();
+                    build.push_str(" ");
+                    self.name(name, &mut build);
+                    build.push_str("=\"");
+                    self.markup(markup, &mut build);
+                    build.push_str("\"");
+                    let body = build.finish();
+                    let cond = toggler.cond;
+                    quote!(if let Some(inner_value) = #cond { #body })
+                }),
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
                     self.name(name, build);
