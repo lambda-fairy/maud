@@ -51,7 +51,7 @@ impl Generator {
             }
             Markup::Literal { content, .. } => build.push_escaped(&content),
             Markup::Symbol { symbol } => self.name(symbol, build),
-            Markup::Splice { expr, .. } => build.push_tokens(self.splice(expr)),
+            Markup::Splice { expr, .. } => self.splice(expr, build),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
             Markup::Let { tokens, .. } => build.push_tokens(tokens),
             Markup::Special { segments } => {
@@ -89,12 +89,13 @@ impl Generator {
         TokenStream::from(block)
     }
 
-    fn splice(&self, expr: TokenStream) -> TokenStream {
+    fn splice(&self, expr: TokenStream, build: &mut Builder) {
         let output_ident = self.output_ident.clone();
-        quote!({
+        let tokens = quote!({
             use maud::render::{RenderInternal, RenderWrapper};
             RenderWrapper(&#expr).__maud_render_to(&mut #output_ident);
-        })
+        });
+        build.push_tokens(tokens);
     }
 
     fn element(&self, name: TokenStream, attrs: Vec<Attr>, body: ElementBody, build: &mut Builder) {
@@ -125,20 +126,16 @@ impl Generator {
                     build.push_str("\"");
                 }
                 AttrType::Optional { toggler } => build.push_tokens({
-                    // `inner_value` is the unpacked Some() from `toggler.cond`, see below.
-                    let markup = Markup::Splice {
-                        expr: quote!(inner_value),
-                        outer_span: toggler.cond_span,
-                    };
                     let mut build = self.builder();
                     build.push_str(" ");
                     self.name(name, &mut build);
                     build.push_str("=\"");
-                    self.markup(markup, &mut build);
+                    let inner_value = quote!(inner_value);
+                    self.splice(inner_value.clone(), &mut build);
                     build.push_str("\"");
                     let body = build.finish();
                     let cond = toggler.cond;
-                    quote!(if let Some(inner_value) = #cond { #body })
+                    quote!(if let Some(#inner_value) = #cond { #body })
                 }),
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
