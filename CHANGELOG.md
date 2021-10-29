@@ -4,6 +4,8 @@
 
 - Update to support axum 0.2
   [#303](https://github.com/lambda-fairy/maud/pull/303)
+- Add support for `Option<T>` attributes using the `attr=[value]` syntax.
+  [#306](https://github.com/lambda-fairy/maud/pull/306)
 
 ## [0.22.3] - 2021-09-27
 

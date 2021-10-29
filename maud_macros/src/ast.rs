@@ -170,6 +170,7 @@ impl Attribute {
 #[derive(Debug)]
 pub enum AttrType {
     Normal { value: Markup },
+    Optional { toggler: Toggler },
     Empty { toggler: Option<Toggler> },
 }
 
@@ -177,6 +178,7 @@ impl AttrType {
     fn span(&self) -> Option<SpanRange> {
         match *self {
             AttrType::Normal { ref value } => Some(value.span()),
+            AttrType::Optional { ref toggler } => Some(toggler.span()),
             AttrType::Empty { ref toggler } => toggler.as_ref().map(Toggler::span),
         }
     }
