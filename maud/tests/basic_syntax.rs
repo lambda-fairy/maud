@@ -138,10 +138,8 @@ fn optional_attribute_non_string_some() {
 
 #[test]
 fn optional_attribute_variable() {
-    let result = html! {
-        @let x = Some(42);
-        input value=[x];
-    };
+    let x = Some(42);
+    let result = html! { input value=[x]; };
     assert_eq!(result.into_string(), r#"<input value="42">"#);
 }
 
@@ -150,6 +148,15 @@ fn optional_attribute_inner_value_evaluated_only_once() {
     let mut count = 0;
     html! { input value=[{ count += 1; Some("picklebarrelkumquat") }]; };
     assert_eq!(count, 1);
+}
+
+#[test]
+fn optional_attribute_braces() {
+    struct Pony {
+        cuteness: Option<i32>,
+    }
+    let result = html! { input value=[Pony { cuteness: Some(9000) }.cuteness]; };
+    assert_eq!(result.into_string(), r#"<input value="9000">"#);
 }
 
 #[test]

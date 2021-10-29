@@ -125,33 +125,35 @@ impl Generator {
                     self.markup(value, build);
                     build.push_str("\"");
                 }
-                AttrType::Optional { toggler } => build.push_tokens({
-                    let mut build = self.builder();
-                    build.push_str(" ");
-                    self.name(name, &mut build);
-                    build.push_str("=\"");
+                AttrType::Optional {
+                    toggler: Toggler { cond, .. },
+                } => {
                     let inner_value = quote!(inner_value);
-                    self.splice(inner_value.clone(), &mut build);
-                    build.push_str("\"");
-                    let body = build.finish();
-                    let cond = toggler.cond;
-                    quote!(if let Some(#inner_value) = #cond { #body })
-                }),
+                    let body = {
+                        let mut build = self.builder();
+                        build.push_str(" ");
+                        self.name(name, &mut build);
+                        build.push_str("=\"");
+                        self.splice(inner_value.clone(), &mut build);
+                        build.push_str("\"");
+                        build.finish()
+                    };
+                    build.push_tokens(quote!(if let Some(#inner_value) = (#cond) { #body }));
+                }
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
                     self.name(name, build);
                 }
                 AttrType::Empty {
-                    toggler: Some(toggler),
+                    toggler: Some(Toggler { cond, .. }),
                 } => {
-                    let head = desugar_toggler(toggler);
-                    build.push_tokens({
+                    let body = {
                         let mut build = self.builder();
                         build.push_str(" ");
                         self.name(name, &mut build);
-                        let body = build.finish();
-                        quote!(#head { #body })
-                    })
+                        build.finish()
+                    };
+                    build.push_tokens(quote!(if (#cond) { #body }));
                 }
             }
         }
@@ -209,16 +211,16 @@ fn desugar_classes_or_ids(
     for name in values_static {
         markups.extend(prepend_leading_space(name, &mut leading_space));
     }
-    for (name, toggler) in values_toggled {
+    for (name, Toggler { cond, cond_span }) in values_toggled {
         let body = Block {
             markups: prepend_leading_space(name, &mut leading_space),
-            outer_span: toggler.cond_span,
+            // TODO: is this correct?
+            outer_span: cond_span,
         };
-        let head = desugar_toggler(toggler);
         markups.push(Markup::Special {
             segments: vec![Special {
                 at_span: SpanRange::call_site(),
-                head,
+                head: quote!(if (#cond)),
                 body,
             }],
         });
@@ -245,26 +247,6 @@ fn prepend_leading_space(name: Markup, leading_space: &mut bool) -> Vec<Markup> 
     *leading_space = true;
     markups.push(name);
     markups
-}
-
-fn desugar_toggler(
-    Toggler {
-        mut cond,
-        cond_span,
-    }: Toggler,
-) -> TokenStream {
-    // If the expression contains an opening brace `{`,
-    // wrap it in parentheses to avoid parse errors
-    if cond.clone().into_iter().any(is_braced_block) {
-        let mut wrapped_cond = TokenTree::Group(Group::new(Delimiter::Parenthesis, cond));
-        wrapped_cond.set_span(cond_span.collapse());
-        cond = TokenStream::from(wrapped_cond);
-    }
-    quote!(if #cond)
-}
-
-fn is_braced_block(token: TokenTree) -> bool {
-    matches!(token, TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace)
 }
 
 ////////////////////////////////////////////////////////
