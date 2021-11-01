@@ -85,8 +85,8 @@ let name = "rarity";
 let severity = "critical";
 # let _ = maud::
 html! {
-    aside#(name) {
-        p.{ "color-" (severity) } { "This is the worst! Possible! Thing!" }
+    aside #(name) {
+        p .{ "color-" (severity) } { "This is the worst! Possible! Thing!" }
     }
 }
 # ;
@@ -146,7 +146,7 @@ And classes:
 let cuteness = 95;
 # let _ = maud::
 html! {
-    p.cute[cuteness > 50] { "Squee!" }
+    p .cute[cuteness > 50] { "Squee!" }
 }
 # ;
 ```
