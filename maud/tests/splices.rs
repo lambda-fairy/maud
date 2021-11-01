@@ -40,21 +40,21 @@ fn attributes() {
 #[test]
 fn class_shorthand() {
     let pinkie_class = "pinkie";
-    let result = html! { p.(pinkie_class) { "Fun!" } };
+    let result = html! { p .(pinkie_class) { "Fun!" } };
     assert_eq!(result.into_string(), r#"<p class="pinkie">Fun!</p>"#);
 }
 
 #[test]
 fn class_shorthand_block() {
     let class_prefix = "pinkie-";
-    let result = html! { p.{ (class_prefix) "123" } { "Fun!" } };
+    let result = html! { p .{ (class_prefix) "123" } { "Fun!" } };
     assert_eq!(result.into_string(), r#"<p class="pinkie-123">Fun!</p>"#);
 }
 
 #[test]
 fn id_shorthand() {
     let pinkie_id = "pinkie";
-    let result = html! { p#(pinkie_id) { "Fun!" } };
+    let result = html! { p #(pinkie_id) { "Fun!" } };
     assert_eq!(result.into_string(), r#"<p id="pinkie">Fun!</p>"#);
 }
 

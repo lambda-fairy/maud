@@ -8,7 +8,7 @@ documentation = "https://docs.rs/maud_htmlescape/"
 homepage = "https://maud.lambda.xyz/"
 repository = "https://github.com/lambda-fairy/maud"
 description = "Internal support code used by Maud."
-edition = "2018"
+edition = "2021"
 
 [lib]
 path = "lib.rs"

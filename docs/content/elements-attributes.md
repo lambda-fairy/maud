@@ -155,7 +155,25 @@ and mix and match them with other attributes:
 ```rust
 # let _ = maud::
 html! {
-    input#cannon.big.scary.bright-red type="button" value="Launch Party Cannon";
+    input #cannon .big .scary .bright-red type="button" value="Launch Party Cannon";
+}
+# ;
+```
+
+In Rust 2021,
+the `#` symbol must be preceded by a space,
+to avoid conflicts with [reserved syntax]:
+
+[reserved syntax]: https://doc.rust-lang.org/edition-guide/rust-2021/reserving-syntax.html
+
+```rust,edition2018
+# let _ = maud::
+html! {
+    // Works on all Rust editions
+    input #pinkie;
+
+    // Works on Rust 2018 and older only
+    input#pinkie;
 }
 # ;
 ```
@@ -167,7 +185,7 @@ which otherwise wouldn't parse:
 ```rust
 # let _ = maud::
 html! {
-    div."col-sm-2" { "Bootstrap column!" }
+    div ."col-sm-2" { "Bootstrap column!" }
 }
 # ;
 ```
