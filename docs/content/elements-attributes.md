@@ -164,6 +164,8 @@ In Rust 2021,
 the `#` symbol must be preceded by a space,
 to avoid conflicts with [reserved syntax]:
 
+[reserved syntax]: https://doc.rust-lang.org/edition-guide/rust-2021/reserving-syntax.html
+
 ```rust,edition2018
 # let _ = maud::
 html! {
