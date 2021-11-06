@@ -8,6 +8,8 @@
   [#306](https://github.com/lambda-fairy/maud/pull/306)
 - Update to Rust 2021
   [#309](https://github.com/lambda-fairy/maud/pull/309)
+- Remove Iron support
+  [#289](https://github.com/lambda-fairy/maud/pull/289)
 
 ## [0.22.3] - 2021-09-27
 

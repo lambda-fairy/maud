@@ -7,8 +7,7 @@ edition = "2018"
 [dependencies]
 actix-web = "3"
 ammonia = "3"
-iron = "0.6"
-maud = { path = "../maud", features = ["actix-web", "iron", "rocket", "tide", "axum"] }
+maud = { path = "../maud", features = ["actix-web", "rocket", "tide", "axum"] }
 pulldown-cmark = "0.8"
 rocket = "0.4"
 rouille = "3"

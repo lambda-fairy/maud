@@ -208,35 +208,6 @@ impl<T: AsRef<str> + Into<String>> From<PreEscaped<T>> for String {
 /// ```
 pub const DOCTYPE: PreEscaped<&'static str> = PreEscaped("<!DOCTYPE html>");
 
-#[cfg(feature = "iron")]
-mod iron_support {
-    extern crate std;
-
-    use crate::PreEscaped;
-    use alloc::{boxed::Box, string::String};
-    use iron::{
-        headers::ContentType,
-        modifier::{Modifier, Set},
-        modifiers::Header,
-        response::{Response, WriteBody},
-    };
-    use std::io;
-
-    impl Modifier<Response> for PreEscaped<String> {
-        fn modify(self, response: &mut Response) {
-            response
-                .set_mut(Header(ContentType::html()))
-                .set_mut(Box::new(self) as Box<dyn WriteBody>);
-        }
-    }
-
-    impl WriteBody for PreEscaped<String> {
-        fn write_body(&mut self, body: &mut dyn io::Write) -> io::Result<()> {
-            self.0.write_body(body)
-        }
-    }
-}
-
 #[cfg(feature = "rocket")]
 mod rocket_support {
     extern crate std;
