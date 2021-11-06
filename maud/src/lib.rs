@@ -51,7 +51,7 @@ impl<'a> Escaper<'a> {
 
 impl<'a> fmt::Write for Escaper<'a> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        escape::escape_to_string(s, &mut self.0);
+        escape::escape_to_string(s, self.0);
         Ok(())
     }
 }
