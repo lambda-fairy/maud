@@ -6,6 +6,7 @@
 extern crate proc_macro;
 
 mod ast;
+mod escape;
 mod generate;
 mod parse;
 

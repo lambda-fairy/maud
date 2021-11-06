@@ -1,9 +1,8 @@
-use maud_htmlescape::Escaper;
 use proc_macro2::{Delimiter, Group, Ident, Literal, Span, TokenStream, TokenTree};
 use proc_macro_error::SpanRange;
 use quote::quote;
 
-use crate::ast::*;
+use crate::{ast::*, escape};
 
 pub fn generate(markups: Vec<Markup>, output_ident: TokenTree) -> TokenStream {
     let mut build = Builder::new(output_ident.clone());
@@ -271,8 +270,7 @@ impl Builder {
     }
 
     fn push_escaped(&mut self, string: &str) {
-        use std::fmt::Write;
-        Escaper::new(&mut self.tail).write_str(string).unwrap();
+        escape::escape_to_string(string, &mut self.tail);
     }
 
     fn push_tokens(&mut self, tokens: TokenStream) {
