@@ -189,15 +189,6 @@ fn hyphens_in_attribute_names() {
 
 #[test]
 fn class_shorthand() {
-    let result = html! { p { "Hi, " span .name { "Lyra" } "!" } };
-    assert_eq!(
-        result.into_string(),
-        r#"<p>Hi, <span class="name">Lyra</span>!</p>"#
-    );
-}
-
-#[test]
-fn class_shorthand_without_space() {
     let result = html! { p { "Hi, " span.name { "Lyra" } "!" } };
     assert_eq!(
         result.into_string(),
@@ -206,8 +197,17 @@ fn class_shorthand_without_space() {
 }
 
 #[test]
+fn class_shorthand_with_space() {
+    let result = html! { p { "Hi, " span .name { "Lyra" } "!" } };
+    assert_eq!(
+        result.into_string(),
+        r#"<p>Hi, <span class="name">Lyra</span>!</p>"#
+    );
+}
+
+#[test]
 fn classes_shorthand() {
-    let result = html! { p { "Hi, " span .name .here { "Lyra" } "!" } };
+    let result = html! { p { "Hi, " span.name.here { "Lyra" } "!" } };
     assert_eq!(
         result.into_string(),
         r#"<p>Hi, <span class="name here">Lyra</span>!</p>"#
@@ -216,7 +216,7 @@ fn classes_shorthand() {
 
 #[test]
 fn hyphens_in_class_names() {
-    let result = html! { p .rocks-these .are--my--rocks { "yes" } };
+    let result = html! { p.rocks-these.are--my--rocks { "yes" } };
     assert_eq!(
         result.into_string(),
         r#"<p class="rocks-these are--my--rocks">yes</p>"#
@@ -225,7 +225,7 @@ fn hyphens_in_class_names() {
 
 #[test]
 fn class_string() {
-    let result = html! { h1 ."pinkie-123" { "Pinkie Pie" } };
+    let result = html! { h1."pinkie-123" { "Pinkie Pie" } };
     assert_eq!(
         result.into_string(),
         r#"<h1 class="pinkie-123">Pinkie Pie</h1>"#
@@ -235,7 +235,7 @@ fn class_string() {
 #[test]
 fn toggle_classes() {
     fn test(is_cupcake: bool, is_muffin: bool) -> Markup {
-        html!(p .cupcake[is_cupcake] .muffin[is_muffin] { "Testing!" })
+        html!(p.cupcake[is_cupcake].muffin[is_muffin] { "Testing!" })
     }
     assert_eq!(
         test(true, true).into_string(),
@@ -260,7 +260,7 @@ fn toggle_classes_braces() {
     struct Maud {
         rocks: bool,
     }
-    let result = html! { p .rocks[Maud { rocks: true }.rocks] { "Awesome!" } };
+    let result = html! { p.rocks[Maud { rocks: true }.rocks] { "Awesome!" } };
     assert_eq!(result.into_string(), r#"<p class="rocks">Awesome!</p>"#);
 }
 
@@ -268,14 +268,14 @@ fn toggle_classes_braces() {
 fn toggle_classes_string() {
     let is_cupcake = true;
     let is_muffin = false;
-    let result = html! { p ."cupcake"[is_cupcake] ."is_muffin"[is_muffin] { "Testing!" } };
+    let result = html! { p."cupcake"[is_cupcake]."is_muffin"[is_muffin] { "Testing!" } };
     assert_eq!(result.into_string(), r#"<p class="cupcake">Testing!</p>"#);
 }
 
 #[test]
 fn mixed_classes() {
     fn test(is_muffin: bool) -> Markup {
-        html!(p .cupcake .muffin[is_muffin] .lamington { "Testing!" })
+        html!(p.cupcake.muffin[is_muffin].lamington { "Testing!" })
     }
     assert_eq!(
         test(true).into_string(),
@@ -307,7 +307,7 @@ fn id_string() {
 
 #[test]
 fn classes_attrs_ids_mixed_up() {
-    let result = html! { p { "Hi, " span .name .here lang="en" #thing { "Lyra" } "!" } };
+    let result = html! { p { "Hi, " span.name.here lang="en" #thing { "Lyra" } "!" } };
     assert_eq!(
         result.into_string(),
         r#"<p>Hi, <span class="name here" id="thing" lang="en">Lyra</span>!</p>"#
