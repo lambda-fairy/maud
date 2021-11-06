@@ -155,7 +155,7 @@ and mix and match them with other attributes:
 ```rust
 # let _ = maud::
 html! {
-    input #cannon .big .scary .bright-red type="button" value="Launch Party Cannon";
+    input #cannon .big.scary.bright-red type="button" value="Launch Party Cannon";
 }
 # ;
 ```
@@ -185,7 +185,7 @@ which otherwise wouldn't parse:
 ```rust
 # let _ = maud::
 html! {
-    div ."col-sm-2" { "Bootstrap column!" }
+    div."col-sm-2" { "Bootstrap column!" }
 }
 # ;
 ```
