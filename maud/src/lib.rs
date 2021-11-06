@@ -16,6 +16,46 @@ use core::fmt::{self, Write};
 
 pub use maud_macros::{html, html_debug};
 
+mod escape;
+
+/// An adapter that escapes HTML special characters.
+///
+/// The following characters are escaped:
+///
+/// * `&` is escaped as `&amp;`
+/// * `<` is escaped as `&lt;`
+/// * `>` is escaped as `&gt;`
+/// * `"` is escaped as `&quot;`
+///
+/// All other characters are passed through unchanged.
+///
+/// **Note:** In versions prior to 0.13, the single quote (`'`) was
+/// escaped as well.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use std::fmt::Write;
+/// let mut s = String::new();
+/// write!(Escaper::new(&mut s), "<script>launchMissiles()</script>").unwrap();
+/// assert_eq!(s, "&lt;script&gt;launchMissiles()&lt;/script&gt;");
+/// ```
+pub struct Escaper<'a>(&'a mut String);
+
+impl<'a> Escaper<'a> {
+    /// Creates an `Escaper` from a `String`.
+    pub fn new(buffer: &'a mut String) -> Escaper<'a> {
+        Escaper(buffer)
+    }
+}
+
+impl<'a> fmt::Write for Escaper<'a> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        escape::escape_to_string(s, self.0);
+        Ok(())
+    }
+}
+
 /// Represents a type that can be rendered as HTML.
 ///
 /// If your type implements [`Display`][1], then it will implement this
@@ -93,10 +133,9 @@ impl<T: fmt::Display + ?Sized> Render for T {
 /// [1]: https://github.com/dtolnay/case-studies/issues/14
 #[doc(hidden)]
 pub mod render {
-    use crate::Render;
+    use crate::{Escaper, Render};
     use alloc::string::String;
     use core::fmt::Write;
-    use maud_htmlescape::Escaper;
 
     pub trait RenderInternal {
         fn __maud_render_to(&self, w: &mut String);
@@ -144,8 +183,6 @@ impl<T: AsRef<str> + Into<String>> From<PreEscaped<T>> for String {
         value.into_string()
     }
 }
-
-pub use maud_htmlescape::Escaper;
 
 /// The literal string `<!DOCTYPE html>`.
 ///
