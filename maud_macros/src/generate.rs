@@ -40,10 +40,13 @@ impl Generator {
                     .iter()
                     .any(|markup| matches!(*markup, Markup::Let { .. }))
                 {
-                    build.push_tokens(self.block(Block {
-                        markups,
-                        outer_span,
-                    }));
+                    self.block(
+                        Block {
+                            markups,
+                            outer_span,
+                        },
+                        build,
+                    );
                 } else {
                     self.markups(markups, build);
                 }
@@ -54,8 +57,9 @@ impl Generator {
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
             Markup::Let { tokens, .. } => build.push_tokens(tokens),
             Markup::Special { segments } => {
-                for segment in segments {
-                    build.push_tokens(self.special(segment));
+                for Special { head, body, .. } in segments {
+                    build.push_tokens(head);
+                    self.block(body, build);
                 }
             }
             Markup::Match {
@@ -64,12 +68,17 @@ impl Generator {
                 arms_span,
                 ..
             } => {
-                build.push_tokens({
-                    let body = arms.into_iter().map(|arm| self.match_arm(arm)).collect();
-                    let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
-                    body.set_span(arms_span.collapse());
-                    quote!(#head #body)
-                });
+                let body = {
+                    let mut build = self.builder();
+                    for MatchArm { head, body } in arms {
+                        build.push_tokens(head);
+                        self.block(body, &mut build);
+                    }
+                    build.finish()
+                };
+                let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
+                body.set_span(arms_span.collapse());
+                build.push_tokens(quote!(#head #body));
             }
         }
     }
@@ -80,12 +89,16 @@ impl Generator {
             markups,
             outer_span,
         }: Block,
-    ) -> TokenStream {
-        let mut build = self.builder();
-        self.markups(markups, &mut build);
-        let mut block = TokenTree::Group(Group::new(Delimiter::Brace, build.finish()));
+        build: &mut Builder,
+    ) {
+        let block = {
+            let mut build = self.builder();
+            self.markups(markups, &mut build);
+            build.finish()
+        };
+        let mut block = TokenTree::Group(Group::new(Delimiter::Brace, block));
         block.set_span(outer_span.collapse());
-        TokenStream::from(block)
+        build.push_tokens(TokenStream::from(block));
     }
 
     fn splice(&self, expr: TokenStream, build: &mut Builder) {
@@ -156,16 +169,6 @@ impl Generator {
                 }
             }
         }
-    }
-
-    fn special(&self, Special { head, body, .. }: Special) -> TokenStream {
-        let body = self.block(body);
-        quote!(#head #body)
-    }
-
-    fn match_arm(&self, MatchArm { head, body }: MatchArm) -> TokenStream {
-        let body = self.block(body);
-        quote!(#head #body)
     }
 }
 
