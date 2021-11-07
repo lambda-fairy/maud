@@ -543,7 +543,7 @@ impl Parser {
                         punct,
                         "void elements must use `;`, not `/`";
                         help = "change this to `;`";
-                        help = "see https://github.com/lambda-fairy/maud/pull/96 for details";
+                        help = "see https://github.com/lambda-fairy/maud/pull/315 for details";
                     );
                 }
                 ast::ElementBody::Void {
