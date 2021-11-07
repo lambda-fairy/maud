@@ -16,13 +16,6 @@ html! {
 # ;
 ```
 
-Before version 0.18,
-Maud allowed the curly braces to be omitted.
-This syntax was [removed][#137]
-and now causes an error instead.
-
-[#137]: https://github.com/lambda-fairy/maud/pull/137
-
 ## Void elements: `br;`
 
 Terminate a void element using a semicolon:
@@ -46,13 +39,6 @@ html! {
 
 The result will be rendered with HTML syntax –
 `<br>` not `<br />`.
-
-Maud also supports ending a void element with a slash:
-`br /`.
-This syntax is [deprecated][#96]
-and should not be used in new code.
-
-[#96]: https://github.com/lambda-fairy/maud/pull/96
 
 ## Custom elements and `data` attributes
 

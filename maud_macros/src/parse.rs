@@ -538,6 +538,14 @@ impl Parser {
             {
                 // Void element
                 self.advance();
+                if punct.as_char() == '/' {
+                    emit_error!(
+                        punct,
+                        "void elements must use `;`, not `/`";
+                        help = "change this to `;`";
+                        help = "see https://github.com/lambda-fairy/maud/pull/96 for details";
+                    );
+                }
                 ast::ElementBody::Void {
                     semi_span: SpanRange::single_span(punct.span()),
                 }
