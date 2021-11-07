@@ -52,12 +52,6 @@ fn empty_elements() {
 }
 
 #[test]
-fn empty_elements_slash() {
-    let result = html! { "pinkie" br / "pie" };
-    assert_eq!(result.into_string(), "pinkie<br>pie");
-}
-
-#[test]
 fn simple_attributes() {
     let result = html! {
         link rel="stylesheet" href="styles.css";
