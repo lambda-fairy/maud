@@ -88,9 +88,8 @@ jobs:
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
-        # rustfmt is often missing on nightly. Since there's little benefit to
-        # using the nightly version, use the more reliable stable build instead.
-        toolchain: stable
+        # Nightly rustfmt is needed for the `imports_granularity` option
+        toolchain: nightly
         profile: minimal
         override: true
         components: rustfmt
