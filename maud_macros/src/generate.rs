@@ -128,7 +128,7 @@ impl Generator {
     }
 
     fn attrs(&self, attrs: Vec<Attr>, build: &mut Builder) {
-        for Attribute { name, attr_type } in desugar_attrs(attrs) {
+        for NamedAttr { name, attr_type } in desugar_attrs(attrs) {
             match attr_type {
                 AttrType::Normal { value } => {
                     build.push_str(" ");
@@ -174,11 +174,11 @@ impl Generator {
 
 ////////////////////////////////////////////////////////
 
-fn desugar_attrs(attrs: Vec<Attr>) -> Vec<Attribute> {
+fn desugar_attrs(attrs: Vec<Attr>) -> Vec<NamedAttr> {
     let mut classes_static = vec![];
     let mut classes_toggled = vec![];
     let mut ids = vec![];
-    let mut attributes = vec![];
+    let mut named_attrs = vec![];
     for attr in attrs {
         match attr {
             Attr::Class {
@@ -192,19 +192,19 @@ fn desugar_attrs(attrs: Vec<Attr>) -> Vec<Attribute> {
                 ..
             } => classes_static.push(name),
             Attr::Id { name, .. } => ids.push(name),
-            Attr::Attribute { attribute } => attributes.push(attribute),
+            Attr::Named { named_attr } => named_attrs.push(named_attr),
         }
     }
     let classes = desugar_classes_or_ids("class", classes_static, classes_toggled);
     let ids = desugar_classes_or_ids("id", ids, vec![]);
-    classes.into_iter().chain(ids).chain(attributes).collect()
+    classes.into_iter().chain(ids).chain(named_attrs).collect()
 }
 
 fn desugar_classes_or_ids(
     attr_name: &'static str,
     values_static: Vec<Markup>,
     values_toggled: Vec<(Markup, Toggler)>,
-) -> Option<Attribute> {
+) -> Option<NamedAttr> {
     if values_static.is_empty() && values_toggled.is_empty() {
         return None;
     }
@@ -227,7 +227,7 @@ fn desugar_classes_or_ids(
             }],
         });
     }
-    Some(Attribute {
+    Some(NamedAttr {
         name: TokenStream::from(TokenTree::Ident(Ident::new(attr_name, Span::call_site()))),
         attr_type: AttrType::Normal {
             value: Markup::Block(Block {
