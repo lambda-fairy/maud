@@ -579,7 +579,7 @@ impl Parser {
                             }
                         };
                         self.current_attr = None;
-                        attrs.push(ast::Attr::NamedAttr {
+                        attrs.push(ast::Attr::Named {
                             named_attr: ast::NamedAttr { name, attr_type },
                         });
                     }
@@ -587,7 +587,7 @@ impl Parser {
                     Some(TokenTree::Punct(ref punct)) if punct.as_char() == '?' => {
                         self.advance();
                         let toggler = self.attr_toggler();
-                        attrs.push(ast::Attr::NamedAttr {
+                        attrs.push(ast::Attr::Named {
                             named_attr: ast::NamedAttr {
                                 name: name.clone(),
                                 attr_type: ast::AttrType::Empty { toggler },
@@ -597,7 +597,7 @@ impl Parser {
                     // Empty attribute (new syntax)
                     _ => {
                         let toggler = self.attr_toggler();
-                        attrs.push(ast::Attr::NamedAttr {
+                        attrs.push(ast::Attr::Named {
                             named_attr: ast::NamedAttr {
                                 name: name.clone(),
                                 attr_type: ast::AttrType::Empty { toggler },
@@ -646,7 +646,7 @@ impl Parser {
                     "class".to_string()
                 }
                 ast::Attr::Id { .. } => "id".to_string(),
-                ast::Attr::NamedAttr { named_attr } => named_attr
+                ast::Attr::Named { named_attr } => named_attr
                     .name
                     .clone()
                     .into_iter()

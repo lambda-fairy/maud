@@ -192,7 +192,7 @@ fn desugar_attrs(attrs: Vec<Attr>) -> Vec<NamedAttr> {
                 ..
             } => classes_static.push(name),
             Attr::Id { name, .. } => ids.push(name),
-            Attr::NamedAttr { named_attr } => named_attrs.push(named_attr),
+            Attr::Named { named_attr } => named_attrs.push(named_attr),
         }
     }
     let classes = desugar_classes_or_ids("class", classes_static, classes_toggled);

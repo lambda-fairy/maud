@@ -76,7 +76,7 @@ pub enum Attr {
         hash_span: SpanRange,
         name: Markup,
     },
-    NamedAttr {
+    Named {
         named_attr: NamedAttr,
     },
 }
@@ -104,7 +104,7 @@ impl Attr {
                 let name_span = name.span();
                 hash_span.join_range(name_span)
             }
-            Attr::NamedAttr { ref named_attr } => named_attr.span(),
+            Attr::Named { ref named_attr } => named_attr.span(),
         }
     }
 }
