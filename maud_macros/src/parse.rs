@@ -579,16 +579,16 @@ impl Parser {
                             }
                         };
                         self.current_attr = None;
-                        attrs.push(ast::Attr::Attribute {
-                            attribute: ast::Attribute { name, attr_type },
+                        attrs.push(ast::Attr::NamedAttr {
+                            named_attr: ast::NamedAttr { name, attr_type },
                         });
                     }
                     // Empty attribute (legacy syntax)
                     Some(TokenTree::Punct(ref punct)) if punct.as_char() == '?' => {
                         self.advance();
                         let toggler = self.attr_toggler();
-                        attrs.push(ast::Attr::Attribute {
-                            attribute: ast::Attribute {
+                        attrs.push(ast::Attr::NamedAttr {
+                            named_attr: ast::NamedAttr {
                                 name: name.clone(),
                                 attr_type: ast::AttrType::Empty { toggler },
                             },
@@ -597,8 +597,8 @@ impl Parser {
                     // Empty attribute (new syntax)
                     _ => {
                         let toggler = self.attr_toggler();
-                        attrs.push(ast::Attr::Attribute {
-                            attribute: ast::Attribute {
+                        attrs.push(ast::Attr::NamedAttr {
+                            named_attr: ast::NamedAttr {
                                 name: name.clone(),
                                 attr_type: ast::AttrType::Empty { toggler },
                             },
@@ -646,7 +646,7 @@ impl Parser {
                     "class".to_string()
                 }
                 ast::Attr::Id { .. } => "id".to_string(),
-                ast::Attr::Attribute { attribute } => attribute
+                ast::Attr::NamedAttr { named_attr } => named_attr
                     .name
                     .clone()
                     .into_iter()
