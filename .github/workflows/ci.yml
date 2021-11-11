@@ -53,9 +53,13 @@ jobs:
         toolchain: nightly
         profile: minimal
         override: true
+        components: clippy
 
     - name: Build documentation
       run: cd docs && make -j$(nproc)
+
+    - name: Check Clippy
+      run: cd docs && cargo clippy --all-targets -- -D warnings
 
   examples:
     name: Examples
