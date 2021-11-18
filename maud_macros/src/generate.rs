@@ -103,11 +103,7 @@ impl Generator {
 
     fn splice(&self, expr: TokenStream, build: &mut Builder) {
         let output_ident = self.output_ident.clone();
-        let tokens = quote!({
-            use maud::render::{RenderInternal, RenderWrapper};
-            RenderWrapper(&#expr).__maud_render_to(&mut #output_ident);
-        });
-        build.push_tokens(tokens);
+        build.push_tokens(quote!(maud::Render::render_to(&#expr, &mut #output_ident);));
     }
 
     fn element(&self, name: TokenStream, attrs: Vec<Attr>, body: ElementBody, build: &mut Builder) {

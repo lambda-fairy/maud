@@ -11,8 +11,8 @@
 
 extern crate alloc;
 
-use alloc::string::String;
-use core::fmt::{self, Write};
+use alloc::{borrow::Cow, boxed::Box, string::String};
+use core::fmt::{self, Arguments, Write};
 
 pub use maud_macros::{html, html_debug};
 
@@ -114,46 +114,63 @@ pub trait Render {
     }
 }
 
-impl<T: fmt::Display + ?Sized> Render for T {
+impl Render for str {
     fn render_to(&self, w: &mut String) {
-        let _ = write!(Escaper::new(w), "{}", self);
+        escape::escape_to_string(self, w);
     }
 }
 
-/// Spicy hack to specialize `Render` for `T: AsRef<str>`.
-///
-/// The `std::fmt` machinery is rather heavyweight, both in code size and speed.
-/// It would be nice to skip this overhead for the common cases of `&str` and
-/// `String`. But the obvious solution uses *specialization*, which (as of this
-/// writing) requires Nightly. The [*inherent method specialization*][1] trick
-/// is less clear but works on Stable.
-///
-/// This module is an implementation detail and should not be used directly.
-///
-/// [1]: https://github.com/dtolnay/case-studies/issues/14
-#[doc(hidden)]
-pub mod render {
-    use crate::{Escaper, Render};
-    use alloc::string::String;
-    use core::fmt::Write;
-
-    pub trait RenderInternal {
-        fn __maud_render_to(&self, w: &mut String);
+impl Render for String {
+    fn render_to(&self, w: &mut String) {
+        str::render_to(self, w);
     }
+}
 
-    pub struct RenderWrapper<'a, T: ?Sized>(pub &'a T);
-
-    impl<'a, T: AsRef<str> + ?Sized> RenderWrapper<'a, T> {
-        pub fn __maud_render_to(&self, w: &mut String) {
-            let _ = Escaper::new(w).write_str(self.0.as_ref());
-        }
+impl<'a> Render for Cow<'a, str> {
+    fn render_to(&self, w: &mut String) {
+        str::render_to(self, w);
     }
+}
 
-    impl<'a, T: Render + ?Sized> RenderInternal for RenderWrapper<'a, T> {
-        fn __maud_render_to(&self, w: &mut String) {
-            self.0.render_to(w);
-        }
+impl<'a> Render for Arguments<'a> {
+    fn render_to(&self, w: &mut String) {
+        let _ = Escaper::new(w).write_fmt(*self);
     }
+}
+
+impl<'a, T: Render + ?Sized> Render for &'a T {
+    fn render_to(&self, w: &mut String) {
+        T::render_to(self, w);
+    }
+}
+
+impl<'a, T: Render + ?Sized> Render for &'a mut T {
+    fn render_to(&self, w: &mut String) {
+        T::render_to(self, w);
+    }
+}
+
+impl<T: Render + ?Sized> Render for Box<T> {
+    fn render_to(&self, w: &mut String) {
+        T::render_to(self, w);
+    }
+}
+
+macro_rules! delegate_to_display_impl {
+    ($($ty:ty)*) => {
+        $(
+            impl Render for $ty {
+                fn render_to(&self, w: &mut String) {
+                    format_args!("{self}").render_to(w);
+                }
+            }
+        )*
+    };
+}
+
+delegate_to_display_impl! {
+    i8 i16 i32 i64 i128
+    u8 u16 u32 u64 u128
 }
 
 /// A wrapper that renders the inner value without escaping.
