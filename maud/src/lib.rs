@@ -156,21 +156,21 @@ impl<T: Render + ?Sized> Render for Box<T> {
     }
 }
 
-macro_rules! delegate_to_display_impl {
+macro_rules! impl_render_with_itoa {
     ($($ty:ty)*) => {
         $(
             impl Render for $ty {
                 fn render_to(&self, w: &mut String) {
-                    format_args!("{self}").render_to(w);
+                    let _ = itoa::fmt(w, *self);
                 }
             }
         )*
     };
 }
 
-delegate_to_display_impl! {
-    i8 i16 i32 i64 i128
-    u8 u16 u32 u64 u128
+impl_render_with_itoa! {
+    i8 i16 i32 i64 i128 isize
+    u8 u16 u32 u64 u128 usize
 }
 
 /// A wrapper that renders the inner value without escaping.
