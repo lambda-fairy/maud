@@ -58,16 +58,9 @@ impl<'a> fmt::Write for Escaper<'a> {
 
 /// Represents a type that can be rendered as HTML.
 ///
-/// If your type implements [`Display`][1], then it will implement this
-/// trait automatically through a blanket impl.
-///
-/// [1]: https://doc.rust-lang.org/std/fmt/trait.Display.html
-///
-/// On the other hand, if your type has a custom HTML representation,
-/// then you can implement `Render` by hand. To do this, override
-/// either the `.render()` or `.render_to()` methods; since each is
-/// defined in terms of the other, you only need to implement one of
-/// them. See the example below.
+/// To implement this for your own type, override either the `.render()`
+/// or `.render_to()` methods; since each is defined in terms of the
+/// other, you only need to implement one of them. See the example below.
 ///
 /// # Minimal implementation
 ///

@@ -1,15 +1,9 @@
 # The `Render` trait
 
-By default,
-a [`(splice)`](splices-toggles.md) is rendered using the [`std::fmt::Display`][Display] trait,
-with any HTML special characters escaped automatically.
+Maud uses the [`Render`][Render] trait to convert [`(spliced)`](splices-toggles.md) values to HTML.
+This is implemented for many Rust primitive types (`&str`, `i32`) by default, but you can implement it for your own types as well.
 
-To change this behavior,
-implement the [`Render`][Render] trait for your type.
-Then, when a value of this type is used in a template,
-Maud will call your custom code instead.
-
-Below are some examples of using `Render`.
+Below are some examples of implementing `Render`.
 Feel free to use these snippets in your own project!
 
 ## Example: a shorthand for including CSS stylesheets
