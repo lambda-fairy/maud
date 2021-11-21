@@ -149,6 +149,22 @@ impl<T: Render + ?Sized> Render for Box<T> {
     }
 }
 
+macro_rules! impl_render_with_display {
+    ($($ty:ty)*) => {
+        $(
+            impl Render for $ty {
+                fn render_to(&self, w: &mut String) {
+                    format_args!("{self}").render_to(w);
+                }
+            }
+        )*
+    };
+}
+
+impl_render_with_display! {
+    char f32 f64
+}
+
 macro_rules! impl_render_with_itoa {
     ($($ty:ty)*) => {
         $(
