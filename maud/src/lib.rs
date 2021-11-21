@@ -34,7 +34,8 @@ mod escape;
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust
+/// use maud::Escaper;
 /// use std::fmt::Write;
 /// let mut s = String::new();
 /// write!(Escaper::new(&mut s), "<script>launchMissiles()</script>").unwrap();
