@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Remove blanket `Render` impl for `T: Display`
+  [#320](https://github.com/lambda-fairy/maud/pull/320)
+
 ## [0.23.0] - 2021-11-10
 
 - Update to support axum 0.2
