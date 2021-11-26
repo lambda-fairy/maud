@@ -218,9 +218,23 @@ impl Html {
         }
     }
 
+    #[cfg(feature = "sanitize")]
     /// Takes an untrusted HTML fragment and makes it safe.
-    pub fn sanitize(_value: &str) -> Self {
-        todo!()
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use maud::Html;
+    ///
+    /// let untrusted_html = "<p><script>alert('bwahaha!');</script></p>";
+    ///
+    /// let clean_html = Html::sanitize(untrusted_html);
+    ///
+    /// assert_eq!(clean_html.into_string(), "<p></p>");
+    /// ```
+    pub fn sanitize(untrusted_html_string: &str) -> Self {
+        // XSS-Safety: Ammonia sanitizes the input.
+        Self::from_unchecked(ammonia::clean(untrusted_html_string))
     }
 
     /// Creates an HTML fragment from a string, without escaping it.
