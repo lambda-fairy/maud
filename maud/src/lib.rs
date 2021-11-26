@@ -18,45 +18,6 @@ pub use maud_macros::{html, html_debug};
 
 mod escape;
 
-/// An adapter that escapes HTML special characters.
-///
-/// The following characters are escaped:
-///
-/// * `&` is escaped as `&amp;`
-/// * `<` is escaped as `&lt;`
-/// * `>` is escaped as `&gt;`
-/// * `"` is escaped as `&quot;`
-///
-/// All other characters are passed through unchanged.
-///
-/// **Note:** In versions prior to 0.13, the single quote (`'`) was
-/// escaped as well.
-///
-/// # Example
-///
-/// ```rust
-/// use maud::Escaper;
-/// use std::fmt::Write;
-/// let mut s = String::new();
-/// write!(Escaper::new(&mut s), "<script>launchMissiles()</script>").unwrap();
-/// assert_eq!(s, "&lt;script&gt;launchMissiles()&lt;/script&gt;");
-/// ```
-pub struct Escaper<'a>(&'a mut String);
-
-impl<'a> Escaper<'a> {
-    /// Creates an `Escaper` from a `String`.
-    pub fn new(buffer: &'a mut String) -> Escaper<'a> {
-        Escaper(buffer)
-    }
-}
-
-impl<'a> fmt::Write for Escaper<'a> {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        escape::escape_to_string(s, self.0);
-        Ok(())
-    }
-}
-
 /// Represents a type that can be rendered as HTML.
 ///
 /// To implement this for your own type, override either the `.html()`
