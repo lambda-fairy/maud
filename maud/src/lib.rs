@@ -59,103 +59,98 @@ impl<'a> fmt::Write for Escaper<'a> {
 
 /// Represents a type that can be rendered as HTML.
 ///
-/// To implement this for your own type, override either the `.render()`
-/// or `.render_to()` methods; since each is defined in terms of the
+/// To implement this for your own type, override either the `.html()`
+/// or `.to_html()` methods; since each is defined in terms of the
 /// other, you only need to implement one of them. See the example below.
 ///
 /// # Minimal implementation
 ///
 /// An implementation of this trait must override at least one of
-/// `.render()` or `.render_to()`. Since the default definitions of
-/// these methods call each other, not doing this will result in
-/// infinite recursion.
+/// `.html()` or `.to_html()`. Since the default definitions of these
+/// methods call each other, not doing this will result in infinite
+/// recursion.
 ///
 /// # Example
 ///
 /// ```rust
-/// use maud::{html, Markup, Render};
+/// use maud::{html, Html, ToHtml};
 ///
 /// /// Provides a shorthand for linking to a CSS stylesheet.
 /// pub struct Stylesheet(&'static str);
 ///
-/// impl Render for Stylesheet {
-///     fn render(&self) -> Markup {
+/// impl ToHtml for Stylesheet {
+///     fn to_html(&self) -> Html {
 ///         html! {
 ///             link rel="stylesheet" type="text/css" href=(self.0);
 ///         }
 ///     }
 /// }
 /// ```
-pub trait Render {
-    /// Renders `self` as a block of `Markup`.
-    fn render(&self) -> Markup {
-        let mut buffer = String::new();
-        self.render_to(&mut buffer);
-        PreEscaped(buffer)
+pub trait ToHtml {
+    /// Creates an HTML representation of `self`.
+    fn to_html(&self) -> Html {
+        let mut buffer = Html::default();
+        self.html(&mut buffer);
+        buffer
     }
 
-    /// Appends a representation of `self` to the given buffer.
+    /// Appends an HTML representation of `self` to the given buffer.
     ///
-    /// Its default implementation just calls `.render()`, but you may
+    /// Its default implementation just calls `.to_html()`, but you may
     /// override it with something more efficient.
-    ///
-    /// Note that no further escaping is performed on data written to
-    /// the buffer. If you override this method, you must make sure that
-    /// any data written is properly escaped, whether by hand or using
-    /// the [`Escaper`](struct.Escaper.html) wrapper struct.
-    fn render_to(&self, buffer: &mut String) {
-        buffer.push_str(&self.render().into_string());
+    fn html(&self, buffer: &mut Html) {
+        self.to_html().html(buffer)
     }
 }
 
-impl Render for str {
-    fn render_to(&self, w: &mut String) {
-        escape::escape_to_string(self, w);
+impl ToHtml for str {
+    fn html(&self, buffer: &mut Html) {
+        buffer.push_text(self);
     }
 }
 
-impl Render for String {
-    fn render_to(&self, w: &mut String) {
-        str::render_to(self, w);
+impl ToHtml for String {
+    fn html(&self, buffer: &mut Html) {
+        buffer.push_text(self);
     }
 }
 
-impl<'a> Render for Cow<'a, str> {
-    fn render_to(&self, w: &mut String) {
-        str::render_to(self, w);
+impl<'a> ToHtml for Cow<'a, str> {
+    fn html(&self, buffer: &mut Html) {
+        buffer.push_text(self);
     }
 }
 
-impl<'a> Render for Arguments<'a> {
-    fn render_to(&self, w: &mut String) {
-        let _ = Escaper::new(w).write_fmt(*self);
+impl<'a> ToHtml for Arguments<'a> {
+    fn html(&self, buffer: &mut Html) {
+        buffer.push_fmt(*self);
     }
 }
 
-impl<'a, T: Render + ?Sized> Render for &'a T {
-    fn render_to(&self, w: &mut String) {
-        T::render_to(self, w);
+impl<'a, T: ToHtml + ?Sized> ToHtml for &'a T {
+    fn html(&self, buffer: &mut Html) {
+        T::html(self, buffer);
     }
 }
 
-impl<'a, T: Render + ?Sized> Render for &'a mut T {
-    fn render_to(&self, w: &mut String) {
-        T::render_to(self, w);
+impl<'a, T: ToHtml + ?Sized> ToHtml for &'a mut T {
+    fn html(&self, buffer: &mut Html) {
+        T::html(self, buffer);
     }
 }
 
-impl<T: Render + ?Sized> Render for Box<T> {
-    fn render_to(&self, w: &mut String) {
-        T::render_to(self, w);
+impl<T: ToHtml + ?Sized> ToHtml for Box<T> {
+    fn html(&self, buffer: &mut Html) {
+        T::html(self, buffer);
     }
 }
 
 macro_rules! impl_render_with_display {
     ($($ty:ty)*) => {
         $(
-            impl Render for $ty {
-                fn render_to(&self, w: &mut String) {
-                    format_args!("{self}").render_to(w);
+            impl ToHtml for $ty {
+                fn html(&self, buffer: &mut Html) {
+                    buffer.push_fmt(format_args!("{self}"));
                 }
             }
         )*
@@ -169,9 +164,10 @@ impl_render_with_display! {
 macro_rules! impl_render_with_itoa {
     ($($ty:ty)*) => {
         $(
-            impl Render for $ty {
-                fn render_to(&self, w: &mut String) {
-                    let _ = itoa::fmt(w, *self);
+            impl ToHtml for $ty {
+                fn html(&self, buffer: &mut Html) {
+                    // XSS-Safety: The characters '0' through '9', and '-', are HTML safe.
+                    let _ = itoa::fmt(buffer.as_mut_string_unchecked(), *self);
                 }
             }
         )*
@@ -183,31 +179,144 @@ impl_render_with_itoa! {
     u8 u16 u32 u64 u128 usize
 }
 
-/// A wrapper that renders the inner value without escaping.
-#[derive(Debug, Clone, Copy)]
-pub struct PreEscaped<T: AsRef<str>>(pub T);
-
-impl<T: AsRef<str>> Render for PreEscaped<T> {
-    fn render_to(&self, w: &mut String) {
-        w.push_str(self.0.as_ref());
-    }
-}
-
-/// A block of markup is a string that does not need to be escaped.
+/// A fragment of HTML.
 ///
-/// The `html!` macro expands to an expression of this type.
-pub type Markup = PreEscaped<String>;
+/// This is the type that's returned by the [`html!`] macro.
+#[derive(Clone, Debug, Default)]
+pub struct Html {
+    inner: Cow<'static, str>,
+}
 
-impl<T: AsRef<str> + Into<String>> PreEscaped<T> {
-    /// Converts the inner value to a string.
+impl Html {
+    /// Creates an HTML fragment from a constant string.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use maud::Html;
+    ///
+    /// let analytics_script = Html::from_const("<script>trackThisPageView();</script>");
+    /// ```
+    ///
+    /// # Security
+    ///
+    /// The given string must be a *compile-time constant*: either a
+    /// literal, or a reference to a `const` value. This ensures that
+    /// the string is as trustworthy as the code itself.
+    ///
+    /// If the string is not a compile-time constant, use
+    /// [`Html::from_unchecked`] instead, and document why the call is
+    /// safe.
+    ///
+    /// In the future, when [`const` string parameters] are available on
+    /// Rust stable, this rule will be enforced by the API.
+    ///
+    /// [`const` string parameters]: https://blog.rust-lang.org/inside-rust/2021/09/06/Splitting-const-generics.html#featureadt_const_params
+    pub const fn from_const(html_string: &'static str) -> Self {
+        Html {
+            inner: Cow::Borrowed(html_string),
+        }
+    }
+
+    /// Takes an untrusted HTML fragment and makes it safe.
+    pub fn sanitize(_value: &str) -> Self {
+        todo!()
+    }
+
+    /// Creates an HTML fragment from a string, without escaping it.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # fn load_header_from_config() -> String { String::new() }
+    /// use maud::Html;
+    ///
+    /// // XSS-Safety: The config can only be edited by an admin.
+    /// let header = Html::from_unchecked(load_header_from_config());
+    /// ```
+    ///
+    /// # Security
+    ///
+    /// It is your responsibility to ensure that the string comes from a
+    /// trusted source. Misuse of this function can lead to [cross-site
+    /// scripting attacks (XSS)][xss].
+    ///
+    /// It is strongly recommended to include a `// XSS-Safety:` comment
+    /// that explains why this call is safe.
+    ///
+    /// If your organization has a security team, consider asking them
+    /// for review.
+    ///
+    /// [xss]: https://www.cloudflare.com/en-au/learning/security/threats/cross-site-scripting/
+    pub fn from_unchecked(html_string: impl Into<Cow<'static, str>>) -> Self {
+        Self {
+            inner: html_string.into(),
+        }
+    }
+
+    /// For internal use only.
+    #[doc(hidden)]
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            inner: Cow::Owned(String::with_capacity(capacity)),
+        }
+    }
+
+    /// Appends another HTML fragment to this one.
+    pub fn push(&mut self, html: &Html) {
+        self.inner.to_mut().push_str(&html.inner);
+    }
+
+    /// Appends a string, escaping if necessary.
+    pub fn push_text(&mut self, text: &str) {
+        escape::escape_to_string(text, self.inner.to_mut());
+    }
+
+    /// Appends a format string, escaping if necessary.
+    pub fn push_fmt(&mut self, args: Arguments<'_>) {
+        struct Escaper<'a>(&'a mut Html);
+
+        impl<'a> Write for Escaper<'a> {
+            fn write_str(&mut self, text: &str) -> fmt::Result {
+                self.0.push_text(text);
+                Ok(())
+            }
+        }
+
+        let _ = Escaper(self).write_fmt(args);
+    }
+
+    /// Exposes the underlying buffer as a `&mut String`.
+    ///
+    /// # Security
+    ///
+    /// As with [`Html::from_unchecked`], it is your responsibility to
+    /// ensure that any additions are properly escaped.
+    ///
+    /// It is strongly recommended to include a `// XSS-Safety:` comment
+    /// that explains why this call is safe.
+    ///
+    /// If your organization has a security team, consider asking them
+    /// for review.
+    pub fn as_mut_string_unchecked(&mut self) -> &mut String {
+        self.inner.to_mut()
+    }
+
+    /// Converts the inner value to a `String`.
     pub fn into_string(self) -> String {
-        self.0.into()
+        self.inner.into_owned()
     }
 }
 
-impl<T: AsRef<str> + Into<String>> From<PreEscaped<T>> for String {
-    fn from(value: PreEscaped<T>) -> String {
-        value.into_string()
+impl ToHtml for Html {
+    fn html(&self, buffer: &mut Html) {
+        buffer.push(self);
+    }
+}
+
+impl From<Html> for String {
+    fn from(html: Html) -> String {
+        html.into_string()
     }
 }
 
@@ -220,7 +329,7 @@ impl<T: AsRef<str> + Into<String>> From<PreEscaped<T>> for String {
 /// ```rust
 /// use maud::{DOCTYPE, html};
 ///
-/// let markup = html! {
+/// let page = html! {
 ///     (DOCTYPE)
 ///     html {
 ///         head {
@@ -233,14 +342,13 @@ impl<T: AsRef<str> + Into<String>> From<PreEscaped<T>> for String {
 ///     }
 /// };
 /// ```
-pub const DOCTYPE: PreEscaped<&'static str> = PreEscaped("<!DOCTYPE html>");
+pub const DOCTYPE: Html = Html::from_const("<!DOCTYPE html>");
 
 #[cfg(feature = "rocket")]
 mod rocket_support {
     extern crate std;
 
-    use crate::PreEscaped;
-    use alloc::string::String;
+    use crate::Html;
     use rocket::{
         http::{ContentType, Status},
         request::Request,
@@ -248,11 +356,11 @@ mod rocket_support {
     };
     use std::io::Cursor;
 
-    impl Responder<'static> for PreEscaped<String> {
+    impl Responder<'static> for Html {
         fn respond_to(self, _: &Request) -> Result<Response<'static>, Status> {
             Response::build()
                 .header(ContentType::HTML)
-                .sized_body(Cursor::new(self.0))
+                .sized_body(Cursor::new(self.into_string()))
                 .ok()
         }
     }
@@ -260,32 +368,30 @@ mod rocket_support {
 
 #[cfg(feature = "actix-web")]
 mod actix_support {
-    use crate::PreEscaped;
+    use crate::Html;
     use actix_web_dep::{Error, HttpRequest, HttpResponse, Responder};
-    use alloc::string::String;
     use futures_util::future::{ok, Ready};
 
-    impl Responder for PreEscaped<String> {
+    impl Responder for Html {
         type Error = Error;
         type Future = Ready<Result<HttpResponse, Self::Error>>;
         fn respond_to(self, _req: &HttpRequest) -> Self::Future {
             ok(HttpResponse::Ok()
                 .content_type("text/html; charset=utf-8")
-                .body(self.0))
+                .body(self.into_string()))
         }
     }
 }
 
 #[cfg(feature = "tide")]
 mod tide_support {
-    use crate::PreEscaped;
-    use alloc::string::String;
+    use crate::Html;
     use tide::{http::mime, Response, StatusCode};
 
-    impl From<PreEscaped<String>> for Response {
-        fn from(markup: PreEscaped<String>) -> Response {
+    impl From<Html> for Response {
+        fn from(html: Html) -> Response {
             Response::builder(StatusCode::Ok)
-                .body(markup.into_string())
+                .body(html.into_string())
                 .content_type(mime::HTML)
                 .build()
         }
@@ -294,19 +400,18 @@ mod tide_support {
 
 #[cfg(feature = "axum")]
 mod axum_support {
-    use crate::PreEscaped;
-    use alloc::string::String;
+    use crate::Html;
     use axum_core::{body::BoxBody, response::IntoResponse};
     use http::{header, HeaderMap, HeaderValue, Response};
 
-    impl IntoResponse for PreEscaped<String> {
+    impl IntoResponse for Html {
         fn into_response(self) -> Response<BoxBody> {
             let mut headers = HeaderMap::new();
             headers.insert(
                 header::CONTENT_TYPE,
                 HeaderValue::from_static("text/html; charset=utf-8"),
             );
-            (headers, self.0).into_response()
+            (headers, self.inner).into_response()
         }
     }
 }

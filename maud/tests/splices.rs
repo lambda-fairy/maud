@@ -1,4 +1,4 @@
-use maud::html;
+use maud::{html, Html};
 
 #[test]
 fn literals() {
@@ -8,8 +8,7 @@ fn literals() {
 
 #[test]
 fn raw_literals() {
-    use maud::PreEscaped;
-    let result = html! { (PreEscaped("<pinkie>")) };
+    let result = html! { (Html::from_const("<pinkie>")) };
     assert_eq!(result.into_string(), "<pinkie>");
 }
 

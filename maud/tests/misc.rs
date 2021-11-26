@@ -1,4 +1,4 @@
-use maud::{self, html};
+use maud::{self, html, Html, ToHtml};
 
 #[test]
 fn issue_13() {
@@ -54,9 +54,9 @@ fn issue_23() {
 #[test]
 fn render_impl() {
     struct R(&'static str);
-    impl maud::Render for R {
-        fn render_to(&self, w: &mut String) {
-            w.push_str(self.0);
+    impl ToHtml for R {
+        fn html(&self, buffer: &mut Html) {
+            buffer.push_text(self.0);
         }
     }
 
@@ -71,11 +71,9 @@ fn render_impl() {
 
 #[test]
 fn issue_97() {
-    use maud::Render;
-
     struct Pinkie;
-    impl Render for Pinkie {
-        fn render(&self) -> maud::Markup {
+    impl ToHtml for Pinkie {
+        fn to_html(&self) -> Html {
             let x = 42;
             html! { (x) }
         }

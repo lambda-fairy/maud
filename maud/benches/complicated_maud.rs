@@ -2,7 +2,7 @@
 
 extern crate test;
 
-use maud::{html, Markup};
+use maud::{html, Html};
 
 #[derive(Debug)]
 struct Entry {
@@ -11,7 +11,7 @@ struct Entry {
 }
 
 mod btn {
-    use maud::{html, Markup, Render};
+    use maud::{html, Html, ToHtml};
 
     #[derive(Copy, Clone)]
     pub enum RequestMethod {
@@ -41,8 +41,8 @@ mod btn {
         }
     }
 
-    impl<'a> Render for Button<'a> {
-        fn render(&self) -> Markup {
+    impl<'a> ToHtml for Button<'a> {
+        fn to_html(&self) -> Html {
             match self.req_meth {
                 RequestMethod::Get => {
                     html! { a.btn href=(self.path) { (self.label) } }
@@ -59,7 +59,7 @@ mod btn {
     }
 }
 
-fn layout<S: AsRef<str>>(title: S, inner: Markup) -> Markup {
+fn layout<S: AsRef<str>>(title: S, inner: Html) -> Html {
     html! {
         html {
             head {

@@ -103,7 +103,7 @@ impl Generator {
 
     fn splice(&self, expr: TokenStream, build: &mut Builder) {
         let output_ident = self.output_ident.clone();
-        build.push_tokens(quote!(maud::Render::render_to(&#expr, &mut #output_ident);));
+        build.push_tokens(quote!(maud::ToHtml::html(&#expr, &mut #output_ident);));
     }
 
     fn element(&self, name: TokenStream, attrs: Vec<Attr>, body: ElementBody, build: &mut Builder) {
@@ -284,7 +284,7 @@ impl Builder {
         let push_str_expr = {
             let output_ident = self.output_ident.clone();
             let string = TokenTree::Literal(Literal::string(&self.tail));
-            quote!(#output_ident.push_str(#string);)
+            quote!(#output_ident.as_mut_string_unchecked().push_str(#string);)
         };
         self.tail.clear();
         self.tokens.extend(push_str_expr);
