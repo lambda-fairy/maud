@@ -84,7 +84,7 @@ impl<'a> ToHtml for Cow<'a, str> {
 
 impl<'a> ToHtml for Arguments<'a> {
     fn html(&self, buffer: &mut Html) {
-        buffer.push_fmt(*self);
+        let _ = buffer.write_fmt(*self);
     }
 }
 
@@ -111,7 +111,7 @@ macro_rules! impl_render_with_display {
         $(
             impl ToHtml for $ty {
                 fn html(&self, buffer: &mut Html) {
-                    buffer.push_fmt(format_args!("{self}"));
+                    let _ = write!(buffer, "{self}");
                 }
             }
         )*
@@ -247,20 +247,6 @@ impl Html {
         escape::escape_to_string(text, self.inner.to_mut());
     }
 
-    /// Appends a format string, escaping if necessary.
-    pub fn push_fmt(&mut self, args: Arguments<'_>) {
-        struct Escaper<'a>(&'a mut Html);
-
-        impl<'a> Write for Escaper<'a> {
-            fn write_str(&mut self, text: &str) -> fmt::Result {
-                self.0.push_text(text);
-                Ok(())
-            }
-        }
-
-        let _ = Escaper(self).write_fmt(args);
-    }
-
     /// Exposes the underlying buffer as a `&mut String`.
     ///
     /// # Security
@@ -280,6 +266,13 @@ impl Html {
     /// Converts the inner value to a `String`.
     pub fn into_string(self) -> String {
         self.inner.into_owned()
+    }
+}
+
+impl Write for Html {
+    fn write_str(&mut self, text: &str) -> fmt::Result {
+        self.push_text(text);
+        Ok(())
     }
 }
 
