@@ -118,8 +118,10 @@ maud = { version = "*", features = ["tide"] }
 # ...
 ```
 
-This adds an implementation of `From<PreEscaped<String>>` for the `Response` struct.
-Once provided, callers may return results of `html!` directly as responses:
+This adds an implementation of `From<PreEscaped<String>>`
+for the `Response` struct.
+Once provided,
+callers may return results of `html!` directly as responses:
 
 ```rust,no_run
 use maud::html;

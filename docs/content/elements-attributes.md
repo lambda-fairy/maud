@@ -89,9 +89,10 @@ html! {
 
 ## Optional attributes: `title=[Some("value")]`
 
-Add optional attributes to an element using `attr=[value]` syntax, with *square*
-brackets. These are only rendered if the value is `Some<T>`, and entirely
-omitted if the value is `None`.
+Add optional attributes to an element using `attr=[value]` syntax,
+with *square* brackets.
+These are only rendered if the value is `Some<T>`,
+and entirely omitted if the value is `None`.
 
 ```rust
 # let _ = maud::

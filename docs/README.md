@@ -2,6 +2,8 @@
 
 This directory contains the documentation for Maud.
 
+It is hosted at <https://maud.lambda.xyz>.
+
 ## Build
 
 Build the documentation:
@@ -13,6 +15,18 @@ The built files will be placed in `site/`.
 You can also delete the build artifacts with:
 
     make clean
+
+## Style
+
+- [Be brief][short].
+- Use [semantic line breaks][sembr].
+- American spelling.
+- Parentheticals should use spaced en dashes –
+  like this –
+  not em dashes.
+
+[short]: https://developers.google.com/tech-writing/one/short-sentences
+[sembr]: https://sembr.org/
 
 ## Watch
 
