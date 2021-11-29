@@ -18,14 +18,14 @@ You can also delete the build artifacts with:
 
 ## Style
 
-- Be [brief].
+- [Be brief][short].
 - Use [semantic line breaks][sembr].
 - American spelling.
 - Parentheticals should use spaced en dashes –
   like this –
   not em dashes.
 
-[brief]: https://developers.google.com/tech-writing/one/short-sentences
+[short]: https://developers.google.com/tech-writing/one/short-sentences
 [sembr]: https://sembr.org/
 
 ## Watch
