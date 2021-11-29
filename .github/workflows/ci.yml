@@ -78,7 +78,7 @@ jobs:
         override: true
 
     - name: Doctest
-      run: cd doctest && cargo check
+      run: cd doctest && cargo test
 
   rustfmt:
     name: Rustfmt
