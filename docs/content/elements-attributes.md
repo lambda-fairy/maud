@@ -14,7 +14,6 @@ html! {
     }
 }
 # ;
-invalid syntax !
 ```
 
 ## Void elements: `br;`
