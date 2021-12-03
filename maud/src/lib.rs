@@ -66,19 +66,20 @@ pub trait ToHtml {
 
 impl ToHtml for str {
     fn html(&self, buffer: &mut Html) {
-        buffer.push_text(self);
+        // XSS-Safety: Special characters will be escaped by `escape_to_string`.
+        escape::escape_to_string(self, buffer.as_mut_string_unchecked());
     }
 }
 
 impl ToHtml for String {
     fn html(&self, buffer: &mut Html) {
-        buffer.push_text(self);
+        str::html(self, buffer);
     }
 }
 
 impl<'a> ToHtml for Cow<'a, str> {
     fn html(&self, buffer: &mut Html) {
-        buffer.push_text(self);
+        str::html(self, buffer);
     }
 }
 
@@ -237,14 +238,14 @@ impl Html {
         }
     }
 
-    /// Appends another HTML fragment to this one.
-    pub fn push(&mut self, html: &Html) {
-        self.inner.to_mut().push_str(&html.inner);
+    /// Appends the HTML representation of the given value to `self`.
+    pub fn push(&mut self, value: &(impl ToHtml + ?Sized)) {
+        value.html(self);
     }
 
-    /// Appends a string, escaping if necessary.
-    pub fn push_text(&mut self, text: &str) {
-        escape::escape_to_string(text, self.inner.to_mut());
+    /// Exposes the underlying buffer as a `&str`.
+    pub fn as_str(&self) -> &str {
+        &self.inner
     }
 
     /// Exposes the underlying buffer as a `&mut String`.
@@ -271,14 +272,15 @@ impl Html {
 
 impl Write for Html {
     fn write_str(&mut self, text: &str) -> fmt::Result {
-        self.push_text(text);
+        self.push(text);
         Ok(())
     }
 }
 
 impl ToHtml for Html {
     fn html(&self, buffer: &mut Html) {
-        buffer.push(self);
+        // XSS-Safety: `self` is already guaranteed to be trusted HTML.
+        buffer.as_mut_string_unchecked().push_str(self.as_str());
     }
 }
 

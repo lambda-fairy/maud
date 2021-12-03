@@ -56,7 +56,7 @@ fn render_impl() {
     struct R(&'static str);
     impl ToHtml for R {
         fn html(&self, buffer: &mut Html) {
-            buffer.push_text(self.0);
+            buffer.push(self.0);
         }
     }
 
