@@ -10,7 +10,7 @@ use crate::{
 struct Comrak<'a>(&'a AstNode<'a>);
 
 impl<'a> ToHtml for Comrak<'a> {
-    fn html(&self, buffer: &mut Html) {
+    fn push_html_to(&self, buffer: &mut Html) {
         // XSS-Safety: The input Markdown comes from docs, which are trusted.
         comrak::format_html(
             self.0,
@@ -43,7 +43,7 @@ impl<'a> ToHtml for ComrakRemovePTags<'a> {
 struct ComrakText<'a>(&'a AstNode<'a>);
 
 impl<'a> ToHtml for ComrakText<'a> {
-    fn html(&self, buffer: &mut Html) {
+    fn push_html_to(&self, buffer: &mut Html) {
         comrak::format_commonmark(self.0, &COMRAK_OPTIONS, &mut TextWriter(buffer)).unwrap();
     }
 }
