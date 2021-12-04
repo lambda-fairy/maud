@@ -20,15 +20,11 @@ mod escape;
 
 /// Represents a type that can be rendered as HTML.
 ///
-/// To implement this for your own type, override either the `.html()`
-/// or `.to_html()` methods; since each is defined in terms of the
-/// other, you only need to implement one of them. See the example below.
-///
 /// # Minimal implementation
 ///
 /// An implementation of this trait must override at least one of
-/// `.html()` or `.to_html()`. Since the default definitions of these
-/// methods call each other, not doing this will result in infinite
+/// `.to_html()` or `.push_html_to()`. Since the default definitions of
+/// these methods call each other, not doing this will result in infinite
 /// recursion.
 ///
 /// # Example
@@ -51,7 +47,7 @@ pub trait ToHtml {
     /// Creates an HTML representation of `self`.
     fn to_html(&self) -> Html {
         let mut buffer = Html::default();
-        self.html(&mut buffer);
+        self.push_html_to(&mut buffer);
         buffer
     }
 
@@ -59,51 +55,51 @@ pub trait ToHtml {
     ///
     /// Its default implementation just calls `.to_html()`, but you may
     /// override it with something more efficient.
-    fn html(&self, buffer: &mut Html) {
-        self.to_html().html(buffer)
+    fn push_html_to(&self, buffer: &mut Html) {
+        self.to_html().push_html_to(buffer)
     }
 }
 
 impl ToHtml for str {
-    fn html(&self, buffer: &mut Html) {
+    fn push_html_to(&self, buffer: &mut Html) {
         // XSS-Safety: Special characters will be escaped by `escape_to_string`.
         escape::escape_to_string(self, buffer.as_mut_string_unchecked());
     }
 }
 
 impl ToHtml for String {
-    fn html(&self, buffer: &mut Html) {
-        str::html(self, buffer);
+    fn push_html_to(&self, buffer: &mut Html) {
+        str::push_html_to(self, buffer);
     }
 }
 
 impl<'a> ToHtml for Cow<'a, str> {
-    fn html(&self, buffer: &mut Html) {
-        str::html(self, buffer);
+    fn push_html_to(&self, buffer: &mut Html) {
+        str::push_html_to(self, buffer);
     }
 }
 
 impl<'a> ToHtml for Arguments<'a> {
-    fn html(&self, buffer: &mut Html) {
+    fn push_html_to(&self, buffer: &mut Html) {
         let _ = buffer.write_fmt(*self);
     }
 }
 
 impl<'a, T: ToHtml + ?Sized> ToHtml for &'a T {
-    fn html(&self, buffer: &mut Html) {
-        T::html(self, buffer);
+    fn push_html_to(&self, buffer: &mut Html) {
+        T::push_html_to(self, buffer);
     }
 }
 
 impl<'a, T: ToHtml + ?Sized> ToHtml for &'a mut T {
-    fn html(&self, buffer: &mut Html) {
-        T::html(self, buffer);
+    fn push_html_to(&self, buffer: &mut Html) {
+        T::push_html_to(self, buffer);
     }
 }
 
 impl<T: ToHtml + ?Sized> ToHtml for Box<T> {
-    fn html(&self, buffer: &mut Html) {
-        T::html(self, buffer);
+    fn push_html_to(&self, buffer: &mut Html) {
+        T::push_html_to(self, buffer);
     }
 }
 
@@ -111,7 +107,7 @@ macro_rules! impl_render_with_display {
     ($($ty:ty)*) => {
         $(
             impl ToHtml for $ty {
-                fn html(&self, buffer: &mut Html) {
+                fn push_html_to(&self, buffer: &mut Html) {
                     let _ = write!(buffer, "{self}");
                 }
             }
@@ -127,7 +123,7 @@ macro_rules! impl_render_with_itoa {
     ($($ty:ty)*) => {
         $(
             impl ToHtml for $ty {
-                fn html(&self, buffer: &mut Html) {
+                fn push_html_to(&self, buffer: &mut Html) {
                     // XSS-Safety: The characters '0' through '9', and '-', are HTML safe.
                     let _ = itoa::fmt(buffer.as_mut_string_unchecked(), *self);
                 }
@@ -240,7 +236,7 @@ impl Html {
 
     /// Appends the HTML representation of the given value to `self`.
     pub fn push(&mut self, value: &(impl ToHtml + ?Sized)) {
-        value.html(self);
+        value.push_html_to(self);
     }
 
     /// Exposes the underlying buffer as a `&str`.
@@ -278,7 +274,7 @@ impl Write for Html {
 }
 
 impl ToHtml for Html {
-    fn html(&self, buffer: &mut Html) {
+    fn push_html_to(&self, buffer: &mut Html) {
         // XSS-Safety: `self` is already guaranteed to be trusted HTML.
         buffer.as_mut_string_unchecked().push_str(self.as_str());
     }

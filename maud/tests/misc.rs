@@ -55,7 +55,7 @@ fn issue_23() {
 fn render_impl() {
     struct R(&'static str);
     impl ToHtml for R {
-        fn html(&self, buffer: &mut Html) {
+        fn push_html_to(&self, buffer: &mut Html) {
             buffer.push(self.0);
         }
     }
