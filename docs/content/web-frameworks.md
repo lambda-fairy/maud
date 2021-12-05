@@ -159,7 +159,7 @@ This then allows you to use it directly as a response!
 
 ```rust,no_run
 use maud::{html, Markup};
-use axum::{Router, handler::get};
+use axum::{Router, routing::get};
 
 async fn hello_world() -> Markup {
     html! {
