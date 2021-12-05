@@ -5,7 +5,7 @@
 - Remove blanket `Render` impl for `T: Display`
   [#320](https://github.com/lambda-fairy/maud/pull/320)
 - Update to axum-core 0.1. This requires axum 0.4
-  [#???](https://github.com/lambda-fairy/maud/pull/???)
+  [#325](https://github.com/lambda-fairy/maud/pull/325)
 
 ## [0.23.0] - 2021-11-10
 
