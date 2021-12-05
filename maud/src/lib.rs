@@ -296,24 +296,17 @@ mod tide_support {
 mod axum_support {
     use crate::PreEscaped;
     use alloc::string::String;
-    use axum::{
-        body::Body,
-        http::{header, HeaderValue, Response, StatusCode},
-        response::IntoResponse,
-    };
+    use axum_core::{body::BoxBody, response::IntoResponse};
+    use http::{header, HeaderMap, HeaderValue, Response};
 
     impl IntoResponse for PreEscaped<String> {
-        type Body = Body;
-        type BodyError = <Self::Body as axum::body::HttpBody>::Error;
-
-        fn into_response(self) -> Response<Body> {
-            let mut res = Response::new(Body::from(self.0));
-            *res.status_mut() = StatusCode::OK;
-            res.headers_mut().insert(
+        fn into_response(self) -> Response<BoxBody> {
+            let mut headers = HeaderMap::new();
+            headers.insert(
                 header::CONTENT_TYPE,
                 HeaderValue::from_static("text/html; charset=utf-8"),
             );
-            res
+            (headers, self.0).into_response()
         }
     }
 }
