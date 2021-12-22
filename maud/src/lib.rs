@@ -103,7 +103,7 @@ impl<T: ToHtml + ?Sized> ToHtml for Box<T> {
     }
 }
 
-macro_rules! impl_render_with_display {
+macro_rules! impl_to_html_with_display {
     ($($ty:ty)*) => {
         $(
             impl ToHtml for $ty {
@@ -115,11 +115,11 @@ macro_rules! impl_render_with_display {
     };
 }
 
-impl_render_with_display! {
+impl_to_html_with_display! {
     char f32 f64
 }
 
-macro_rules! impl_render_with_itoa {
+macro_rules! impl_to_html_with_itoa {
     ($($ty:ty)*) => {
         $(
             impl ToHtml for $ty {
@@ -132,7 +132,7 @@ macro_rules! impl_render_with_itoa {
     };
 }
 
-impl_render_with_itoa! {
+impl_to_html_with_itoa! {
     i8 i16 i32 i64 i128 isize
     u8 u16 u32 u64 u128 usize
 }
