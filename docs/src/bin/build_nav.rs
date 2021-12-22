@@ -1,7 +1,7 @@
 use comrak::{self, nodes::AstNode, Arena};
 use docs::{
     page::{Page, COMRAK_OPTIONS},
-    string_writer::StringWriter,
+    text_writer::TextWriter,
 };
 use std::{env, error::Error, fs, io, path::Path, str};
 
@@ -51,7 +51,7 @@ fn load_page_title<'a>(
     let page = Page::load(arena, path)?;
     let title = page.title.map(|title| {
         let mut buffer = String::new();
-        comrak::format_commonmark(title, &COMRAK_OPTIONS, &mut StringWriter(&mut buffer)).unwrap();
+        comrak::format_commonmark(title, &COMRAK_OPTIONS, &mut TextWriter(&mut buffer)).unwrap();
         buffer
     });
     Ok(title)

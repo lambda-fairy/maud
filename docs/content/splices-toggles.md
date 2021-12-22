@@ -94,30 +94,44 @@ html! {
 
 ### What can be spliced?
 
-You can splice any value that implements [`Render`][Render].
+You can splice any value that implements [`ToHtml`][ToHtml].
 Most primitive types (such as `str` and `i32`) implement this trait,
 so they should work out of the box.
 
 To get this behavior for a custom type,
-you can implement the [`Render`][Render] trait by hand.
-The [`PreEscaped`][PreEscaped] wrapper type,
-which outputs its argument without escaping,
-works this way.
-See the [traits](render-trait.md) section for details.
+you can implement the [`ToHtml`][ToHtml] trait by hand.
 
 ```rust
-use maud::PreEscaped;
-let post = "<p>Pre-escaped</p>";
-# let _ = maud::
-html! {
-    h1 { "My super duper blog post" }
-    (PreEscaped(post))
+use maud::{Html, ToHtml, html};
+
+struct Pony {
+    name: String,
+    cuteness: i32,
 }
-# ;
+
+impl ToHtml for Pony {
+    fn to_html(&self) -> Html {
+        html! {
+            p {
+                "Pony " (self.name) " is " (self.cuteness) " cute!"
+            }
+        }
+    }
+}
+
+let sweetie_belle = Pony {
+    name: "Sweetie Belle".into(),
+    cuteness: 99,
+};
+
+let example = html! {
+    (sweetie_belle)
+};
+
+assert_eq!(example.into_string(), "<p>Pony Sweetie Belle is 99 cute!</p>");
 ```
 
-[Render]: https://docs.rs/maud/*/maud/trait.Render.html
-[PreEscaped]: https://docs.rs/maud/*/maud/struct.PreEscaped.html
+[ToHtml]: https://docs.rs/maud/*/maud/trait.ToHtml.html
 
 ## Toggles: `[foo]`
 

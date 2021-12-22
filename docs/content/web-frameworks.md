@@ -24,11 +24,11 @@ that implements the `actix_web::Responder` trait.
 
 ```rust,no_run
 use actix_web::{get, App, HttpServer, Result as AwResult};
-use maud::{html, Markup};
+use maud::{html, Html};
 use std::io;
 
 #[get("/")]
-async fn index() -> AwResult<Markup> {
+async fn index() -> AwResult<Html> {
     Ok(html! {
         html {
             body {
@@ -59,18 +59,18 @@ maud = { version = "*", features = ["rocket"] }
 # ...
 ```
 
-This adds a `Responder` implementation for the `Markup` type,
+This adds a `Responder` implementation for the `Html` type,
 so you can return the result directly:
 
 ```rust,no_run
 #![feature(decl_macro)]
 
-use maud::{html, Markup};
+use maud::{html, Html};
 use rocket::{get, routes};
 use std::borrow::Cow;
 
 #[get("/<name>")]
-fn hello<'a>(name: Cow<'a, str>) -> Markup {
+fn hello<'a>(name: Cow<'a, str>) -> Html {
     html! {
         h1 { "Hello, " (name) "!" }
         p { "Nice to meet you!" }
@@ -86,7 +86,7 @@ fn main() {
 
 Unlike with the other frameworks,
 Rouille doesn't need any extra features at all!
-Calling `Response::html` on the rendered `Markup` will Just Work®.
+Calling `Response::html` on the rendered `Html` will Just Work®.
 
 ```rust,no_run
 use maud::html;
@@ -118,7 +118,7 @@ maud = { version = "*", features = ["tide"] }
 # ...
 ```
 
-This adds an implementation of `From<PreEscaped<String>>`
+This adds an implementation of `From<Html>`
 for the `Response` struct.
 Once provided,
 callers may return results of `html!` directly as responses:
@@ -154,14 +154,14 @@ maud = { version = "*", features = ["axum"] }
 # ...
 ```
 
-This adds an implementation of `IntoResponse` for `Markup`/`PreEscaped<String>`.
+This adds an implementation of `IntoResponse` for `Html`.
 This then allows you to use it directly as a response!
 
 ```rust,no_run
-use maud::{html, Markup};
+use maud::{html, Html};
 use axum::{Router, routing::get};
 
-async fn hello_world() -> Markup {
+async fn hello_world() -> Html {
     html! {
         h1 { "Hello, World!" }
     }

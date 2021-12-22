@@ -1,17 +1,23 @@
 use comrak::nodes::AstNode;
-use maud::{html, Markup, PreEscaped, Render, DOCTYPE};
+use maud::{html, Html, HtmlBuilder, ToHtml, DOCTYPE};
 use std::str;
 
 use crate::{
     page::{Page, COMRAK_OPTIONS},
-    string_writer::StringWriter,
+    text_writer::TextWriter,
 };
 
 struct Comrak<'a>(&'a AstNode<'a>);
 
-impl<'a> Render for Comrak<'a> {
-    fn render_to(&self, buffer: &mut String) {
-        comrak::format_html(self.0, &COMRAK_OPTIONS, &mut StringWriter(buffer)).unwrap();
+impl<'a> ToHtml for Comrak<'a> {
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
+        // XSS-Safety: The input Markdown comes from docs, which are trusted.
+        comrak::format_html(
+            self.0,
+            &COMRAK_OPTIONS,
+            &mut TextWriter(builder.as_mut_string_unchecked()),
+        )
+        .unwrap();
     }
 }
 
@@ -19,12 +25,13 @@ impl<'a> Render for Comrak<'a> {
 /// general but not suitable for links in the navigation bar.
 struct ComrakRemovePTags<'a>(&'a AstNode<'a>);
 
-impl<'a> Render for ComrakRemovePTags<'a> {
-    fn render(&self) -> Markup {
+impl<'a> ToHtml for ComrakRemovePTags<'a> {
+    fn to_html(&self) -> Html {
         let mut buffer = String::new();
-        comrak::format_html(self.0, &COMRAK_OPTIONS, &mut StringWriter(&mut buffer)).unwrap();
+        comrak::format_html(self.0, &COMRAK_OPTIONS, &mut TextWriter(&mut buffer)).unwrap();
         assert!(buffer.starts_with("<p>") && buffer.ends_with("</p>\n"));
-        PreEscaped(
+        // XSS-Safety: The input Markdown comes from docs, which are trusted.
+        Html::from_unchecked(
             buffer
                 .trim_start_matches("<p>")
                 .trim_end_matches("</p>\n")
@@ -35,9 +42,9 @@ impl<'a> Render for ComrakRemovePTags<'a> {
 
 struct ComrakText<'a>(&'a AstNode<'a>);
 
-impl<'a> Render for ComrakText<'a> {
-    fn render_to(&self, buffer: &mut String) {
-        comrak::format_commonmark(self.0, &COMRAK_OPTIONS, &mut StringWriter(buffer)).unwrap();
+impl<'a> ToHtml for ComrakText<'a> {
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
+        comrak::format_commonmark(self.0, &COMRAK_OPTIONS, &mut TextWriter(builder)).unwrap();
     }
 }
 
@@ -47,7 +54,7 @@ pub fn main<'a>(
     nav: &[(&str, &'a AstNode<'a>)],
     version: &str,
     hash: &str,
-) -> Markup {
+) -> Html {
     html! {
         (DOCTYPE)
         meta charset="utf-8";

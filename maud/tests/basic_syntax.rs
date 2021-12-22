@@ -1,4 +1,4 @@
-use maud::{html, Markup};
+use maud::{html, Html};
 
 #[test]
 fn literals() {
@@ -228,7 +228,7 @@ fn class_string() {
 
 #[test]
 fn toggle_classes() {
-    fn test(is_cupcake: bool, is_muffin: bool) -> Markup {
+    fn test(is_cupcake: bool, is_muffin: bool) -> Html {
         html!(p.cupcake[is_cupcake].muffin[is_muffin] { "Testing!" })
     }
     assert_eq!(
@@ -268,7 +268,7 @@ fn toggle_classes_string() {
 
 #[test]
 fn mixed_classes() {
-    fn test(is_muffin: bool) -> Markup {
+    fn test(is_muffin: bool) -> Html {
         html!(p.cupcake.muffin[is_muffin].lamington { "Testing!" })
     }
     assert_eq!(
