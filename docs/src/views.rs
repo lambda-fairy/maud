@@ -1,5 +1,5 @@
 use comrak::nodes::AstNode;
-use maud::{html, Html, ToHtml, DOCTYPE};
+use maud::{html, Html, HtmlBuilder, ToHtml, DOCTYPE};
 use std::str;
 
 use crate::{
@@ -10,12 +10,12 @@ use crate::{
 struct Comrak<'a>(&'a AstNode<'a>);
 
 impl<'a> ToHtml for Comrak<'a> {
-    fn push_html_to(&self, buffer: &mut Html) {
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
         // XSS-Safety: The input Markdown comes from docs, which are trusted.
         comrak::format_html(
             self.0,
             &COMRAK_OPTIONS,
-            &mut TextWriter(buffer.as_mut_string_unchecked()),
+            &mut TextWriter(builder.as_mut_string_unchecked()),
         )
         .unwrap();
     }
@@ -43,8 +43,8 @@ impl<'a> ToHtml for ComrakRemovePTags<'a> {
 struct ComrakText<'a>(&'a AstNode<'a>);
 
 impl<'a> ToHtml for ComrakText<'a> {
-    fn push_html_to(&self, buffer: &mut Html) {
-        comrak::format_commonmark(self.0, &COMRAK_OPTIONS, &mut TextWriter(buffer)).unwrap();
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
+        comrak::format_commonmark(self.0, &COMRAK_OPTIONS, &mut TextWriter(builder)).unwrap();
     }
 }
 
