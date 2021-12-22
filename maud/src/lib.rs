@@ -336,9 +336,7 @@ pub struct HtmlBuilder {
 
 impl HtmlBuilder {
     /// For internal use only.
-    #[doc(hidden)]
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             inner: Cow::Owned(String::new()),
         }
