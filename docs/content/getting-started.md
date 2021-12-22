@@ -24,19 +24,19 @@ use maud::html;
 
 fn main() {
     let name = "Lyra";
-    let markup = html! {
+    let hello = html! {
         p { "Hi, " (name) "!" }
     };
-    println!("{}", markup.into_string());
+    println!("{}", hello.into_string());
 }
 ```
 
 `html!` takes a single argument:
 a template using Maud's custom syntax.
-This call expands to an expression of type [`Markup`][Markup],
+This call expands to an expression of type [`Html`][Html],
 which can then be converted to a `String` using `.into_string()`.
 
-[Markup]: https://docs.rs/maud/*/maud/type.Markup.html
+[Html]: https://docs.rs/maud/*/maud/struct.Html.html
 
 Run this program with `cargo run`,
 and you should get the following:

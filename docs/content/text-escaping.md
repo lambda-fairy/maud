@@ -39,23 +39,32 @@ html! {
 
 [raw strings]: https://doc.rust-lang.org/reference/tokens.html#raw-string-literals
 
-## Escaping and `PreEscaped`
+## Escaping
 
 By default,
 HTML special characters are escaped automatically.
-Wrap the string in `(PreEscaped())` to disable this escaping.
-(See the section on [splices](splices-toggles.md) to
-learn more about how this works.)
 
 ```rust
-use maud::PreEscaped;
-# let _ = maud::
-html! {
-    "<script>alert(\"XSS\")</script>"                // &lt;script&gt;...
-    (PreEscaped("<script>alert(\"XSS\")</script>"))  // <script>...
-}
-# ;
+# use maud::html;
+let markup = html! {
+    "<p>Pickle, barrel, kumquat.</p>"
+};
+assert_eq!(markup.into_string(), "&lt;p&gt;Pickel, barrel, kumquat.&lt;/p&gt;");
 ```
+
+This escaping also applies within a [splice](splices-toggles.md),
+which prevents [cross-site scripting][xss] attacks:
+
+```rust
+# use maud::html;
+let unsafe_input = "<script>alert('Bwahahaha!')</script>";
+let markup = html! {
+    (unsafe_input)
+};
+assert_eq!(markup.into_string(), "&lt;script&gt;alert('Bwahahaha!')&lt;/script&gt;");
+```
+
+[xss]: https://owasp.org/www-community/attacks/xss/
 
 ## The `DOCTYPE` constant
 

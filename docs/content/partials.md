@@ -2,16 +2,16 @@
 
 Maud does not have a built-in concept of partials or sub-templates.
 Instead,
-you can compose your markup with any function that returns `Markup`.
+you can compose your markup with any function that returns `Html`.
 
 The following example defines a `header` and `footer` function.
 These functions are combined to form the final `page`.
 
 ```rust
-use maud::{DOCTYPE, html, Markup};
+use maud::{DOCTYPE, html, Html};
 
 /// A basic header with a dynamic `page_title`.
-fn header(page_title: &str) -> Markup {
+fn header(page_title: &str) -> Html {
     html! {
         (DOCTYPE)
         meta charset="utf-8";
@@ -20,7 +20,7 @@ fn header(page_title: &str) -> Markup {
 }
 
 /// A static footer.
-fn footer() -> Markup {
+fn footer() -> Html {
     html! {
         footer {
             a href="rss.atom" { "RSS Feed" }
@@ -28,12 +28,11 @@ fn footer() -> Markup {
     }
 }
 
-/// The final Markup, including `header` and `footer`.
+/// The final page, including `header` and `footer`.
 ///
-/// Additionally takes a `greeting_box` that's `Markup`, not `&str`.
-pub fn page(title: &str, greeting_box: Markup) -> Markup {
+/// Additionally takes a `greeting_box` that's `Html`, not `&str`.
+pub fn page(title: &str, greeting_box: Html) -> Html {
     html! {
-        // Add the header markup to the page
         (header(title))
         h1 { (title) }
         (greeting_box)
@@ -42,12 +41,12 @@ pub fn page(title: &str, greeting_box: Markup) -> Markup {
 }
 ```
 
-Using the `page` function will return the markup for the whole page.
+Using the `page` function will return the HTML for the whole page.
 Here's an example:
 
 ```rust
-# use maud::{html, Markup};
-# fn page(title: &str, greeting_box: Markup) -> Markup { greeting_box }
+# use maud::{html, Html};
+# fn page(title: &str, greeting_box: Html) -> Html { greeting_box }
 page("Hello!", html! {
     div { "Greetings, Maud." }
 });

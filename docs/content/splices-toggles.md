@@ -94,6 +94,8 @@ html! {
 
 ### What can be spliced?
 
+TODO: update this
+
 You can splice any value that implements [`Render`][Render].
 Most primitive types (such as `str` and `i32`) implement this trait,
 so they should work out of the box.
