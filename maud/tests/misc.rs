@@ -1,4 +1,4 @@
-use maud::{self, html, Html, ToHtml};
+use maud::{self, html, Html, HtmlBuilder, ToHtml};
 
 #[test]
 fn issue_13() {
@@ -55,7 +55,7 @@ fn issue_23() {
 fn render_impl() {
     struct R(&'static str);
     impl ToHtml for R {
-        fn push_html_to(&self, buffer: &mut Html) {
+        fn push_html_to(&self, buffer: &mut HtmlBuilder) {
             buffer.push(self.0);
         }
     }

@@ -46,60 +46,60 @@ mod escape;
 pub trait ToHtml {
     /// Creates an HTML representation of `self`.
     fn to_html(&self) -> Html {
-        let mut buffer = Html::default();
-        self.push_html_to(&mut buffer);
-        buffer
+        let mut builder = HtmlBuilder::new();
+        self.push_html_to(&mut builder);
+        builder.finalize()
     }
 
     /// Appends an HTML representation of `self` to the given buffer.
     ///
     /// Its default implementation just calls `.to_html()`, but you may
     /// override it with something more efficient.
-    fn push_html_to(&self, buffer: &mut Html) {
-        self.to_html().push_html_to(buffer)
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
+        self.to_html().push_html_to(builder)
     }
 }
 
 impl ToHtml for str {
-    fn push_html_to(&self, buffer: &mut Html) {
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
         // XSS-Safety: Special characters will be escaped by `escape_to_string`.
-        escape::escape_to_string(self, buffer.as_mut_string_unchecked());
+        escape::escape_to_string(self, builder.as_mut_string_unchecked());
     }
 }
 
 impl ToHtml for String {
-    fn push_html_to(&self, buffer: &mut Html) {
-        str::push_html_to(self, buffer);
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
+        str::push_html_to(self, builder);
     }
 }
 
 impl<'a> ToHtml for Cow<'a, str> {
-    fn push_html_to(&self, buffer: &mut Html) {
-        str::push_html_to(self, buffer);
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
+        str::push_html_to(self, builder);
     }
 }
 
 impl<'a> ToHtml for Arguments<'a> {
-    fn push_html_to(&self, buffer: &mut Html) {
-        let _ = buffer.write_fmt(*self);
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
+        let _ = builder.write_fmt(*self);
     }
 }
 
 impl<'a, T: ToHtml + ?Sized> ToHtml for &'a T {
-    fn push_html_to(&self, buffer: &mut Html) {
-        T::push_html_to(self, buffer);
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
+        T::push_html_to(self, builder);
     }
 }
 
 impl<'a, T: ToHtml + ?Sized> ToHtml for &'a mut T {
-    fn push_html_to(&self, buffer: &mut Html) {
-        T::push_html_to(self, buffer);
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
+        T::push_html_to(self, builder);
     }
 }
 
 impl<T: ToHtml + ?Sized> ToHtml for Box<T> {
-    fn push_html_to(&self, buffer: &mut Html) {
-        T::push_html_to(self, buffer);
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
+        T::push_html_to(self, builder);
     }
 }
 
@@ -107,8 +107,8 @@ macro_rules! impl_to_html_with_display {
     ($($ty:ty)*) => {
         $(
             impl ToHtml for $ty {
-                fn push_html_to(&self, buffer: &mut Html) {
-                    let _ = write!(buffer, "{self}");
+                fn push_html_to(&self, builder: &mut HtmlBuilder) {
+                    let _ = write!(builder, "{self}");
                 }
             }
         )*
@@ -123,9 +123,9 @@ macro_rules! impl_to_html_with_itoa {
     ($($ty:ty)*) => {
         $(
             impl ToHtml for $ty {
-                fn push_html_to(&self, buffer: &mut Html) {
+                fn push_html_to(&self, builder: &mut HtmlBuilder) {
                     // XSS-Safety: The characters '0' through '9', and '-', are HTML safe.
-                    let _ = itoa::fmt(buffer.as_mut_string_unchecked(), *self);
+                    let _ = itoa::fmt(builder.as_mut_string_unchecked(), *self);
                 }
             }
         )*
@@ -179,8 +179,8 @@ impl_to_html_with_itoa! {
 ///
 /// - **I have performance-sensitive rendering code that needs direct
 ///   access to the buffer.**
-///     - Use [`Html::as_mut_string_unchecked`], and ask a security
-///       expert for review.
+///     - Use [`HtmlBuilder::as_mut_string_unchecked`], and ask a
+///       security expert for review.
 ///
 /// - **I have special requirements and the other options don't work for
 ///   me.**
@@ -274,53 +274,9 @@ impl Html {
         }
     }
 
-    /// For internal use only.
-    #[doc(hidden)]
-    pub fn with_capacity(capacity: usize) -> Self {
-        Self {
-            inner: Cow::Owned(String::with_capacity(capacity)),
-        }
-    }
-
-    /// Appends the HTML representation of the given value to `self`.
-    pub fn push(&mut self, value: &(impl ToHtml + ?Sized)) {
-        value.push_html_to(self);
-    }
-
     /// Exposes the underlying buffer as a `&str`.
     pub fn as_str(&self) -> &str {
         &self.inner
-    }
-
-    /// Exposes the underlying buffer as a `&mut String`.
-    ///
-    /// This is useful for performance-sensitive use cases that need
-    /// direct access to the buffer.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use maud::Html;
-    /// # mod base64 { pub fn encode(_: &mut String, _: &[u8]) {} }
-    ///
-    /// fn append_base64_to_html(buffer: &mut Html, bytes: &[u8]) {
-    ///     // XSS-Safety: The characters [A-Za-z0-9+/=] are all HTML-safe.
-    ///     base64::encode(buffer.as_mut_string_unchecked(), bytes);
-    /// }
-    /// ```
-    ///
-    /// # Security
-    ///
-    /// As with [`Html::from_unchecked`], it is your responsibility to
-    /// ensure that any additions are properly escaped.
-    ///
-    /// It is strongly recommended to include a `// XSS-Safety:` comment
-    /// that explains why this call is safe.
-    ///
-    /// If your organization has a security team, consider asking them
-    /// for review.
-    pub fn as_mut_string_unchecked(&mut self) -> &mut String {
-        self.inner.to_mut()
     }
 
     /// Converts the inner value to a `String`.
@@ -329,17 +285,10 @@ impl Html {
     }
 }
 
-impl Write for Html {
-    fn write_str(&mut self, text: &str) -> fmt::Result {
-        self.push(text);
-        Ok(())
-    }
-}
-
 impl ToHtml for Html {
-    fn push_html_to(&self, buffer: &mut Html) {
+    fn push_html_to(&self, builder: &mut HtmlBuilder) {
         // XSS-Safety: `self` is already guaranteed to be trusted HTML.
-        buffer.as_mut_string_unchecked().push_str(self.as_str());
+        builder.as_mut_string_unchecked().push_str(self.as_str());
     }
 }
 
@@ -372,6 +321,90 @@ impl From<Html> for String {
 /// };
 /// ```
 pub const DOCTYPE: Html = Html::from_const_unchecked("<!DOCTYPE html>");
+
+/// A partially created fragment of HTML.
+///
+/// Unlike [`Html`], an `HtmlBuilder` might have unclosed elements or
+/// attributes.
+///
+/// This type cannot be constructed by hand. The [`html!`] macro creates
+/// one internally, and passes it to [`ToHtml::push_html_to`].
+#[derive(Clone, Debug)]
+pub struct HtmlBuilder {
+    inner: Cow<'static, str>,
+}
+
+impl HtmlBuilder {
+    /// For internal use only.
+    #[doc(hidden)]
+    pub fn new() -> Self {
+        Self {
+            inner: Cow::Owned(String::new()),
+        }
+    }
+
+    /// For internal use only.
+    #[doc(hidden)]
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            inner: Cow::Owned(String::with_capacity(capacity)),
+        }
+    }
+
+    /// Appends the HTML representation of the given value to `self`.
+    pub fn push(&mut self, value: &(impl ToHtml + ?Sized)) {
+        value.push_html_to(self);
+    }
+
+    /// Exposes the underlying buffer as a `&mut String`.
+    ///
+    /// This is useful for performance-sensitive use cases that need
+    /// direct access to the buffer.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use maud::{HtmlBuilder, ToHtml};
+    /// # mod base64 { pub fn encode(_: &mut String, _: &[u8]) {} }
+    ///
+    /// struct Base64<'a>(&'a [u8]);
+    ///
+    /// impl<'a> ToHtml for Base64<'a> {
+    ///     fn push_html_to(&self, builder: &mut HtmlBuilder) {
+    ///         // XSS-Safety: The characters [A-Za-z0-9+/=] are all HTML-safe.
+    ///         base64::encode(builder.as_mut_string_unchecked(), self.0);
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// # Security
+    ///
+    /// As with [`Html::from_unchecked`], it is your responsibility to
+    /// ensure that any additions are properly escaped.
+    ///
+    /// It is strongly recommended to include a `// XSS-Safety:` comment
+    /// that explains why this call is safe.
+    ///
+    /// If your organization has a security team, consider asking them
+    /// for review.
+    pub fn as_mut_string_unchecked(&mut self) -> &mut String {
+        self.inner.to_mut()
+    }
+
+    /// For internal use only.
+    #[doc(hidden)]
+    pub fn finalize(self) -> Html {
+        // XSS-Safety: This is called from the `html!` macro, which enforces safety itself.
+        Html::from_unchecked(self.inner)
+    }
+}
+
+impl Write for HtmlBuilder {
+    fn write_str(&mut self, text: &str) -> fmt::Result {
+        self.push(text);
+        Ok(())
+    }
+}
 
 #[cfg(feature = "rocket")]
 mod rocket_support {

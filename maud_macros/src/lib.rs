@@ -37,8 +37,8 @@ fn expand(input: TokenStream) -> TokenStream {
     let stmts = generate::generate(markups, output_ident.clone());
     quote!({
         extern crate maud;
-        let mut #output_ident = maud::Html::with_capacity(#size_hint);
+        let mut #output_ident = maud::HtmlBuilder::with_capacity(#size_hint);
         #stmts
-        #output_ident
+        maud::HtmlBuilder::finalize(#output_ident)
     })
 }
