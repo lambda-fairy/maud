@@ -140,42 +140,45 @@ impl_render_with_itoa! {
 /// A fragment of HTML.
 ///
 /// This is the type that's returned by the [`html!`] macro.
+///
+/// # Security
+///
+/// All instances of `Html` must be:
+///
+/// 1. **Trusted.** Any embedded scripts (in a `<script>` tag or
+///    otherwise) must come from a developer or admin, not an arbitrary
+///    user.
+///
+/// 2. **Composable.** Appending two valid `Html` values must result in
+///     another valid `Html`. This excludes, for example, unclosed tags.
+///
+/// In general, the `html!` macro will enforce these rules automatically
+/// (but see caveats). If you use the `_unchecked` methods, however,
+/// you'll need to enforce these rules yourself.
+///
+/// # Which constructor should I use?
+///
+/// Most of the time, you should use the `html!` macro.
+///
+/// - **I have an untrusted input (e.g. a Markdown comment on a blog).**
+///   Use [`Html::sanitize`].
+///
+/// - **I have a pre-defined snippet that I need to include in the page
+///   (e.g. Google Analytics).** Use [`Html::from_const_unchecked`].
+///
+/// - **I have performance-sensitive rendering code that needs direct
+///   access to the buffer.** Use [`Html::as_mut_string_unchecked`], and
+///   ask a security expert for review.
+///
+/// - **I have special requirements and the other options don't work for
+///   me.** Use [`Html::from_unchecked`], and ask a security expert for
+///   review.
 #[derive(Clone, Debug, Default)]
 pub struct Html {
     inner: Cow<'static, str>,
 }
 
 impl Html {
-    /// Creates an HTML fragment from a constant string.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use maud::Html;
-    ///
-    /// let analytics_script = Html::from_const("<script>trackThisPageView();</script>");
-    /// ```
-    ///
-    /// # Security
-    ///
-    /// The given string must be a *compile-time constant*: either a
-    /// literal, or a reference to a `const` value. This ensures that
-    /// the string is as trustworthy as the code itself.
-    ///
-    /// If the string is not a compile-time constant, use
-    /// [`Html::from_unchecked`] instead, and document why the call is
-    /// safe.
-    ///
-    /// In the future, when [`const` string parameters] are available on
-    /// Rust stable, this rule will be enforced by the API.
-    ///
-    /// [`const` string parameters]: https://blog.rust-lang.org/inside-rust/2021/09/06/Splitting-const-generics.html#featureadt_const_params
-    pub const fn from_const(html_string: &'static str) -> Self {
-        Html {
-            inner: Cow::Borrowed(html_string),
-        }
-    }
-
     #[cfg(feature = "sanitize")]
     /// Takes an untrusted HTML fragment and makes it safe.
     ///
@@ -209,6 +212,8 @@ impl Html {
     ///
     /// # Security
     ///
+    /// See [`Html`].
+    ///
     /// It is your responsibility to ensure that the string comes from a
     /// trusted source. Misuse of this function can lead to [cross-site
     /// scripting attacks (XSS)][xss].
@@ -223,6 +228,44 @@ impl Html {
     pub fn from_unchecked(html_string: impl Into<Cow<'static, str>>) -> Self {
         Self {
             inner: html_string.into(),
+        }
+    }
+
+    /// Creates an HTML fragment from a constant string.
+    ///
+    /// This is similar to [`Html::from_unchecked`], but can be called
+    /// in a `const` context.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use maud::Html;
+    ///
+    /// const ANALYTICS_SCRIPT: Html = Html::from_const_unchecked(
+    ///     "<script>trackThisPageView();</script>",
+    /// );
+    /// ```
+    ///
+    /// # Security
+    ///
+    /// As long as the string is a compile-time constant, it is
+    /// guaranteed to be as *trusted* as its surrounding code.
+    ///
+    /// However, this doesn't guarantee that it's *composable*:
+    ///
+    /// ```rust
+    /// use maud::Html;
+    ///
+    /// // BROKEN - DO NOT USE!
+    /// const UNCLOSED_SCRIPT: Html = Html::from_const_unchecked("<script>");
+    /// const UNCLOSED_HREF: Html = Html::from_const_unchecked("<a href='");
+    /// ```
+    ///
+    /// This is why the method has an `_unchecked` prefix -- you must
+    /// verify that the HTML is valid yourself.
+    pub const fn from_const_unchecked(html_string: &'static str) -> Self {
+        Html {
+            inner: Cow::Borrowed(html_string),
         }
     }
 
@@ -245,6 +288,21 @@ impl Html {
     }
 
     /// Exposes the underlying buffer as a `&mut String`.
+    ///
+    /// This is useful for performance-sensitive use cases that need
+    /// direct access to the buffer.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use maud::Html;
+    /// # mod base64 { pub fn encode(_: &mut String, _: &[u8]) {} }
+    ///
+    /// fn append_base64_to_html(buffer: &mut Html, bytes: &[u8]) {
+    ///     // XSS-Safety: The characters [A-Za-z0-9+/=] are all HTML-safe.
+    ///     base64::encode(buffer.as_mut_string_unchecked(), bytes);
+    /// }
+    /// ```
     ///
     /// # Security
     ///
@@ -308,7 +366,7 @@ impl From<Html> for String {
 ///     }
 /// };
 /// ```
-pub const DOCTYPE: Html = Html::from_const("<!DOCTYPE html>");
+pub const DOCTYPE: Html = Html::from_const_unchecked("<!DOCTYPE html>");
 
 #[cfg(feature = "rocket")]
 mod rocket_support {

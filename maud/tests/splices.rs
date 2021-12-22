@@ -8,7 +8,7 @@ fn literals() {
 
 #[test]
 fn raw_literals() {
-    let result = html! { (Html::from_const("<pinkie>")) };
+    let result = html! { (Html::from_const_unchecked("<pinkie>")) };
     assert_eq!(result.into_string(), "<pinkie>");
 }
 
