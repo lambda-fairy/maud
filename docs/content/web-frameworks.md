@@ -28,7 +28,7 @@ use maud::{html, Html};
 use std::io;
 
 #[get("/")]
-async fn index() -> AwResult<Markup> {
+async fn index() -> AwResult<Html> {
     Ok(html! {
         html {
             body {

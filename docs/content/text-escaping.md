@@ -49,7 +49,7 @@ HTML special characters are escaped automatically.
 let markup = html! {
     "<p>Pickle, barrel, kumquat.</p>"
 };
-assert_eq!(markup.into_string(), "&lt;p&gt;Pickel, barrel, kumquat.&lt;/p&gt;");
+assert_eq!(markup.into_string(), "&lt;p&gt;Pickle, barrel, kumquat.&lt;/p&gt;");
 ```
 
 This escaping also applies within a [splice](splices-toggles.md),
@@ -109,6 +109,7 @@ Instead, either:
   to bypass Maud's escaping:
 
   ```rust
+  use maud::Html;
   # let _ = maud::
   html! {
       (Html::from_const_unchecked("<script>doCoolStuff();</script>"))
