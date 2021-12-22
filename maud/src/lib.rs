@@ -145,34 +145,47 @@ impl_to_html_with_itoa! {
 ///
 /// All instances of `Html` must be:
 ///
-/// 1. **Trusted.** Any embedded scripts (in a `<script>` tag or
+/// 1. **Trusted.** Any embedded scripts (in a `<script>` element or
 ///    otherwise) must come from a developer or admin, not an arbitrary
 ///    user.
 ///
 /// 2. **Composable.** Appending two valid `Html` values must result in
 ///     another valid `Html`. This excludes, for example, unclosed tags.
 ///
+/// Not following these rules can lead to [cross-site scripting attacks
+/// (XSS)][xss].
+///
+/// [xss]: https://www.cloudflare.com/en-au/learning/security/threats/cross-site-scripting/
+///
 /// In general, the `html!` macro will enforce these rules automatically
-/// (but see caveats). If you use the `_unchecked` methods, however,
+/// (but see [caveats]). If you use the `_unchecked` methods, however,
 /// you'll need to enforce these rules yourself.
+///
+/// [caveats]: https://maud.lambda.xyz/text-escaping.html#inline-script-and-style
 ///
 /// # Which constructor should I use?
 ///
-/// Most of the time, you should use the `html!` macro.
+/// Most of the time, you should use the `html!` macro. Otherwise:
+///
+/// - **I need to add `<!DOCTYPE html>`.**
+///     - Use the [`DOCTYPE`] constant.
 ///
 /// - **I have an untrusted input (e.g. a Markdown comment on a blog).**
-///   Use [`Html::sanitize`].
+///     - Use [`Html::sanitize`].
 ///
 /// - **I have a pre-defined snippet that I need to include in the page
-///   (e.g. Google Analytics).** Use [`Html::from_const_unchecked`].
+///   (e.g. Google Analytics).**
+///     - Use [`Html::from_const_unchecked`].
 ///
 /// - **I have performance-sensitive rendering code that needs direct
-///   access to the buffer.** Use [`Html::as_mut_string_unchecked`], and
-///   ask a security expert for review.
+///   access to the buffer.**
+///     - Use [`Html::as_mut_string_unchecked`], and ask a security
+///       expert for review.
 ///
 /// - **I have special requirements and the other options don't work for
-///   me.** Use [`Html::from_unchecked`], and ask a security expert for
-///   review.
+///   me.**
+///     - Use [`Html::from_unchecked`], and ask a security expert for
+///       review.
 #[derive(Clone, Debug, Default)]
 pub struct Html {
     inner: Cow<'static, str>,
@@ -212,19 +225,11 @@ impl Html {
     ///
     /// # Security
     ///
-    /// See [`Html`].
-    ///
-    /// It is your responsibility to ensure that the string comes from a
-    /// trusted source. Misuse of this function can lead to [cross-site
-    /// scripting attacks (XSS)][xss].
-    ///
     /// It is strongly recommended to include a `// XSS-Safety:` comment
     /// that explains why this call is safe.
     ///
     /// If your organization has a security team, consider asking them
     /// for review.
-    ///
-    /// [xss]: https://www.cloudflare.com/en-au/learning/security/threats/cross-site-scripting/
     pub fn from_unchecked(html_string: impl Into<Cow<'static, str>>) -> Self {
         Self {
             inner: html_string.into(),

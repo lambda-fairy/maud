@@ -64,7 +64,7 @@ let markup = html! {
 assert_eq!(markup.into_string(), "&lt;script&gt;alert('Bwahahaha!')&lt;/script&gt;");
 ```
 
-[xss]: https://owasp.org/www-community/attacks/xss/
+[xss]: https://www.cloudflare.com/en-au/learning/security/threats/cross-site-scripting/
 
 ## The `DOCTYPE` constant
 
@@ -80,3 +80,52 @@ html! {
 }
 # ;
 ```
+
+## Inline `<script>` and `<style>`
+
+In HTML,
+`<script>` and `<style>` elements
+have [special syntax rules].
+
+[special syntax rules]: https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
+
+Maud does not yet implement these special rules,
+so it's not recommended to write `script { ... }` or `style { ... }` directly.
+
+Instead, either:
+
+- Put the CSS or JavaScript in a separate file,
+  and link to it:
+
+  ```rust
+  # let _ = maud::
+  html! {
+      script src="my-external-script.js" {}
+  }
+  # ;
+  ```
+
+- Wrap the whole thing in [`Html::from_const_unchecked`][from_const_unchecked],
+  to bypass Maud's escaping:
+
+  ```rust
+  # let _ = maud::
+  html! {
+      (Html::from_const_unchecked("<script>doCoolStuff();</script>"))
+  }
+  # ;
+  ```
+
+[from_const_unchecked]: https://docs.rs/maud/*/maud/struct.Html.html#method.from_const_unchecked
+
+When Maud implements [context-aware escaping],
+these workarounds will no longer be needed.
+
+[context-aware escaping]: https://github.com/lambda-fairy/maud/issues/181
+
+## Custom escaping
+
+If your use case isn't covered by these examples,
+check out the [advanced API].
+
+[advanced API]: https://docs.rs/maud/*/maud/struct.Html.html
