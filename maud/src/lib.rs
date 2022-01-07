@@ -155,7 +155,7 @@ macro_rules! impl_render_with_display {
         $(
             impl Render for $ty {
                 fn render_to(&self, w: &mut String) {
-                    format_args!("{self}").render_to(w);
+                    format_args!("{self}", self=self).render_to(w);
                 }
             }
         )*
