@@ -1,9 +1,9 @@
 error: unexpected end of input
- --> $DIR/attribute-missing-value.rs:4:5
+ --> tests/warnings/attribute-missing-value.rs:4:5
   |
 4 | /     html! {
 5 | |         a href=
 6 | |     };
-  | |_____^
+  | |______^
   |
-  = note: this error originates in the macro `html` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
