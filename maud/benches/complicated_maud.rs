@@ -1,7 +1,4 @@
-#![feature(test)]
-
-extern crate test;
-
+use criterion::{black_box, criterion_group, criterion_main, Bencher, Criterion};
 use maud::{html, Markup};
 
 #[derive(Debug)]
@@ -72,43 +69,48 @@ fn layout<S: AsRef<str>>(title: S, inner: Markup) -> Markup {
     }
 }
 
-#[bench]
-fn render_complicated_template(b: &mut test::Bencher) {
-    let year = test::black_box("2015");
-    let teams = test::black_box(vec![
-        Entry {
-            name: "Jiangsu",
-            score: 43,
-        },
-        Entry {
-            name: "Beijing",
-            score: 27,
-        },
-        Entry {
-            name: "Guangzhou",
-            score: 22,
-        },
-        Entry {
-            name: "Shandong",
-            score: 12,
-        },
-    ]);
-    b.iter(|| {
-        use crate::btn::{Button, RequestMethod};
-        layout(
-            format!("Homepage of {}", year),
-            html! {
-                h1 { "Hello there!" }
-
-                @for entry in &teams {
-                    div {
-                        strong { (entry.name) ": " (entry.score) }
-                        (Button::new("Edit", "edit"))
-                        (Button::new("Delete", "edit")
-                                    .with_method(RequestMethod::Post))
-                    }
-                }
+fn render_complicated_template(c: &mut Criterion) {
+    c.bench_function("render_complicated_template", |b: &mut Bencher| {
+        let year = black_box("2015");
+        let teams = black_box(vec![
+            Entry {
+                name: "Jiangsu",
+                score: 43,
             },
-        )
+            Entry {
+                name: "Beijing",
+                score: 27,
+            },
+            Entry {
+                name: "Guangzhou",
+                score: 22,
+            },
+            Entry {
+                name: "Shandong",
+                score: 12,
+            },
+        ]);
+
+        b.iter(|| {
+            use crate::btn::{Button, RequestMethod};
+            layout(
+                format!("Homepage of {}", year),
+                html! {
+                    h1 { "Hello there!" }
+
+                    @for entry in &teams {
+                        div {
+                            strong { (entry.name) ": " (entry.score) }
+                            (Button::new("Edit", "edit"))
+                            (Button::new("Delete", "edit")
+                                        .with_method(RequestMethod::Post))
+                        }
+                    }
+                },
+            )
+        });
     });
 }
+
+criterion_group!(benches, render_complicated_template);
+criterion_main!(benches);

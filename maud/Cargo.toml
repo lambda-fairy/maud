@@ -29,8 +29,17 @@ axum-core = { version = "0.1", optional = true }
 http = { version = "0.2", optional = true }
 
 [dev-dependencies]
-trybuild = { version = "1.0.33", features = ["diff"] }
+criterion = { version = "0.3", features = ["html_reports"] }
 rustversion = "1"
+trybuild = { version = "1.0.33", features = ["diff"] }
 
 [package.metadata.docs.rs]
 all-features = true
+
+[[bench]]
+name = "maud"
+harness = false
+
+[[bench]]
+name = "complicated_maud"
+harness = false
