@@ -5,7 +5,7 @@ authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-actix-web = "3"
+actix-web = { version = "4.0.0-rc.2", default-features = false, features = ["macros"] }
 ammonia = "3"
 maud = { path = "../maud", features = ["actix-web", "rocket", "tide", "axum"] }
 pulldown-cmark = "0.8"

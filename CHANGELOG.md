@@ -6,6 +6,8 @@
   [#320](https://github.com/lambda-fairy/maud/pull/320)
 - Update to axum-core 0.1. This requires axum 0.4
   [#325](https://github.com/lambda-fairy/maud/pull/325)
+- Update to `actix-web` 4.0.
+  [#331](https://github.com/lambda-fairy/maud/pull/331)
 
 ## [0.23.0] - 2021-11-10
 
