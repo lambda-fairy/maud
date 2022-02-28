@@ -262,17 +262,17 @@ mod rocket_support {
 #[cfg(feature = "actix-web")]
 mod actix_support {
     use crate::PreEscaped;
-    use actix_web_dep::{Error, HttpRequest, HttpResponse, Responder};
+    use actix_web_dep::{http::header, HttpRequest, HttpResponse, Responder};
     use alloc::string::String;
-    use futures_util::future::{ok, Ready};
 
     impl Responder for PreEscaped<String> {
-        type Error = Error;
-        type Future = Ready<Result<HttpResponse, Self::Error>>;
-        fn respond_to(self, _req: &HttpRequest) -> Self::Future {
-            ok(HttpResponse::Ok()
-                .content_type("text/html; charset=utf-8")
-                .body(self.0))
+        type Body = String;
+
+        fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
+            HttpResponse::Ok()
+                .content_type(header::ContentType::html())
+                .message_body(self.0)
+                .unwrap()
         }
     }
 }
