@@ -1,9 +1,9 @@
 error: unexpected end of input
- --> $DIR/class-shorthand-missing-value.rs:4:5
+ --> tests/warnings/class-shorthand-missing-value.rs:4:5
   |
 4 | /     html! {
 5 | |         p.
 6 | |     };
-  | |_____^
+  | |______^
   |
-  = note: this error originates in the macro `html` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)

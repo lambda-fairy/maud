@@ -9,7 +9,7 @@ homepage = "https://maud.lambda.xyz/"
 repository = "https://github.com/lambda-fairy/maud"
 description = "Compile-time HTML templates."
 categories = ["template-engine"]
-edition = "2021"
+edition = "2018"
 
 [features]
 default = []
@@ -29,7 +29,17 @@ axum-core = { version = "0.1", optional = true }
 http = { version = "0.2", optional = true }
 
 [dev-dependencies]
+criterion = { version = "0.3", features = ["html_reports"] }
+rustversion = "1"
 trybuild = { version = "1.0.33", features = ["diff"] }
 
 [package.metadata.docs.rs]
 all-features = true
+
+[[bench]]
+name = "maud"
+harness = false
+
+[[bench]]
+name = "complicated_maud"
+harness = false

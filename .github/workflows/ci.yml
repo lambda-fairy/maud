@@ -12,16 +12,22 @@ jobs:
   main:
     name: Main
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - 1.45.2 # MSRV
+          - stable
+          - nightly
 
     steps:
-
     - name: Check out repository
       uses: actions/checkout@v2
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: nightly
+        toolchain: ${{ matrix.version }}
         profile: minimal
         override: true
         components: clippy
