@@ -179,3 +179,41 @@ async fn main() {
         .unwrap();
 }
 ```
+
+# Poem
+
+Poem support is available with the "poem" feature:
+
+```toml
+# ...
+[dependencies]
+maud = { version = "*", features = ["poem"] }
+# ...
+```
+
+This adds an implementation of `IntoResponse` for `Markup`/`PreEscaped<String>`.
+This then allows you to use it directly as a response!
+
+```rust,no_run
+use std::net::SocketAddr;
+
+use maud::{html, Markup};
+use poem::{get, handler, listener::TcpListener, Route, Server};
+
+#[handler]
+fn hello_world() -> Markup {
+    html! {
+        h1 { "Hello, World!" }
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    // build our application with a single route
+    let app = Route::new().at("/", get(hello_world));
+
+    // run it with hyper on localhost:3000
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    Server::new(TcpListener::bind(addr)).run(app).await.unwrap();
+}
+```

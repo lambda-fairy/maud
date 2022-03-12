@@ -311,3 +311,24 @@ mod axum_support {
         }
     }
 }
+
+#[cfg(feature = "poem")]
+mod poem_support {
+    use crate::PreEscaped;
+    use alloc::string::String;
+    use poem::{
+        http::{header, HeaderMap, HeaderValue},
+        IntoResponse, Response,
+    };
+
+    impl IntoResponse for PreEscaped<String> {
+        fn into_response(self) -> Response {
+            let mut headers = HeaderMap::new();
+            headers.insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("text/html; charset=utf-8"),
+            );
+            (headers, self.0).into_response()
+        }
+    }
+}
