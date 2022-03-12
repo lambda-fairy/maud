@@ -8,6 +8,8 @@
   [#325](https://github.com/lambda-fairy/maud/pull/325)
 - Update to `actix-web` 4.0.
   [#331](https://github.com/lambda-fairy/maud/pull/331)
+- Add support for `poem`.
+  [#333](https://github.com/lambda-fairy/maud/pull/333)
 
 ## [0.23.0] - 2021-11-10
 
