@@ -61,8 +61,8 @@ jobs:
     - name: Check Clippy
       run: cd docs && cargo clippy --all-targets -- -D warnings
 
-  examples:
-    name: Examples
+  doctest:
+    name: Doctest
     runs-on: ubuntu-latest
 
     steps:
