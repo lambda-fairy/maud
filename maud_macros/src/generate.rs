@@ -110,11 +110,17 @@ impl Generator {
         build.push_str("<");
         self.name(name.clone(), build);
         self.attrs(attrs, build);
-        build.push_str(">");
         if let ElementBody::Block { block } = body {
-            self.markups(block.markups, build);
-            build.push_str("</");
-            self.name(name, build);
+            if block.markups.is_empty() {
+                build.push_str("/>");
+            } else {
+                build.push_str(">");
+                self.markups(block.markups, build);
+                build.push_str("</");
+                self.name(name, build);
+                build.push_str(">");
+            }
+        } else {
             build.push_str(">");
         }
     }
