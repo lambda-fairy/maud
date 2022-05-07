@@ -169,7 +169,7 @@ fn colons_in_names() {
 #[test]
 fn hyphens_in_element_names() {
     let result = html! { custom-element {} };
-    assert_eq!(result.into_string(), "<custom-element></custom-element>");
+    assert_eq!(result.into_string(), "<custom-element/>");
 }
 
 #[test]
@@ -177,7 +177,7 @@ fn hyphens_in_attribute_names() {
     let result = html! { this sentence-is="false" of-course {} };
     assert_eq!(
         result.into_string(),
-        r#"<this sentence-is="false" of-course></this>"#
+        r#"<this sentence-is="false" of-course/>"#
     );
 }
 
@@ -311,13 +311,13 @@ fn classes_attrs_ids_mixed_up() {
 #[test]
 fn div_shorthand_class() {
     let result = html! { .awesome-class {} };
-    assert_eq!(result.into_string(), r#"<div class="awesome-class"></div>"#);
+    assert_eq!(result.into_string(), r#"<div class="awesome-class"/>"#);
 }
 
 #[test]
 fn div_shorthand_id() {
     let result = html! { #unique-id {} };
-    assert_eq!(result.into_string(), r#"<div id="unique-id"></div>"#);
+    assert_eq!(result.into_string(), r#"<div id="unique-id"/>"#);
 }
 
 #[test]
@@ -325,7 +325,7 @@ fn div_shorthand_class_with_attrs() {
     let result = html! { .awesome-class contenteditable dir="rtl" #unique-id {} };
     assert_eq!(
         result.into_string(),
-        r#"<div class="awesome-class" id="unique-id" contenteditable dir="rtl"></div>"#
+        r#"<div class="awesome-class" id="unique-id" contenteditable dir="rtl"/>"#
     );
 }
 
@@ -334,6 +334,6 @@ fn div_shorthand_id_with_attrs() {
     let result = html! { #unique-id contenteditable dir="rtl" .awesome-class {} };
     assert_eq!(
         result.into_string(),
-        r#"<div class="awesome-class" id="unique-id" contenteditable dir="rtl"></div>"#
+        r#"<div class="awesome-class" id="unique-id" contenteditable dir="rtl"/>"#
     );
 }
