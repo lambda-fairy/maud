@@ -12,12 +12,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let entries = args[2..]
         .iter()
-        .map(|arg| {
-            let mut splits = arg.splitn(2, ':');
-            let slug = splits.next().unwrap();
-            let input_path = splits.next().unwrap();
-            (slug, input_path)
-        })
+        .map(|arg| arg.split_once(':').unwrap())
         .collect::<Vec<_>>();
     build_nav(&entries, &args[1])
 }
