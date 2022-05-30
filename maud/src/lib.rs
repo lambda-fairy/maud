@@ -14,7 +14,7 @@ extern crate alloc;
 use alloc::{borrow::Cow, boxed::Box, string::String};
 use core::fmt::{self, Arguments, Write};
 
-pub use maud_macros::{html, html_debug};
+pub use maud_macros::{html, html_debug, html_file};
 
 mod escape;
 
