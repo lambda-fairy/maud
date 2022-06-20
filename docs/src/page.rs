@@ -2,7 +2,7 @@ use comrak::{
     nodes::{AstNode, NodeHeading, NodeValue},
     Arena, ComrakOptions,
 };
-use std::{fs, io, lazy::SyncLazy, path::Path};
+use std::{fs, io, path::Path, sync::LazyLock};
 
 pub struct Page<'a> {
     pub title: Option<&'a AstNode<'a>>,
@@ -29,7 +29,7 @@ impl<'a> Page<'a> {
     }
 }
 
-pub static COMRAK_OPTIONS: SyncLazy<ComrakOptions> = SyncLazy::new(|| {
+pub static COMRAK_OPTIONS: LazyLock<ComrakOptions> = LazyLock::new(|| {
     let mut options = ComrakOptions::default();
     options.extension.header_ids = Some("".to_string());
     options.render.unsafe_ = true;
