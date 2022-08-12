@@ -12,7 +12,7 @@
 extern crate alloc;
 
 use alloc::{borrow::Cow, boxed::Box, string::String};
-use core::fmt::{self, Arguments, Write};
+use core::fmt::{self, Arguments, Display, Write};
 
 pub use maud_macros::{html, html_debug};
 
@@ -182,6 +182,35 @@ macro_rules! impl_render_with_itoa {
 impl_render_with_itoa! {
     i8 i16 i32 i64 i128 isize
     u8 u16 u32 u64 u128 usize
+}
+
+/// Renders a value using its [`Display`] impl.
+///
+/// # Example
+///
+/// ```rust
+/// use maud::html;
+/// use std::net::Ipv4Addr;
+///
+/// let ip_address = Ipv4Addr::new(127, 0, 0, 1);
+///
+/// let markup = html! {
+///     "My IP address is: "
+///     (maud::display(ip_address))
+/// };
+///
+/// assert_eq!(markup.into_string(), "My IP address is: 127.0.0.1");
+/// ```
+pub fn display(value: impl Display) -> impl Render {
+    struct DisplayWrapper<T>(T);
+
+    impl<T: Display> Render for DisplayWrapper<T> {
+        fn render_to(&self, w: &mut String) {
+            format_args!("{0}", self.0).render_to(w);
+        }
+    }
+
+    DisplayWrapper(value)
 }
 
 /// A wrapper that renders the inner value without escaping.

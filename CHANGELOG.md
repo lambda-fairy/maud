@@ -9,6 +9,8 @@
   [#337](https://github.com/lambda-fairy/maud/pull/337)
 - Update to `actix-web` 4.0.
   [#331](https://github.com/lambda-fairy/maud/pull/331)
+- Add a `maud::display` adapter that forwards to the `Display` impl
+  [#350](https://github.com/lambda-fairy/maud/pull/350)
 
 ## [0.23.0] - 2021-11-10
 
