@@ -149,9 +149,10 @@ fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), Box<dyn Error>> {
                 literal.push('\n');
             }
             let html = highlighted_html_for_string(&literal, &ss, syntax, &theme)?;
-            let mut html_block = NodeHtmlBlock::default();
-            html_block.literal = html.into_bytes();
-            data.value = NodeValue::HtmlBlock(html_block);
+            data.value = NodeValue::HtmlBlock(NodeHtmlBlock {
+                literal: html.into_bytes(),
+                ..Default::default()
+            });
         }
     }
     Ok(())
