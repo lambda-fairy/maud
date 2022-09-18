@@ -11,7 +11,7 @@ description = "Documentation for Maud."
 edition = "2018"
 
 [dependencies]
-comrak = "*"
+comrak = { version = "*", default-features = false }
 maud = { path = "../maud" }
 serde_json = "*"
 syntect = "*"
