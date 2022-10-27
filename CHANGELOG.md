@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Remove `html_debug!`
+  [#357](https://github.com/lambda-fairy/maud/pull/357)
+
 ## [0.24.0] - 2022-08-12
 
 - Remove blanket `Render` impl for `T: Display`
