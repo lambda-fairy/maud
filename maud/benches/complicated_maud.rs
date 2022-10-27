@@ -96,7 +96,7 @@ fn render_complicated_template(b: &mut test::Bencher) {
     b.iter(|| {
         use crate::btn::{Button, RequestMethod};
         layout(
-            format!("Homepage of {}", year),
+            format!("Homepage of {year}"),
             html! {
                 h1 { "Hello there!" }
 
