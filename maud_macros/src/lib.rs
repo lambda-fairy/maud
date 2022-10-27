@@ -20,14 +20,6 @@ pub fn html(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     expand(input.into()).into()
 }
 
-#[proc_macro]
-#[proc_macro_error]
-pub fn html_debug(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let expr = expand(input.into());
-    println!("expansion:\n{}", expr);
-    expr.into()
-}
-
 fn expand(input: TokenStream) -> TokenStream {
     let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
     // Heuristic: the size of the resulting markup tends to correlate with the
