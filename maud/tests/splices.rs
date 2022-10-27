@@ -121,6 +121,6 @@ fn splice_with_path() {
 #[test]
 fn nested_macro_invocation() {
     let best_pony = "Pinkie Pie";
-    let result = html! { (format!("{} is best pony", best_pony)) };
+    let result = html! { (format!("{best_pony} is best pony")) };
     assert_eq!(result.into_string(), "Pinkie Pie is best pony");
 }
