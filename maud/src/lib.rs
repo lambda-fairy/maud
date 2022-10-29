@@ -172,7 +172,7 @@ macro_rules! impl_render_with_itoa {
         $(
             impl Render for $ty {
                 fn render_to(&self, w: &mut String) {
-                    let _ = itoa::fmt(w, *self);
+                    w.push_str(itoa::Buffer::new().format(*self));
                 }
             }
         )*
