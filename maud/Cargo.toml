@@ -25,7 +25,7 @@ rocket = { version = ">= 0.3, < 0.5", optional = true }
 futures-util = { version = "0.3.0", optional = true, default-features = false }
 actix-web-dep = { package = "actix-web", version = "4", optional = true, default-features = false }
 tide = { version = "0.16.0", optional = true, default-features = false }
-axum-core = { version = "0.2", optional = true }
+axum-core = { version = "0.3.0-rc", optional = true }
 http = { version = "0.2", optional = true }
 
 [dev-dependencies]
