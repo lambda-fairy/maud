@@ -340,3 +340,54 @@ mod axum_support {
         }
     }
 }
+
+#[doc(hidden)]
+pub mod macro_private {
+    use crate::{display, Render};
+    use alloc::string::String;
+    use core::fmt::Display;
+
+    #[doc(hidden)]
+    #[macro_export]
+    macro_rules! render_to {
+        ($x:expr, $buffer:expr) => {{
+            use $crate::macro_private::*;
+            match ChooseRenderOrDisplay($x) {
+                x => (&&x).implements_render_or_display().render_to(x.0, $buffer),
+            }
+        }};
+    }
+
+    pub use render_to;
+
+    pub struct ChooseRenderOrDisplay<T>(pub T);
+
+    pub struct ViaRenderTag;
+    pub struct ViaDisplayTag;
+
+    pub trait ViaRender {
+        fn implements_render_or_display(&self) -> ViaRenderTag {
+            ViaRenderTag
+        }
+    }
+    pub trait ViaDisplay {
+        fn implements_render_or_display(&self) -> ViaDisplayTag {
+            ViaDisplayTag
+        }
+    }
+
+    impl<T: Render> ViaRender for &ChooseRenderOrDisplay<T> {}
+    impl<T: Display> ViaDisplay for ChooseRenderOrDisplay<T> {}
+
+    impl ViaRenderTag {
+        pub fn render_to<T: Render + ?Sized>(self, value: &T, buffer: &mut String) {
+            value.render_to(buffer);
+        }
+    }
+
+    impl ViaDisplayTag {
+        pub fn render_to<T: Display + ?Sized>(self, value: &T, buffer: &mut String) {
+            display(value).render_to(buffer);
+        }
+    }
+}
