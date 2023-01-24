@@ -4,6 +4,8 @@
 
 - Remove `html_debug!`
   [#357](https://github.com/lambda-fairy/maud/pull/357)
+- Support `axum` v0.6 through `axum-core` v0.3
+  [#361](https://github.com/lambda-fairy/maud/pull/361)
 
 ## [0.24.0] - 2022-08-12
 
