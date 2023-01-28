@@ -7,13 +7,11 @@ use docs::{
     page::{Page, COMRAK_OPTIONS},
     views,
 };
-use serde_json;
 use std::{
     env,
     error::Error,
     fs::{self, File},
     io::BufReader,
-    mem,
     path::Path,
     str::{self, Utf8Error},
     string::FromUtf8Error,
@@ -90,7 +88,7 @@ fn rewrite_md_links<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
     for node in root.descendants() {
         let mut data = node.data.borrow_mut();
         if let NodeValue::Link(NodeLink { url, .. }) = &mut data.value {
-            let mut url_string = String::from_utf8(mem::replace(url, Vec::new()))?;
+            let mut url_string = String::from_utf8(std::mem::take(url))?;
             if url_string.ends_with(".md") {
                 url_string.truncate(url_string.len() - ".md".len());
                 url_string.push_str(".html");
@@ -117,7 +115,7 @@ fn strip_hidden_code<'a>(root: &'a AstNode<'a>) -> Result<(), Box<dyn Error>> {
 
 fn strip_hidden_code_inner(literal: &str) -> String {
     let lines = literal
-        .split("\n")
+        .split('\n')
         .filter(|line| {
             let line = line.trim();
             line != "#" && !line.starts_with("# ")
@@ -142,23 +140,24 @@ fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), Box<dyn Error>> {
             let info = parse_code_block_info(info)?;
             let syntax = info
                 .into_iter()
-                .filter_map(|token| ss.find_syntax_by_token(&token))
+                .filter_map(|token| ss.find_syntax_by_token(token))
                 .next()
                 .unwrap_or_else(|| ss.find_syntax_plain_text());
-            let mut literal = String::from_utf8(mem::replace(literal, Vec::new()))?;
+            let mut literal = String::from_utf8(std::mem::take(literal))?;
             if !literal.ends_with('\n') {
                 // Syntect expects a trailing newline
                 literal.push('\n');
             }
-            let html = highlighted_html_for_string(&literal, &ss, syntax, &theme);
-            let mut html_block = NodeHtmlBlock::default();
-            html_block.literal = html.into_bytes();
-            data.value = NodeValue::HtmlBlock(html_block);
+            let html = highlighted_html_for_string(&literal, &ss, syntax, &theme)?;
+            data.value = NodeValue::HtmlBlock(NodeHtmlBlock {
+                literal: html.into_bytes(),
+                ..Default::default()
+            });
         }
     }
     Ok(())
 }
 
 fn parse_code_block_info(info: &[u8]) -> Result<Vec<&str>, Utf8Error> {
-    str::from_utf8(info).map(|info| info.split(",").map(str::trim).collect())
+    str::from_utf8(info).map(|info| info.split(',').map(str::trim).collect())
 }

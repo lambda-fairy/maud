@@ -76,8 +76,8 @@ pub enum Attr {
         hash_span: SpanRange,
         name: Markup,
     },
-    Attribute {
-        attribute: Attribute,
+    Named {
+        named_attr: NamedAttr,
     },
 }
 
@@ -104,7 +104,7 @@ impl Attr {
                 let name_span = name.span();
                 hash_span.join_range(name_span)
             }
-            Attr::Attribute { ref attribute } => attribute.span(),
+            Attr::Named { ref named_attr } => named_attr.span(),
         }
     }
 }
@@ -151,12 +151,12 @@ impl Special {
 }
 
 #[derive(Debug)]
-pub struct Attribute {
+pub struct NamedAttr {
     pub name: TokenStream,
     pub attr_type: AttrType,
 }
 
-impl Attribute {
+impl NamedAttr {
     fn span(&self) -> SpanRange {
         let name_span = span_tokens(self.name.clone());
         if let Some(attr_type_span) = self.attr_type.span() {
@@ -170,6 +170,7 @@ impl Attribute {
 #[derive(Debug)]
 pub enum AttrType {
     Normal { value: Markup },
+    Optional { toggler: Toggler },
     Empty { toggler: Option<Toggler> },
 }
 
@@ -177,6 +178,7 @@ impl AttrType {
     fn span(&self) -> Option<SpanRange> {
         match *self {
             AttrType::Normal { ref value } => Some(value.span()),
+            AttrType::Optional { ref toggler } => Some(toggler.span()),
             AttrType::Empty { ref toggler } => toggler.as_ref().map(Toggler::span),
         }
     }

@@ -85,7 +85,7 @@ let name = "rarity";
 let severity = "critical";
 # let _ = maud::
 html! {
-    aside#(name) {
+    aside #(name) {
         p.{ "color-" (severity) } { "This is the worst! Possible! Thing!" }
     }
 }
@@ -94,11 +94,11 @@ html! {
 
 ### What can be spliced?
 
-You can splice any value that implements [`std::fmt::Display`][Display].
+You can splice any value that implements [`Render`][Render].
 Most primitive types (such as `str` and `i32`) implement this trait,
 so they should work out of the box.
 
-To change this behavior for some type,
+To get this behavior for a custom type,
 you can implement the [`Render`][Render] trait by hand.
 The [`PreEscaped`][PreEscaped] wrapper type,
 which outputs its argument without escaping,
@@ -116,7 +116,6 @@ html! {
 # ;
 ```
 
-[Display]: http://doc.rust-lang.org/std/fmt/trait.Display.html
 [Render]: https://docs.rs/maud/*/maud/trait.Render.html
 [PreEscaped]: https://docs.rs/maud/*/maud/struct.PreEscaped.html
 

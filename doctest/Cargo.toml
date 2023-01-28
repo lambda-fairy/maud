@@ -5,16 +5,15 @@ authors = ["Chris Wong <lambda.fairy@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-actix-web = "3"
+actix-web = { version = "4.0.0-rc.2", default-features = false, features = ["macros"] }
 ammonia = "3"
-iron = "0.6"
-maud = { path = "../maud", features = ["actix-web", "iron", "rocket", "tide", "axum"] }
+maud = { path = "../maud", features = ["actix-web", "rocket", "tide", "axum"] }
 pulldown-cmark = "0.8"
 rocket = { git = "https://github.com/SergioBenitez/Rocket", rev = "v0.5.0-rc.2" }
 rouille = "3"
 tide = "0.16"
 tokio = { version = "1.9.0", features = ["rt", "macros", "rt-multi-thread"] }
-axum = "0.2"
+axum = "0.6"
 
 [dependencies.async-std]
 version = "1.9.0"

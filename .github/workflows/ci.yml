@@ -53,12 +53,16 @@ jobs:
         toolchain: nightly
         profile: minimal
         override: true
+        components: clippy
 
     - name: Build documentation
       run: cd docs && make -j$(nproc)
 
-  examples:
-    name: Examples
+    - name: Check Clippy
+      run: cd docs && cargo clippy --all-targets -- -D warnings
+
+  doctest:
+    name: Doctest
     runs-on: ubuntu-latest
 
     steps:
@@ -74,7 +78,7 @@ jobs:
         override: true
 
     - name: Doctest
-      run: cd doctest && cargo check
+      run: cd doctest && cargo test
 
   rustfmt:
     name: Rustfmt
@@ -88,9 +92,8 @@ jobs:
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
-        # rustfmt is often missing on nightly. Since there's little benefit to
-        # using the nightly version, use the more reliable stable build instead.
-        toolchain: stable
+        # Nightly rustfmt is needed for the `imports_granularity` option
+        toolchain: nightly
         profile: minimal
         override: true
         components: rustfmt

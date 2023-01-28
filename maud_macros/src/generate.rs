@@ -1,9 +1,8 @@
-use maud_htmlescape::Escaper;
 use proc_macro2::{Delimiter, Group, Ident, Literal, Span, TokenStream, TokenTree};
 use proc_macro_error::SpanRange;
 use quote::quote;
 
-use crate::ast::*;
+use crate::{ast::*, escape};
 
 pub fn generate(markups: Vec<Markup>, output_ident: TokenTree) -> TokenStream {
     let mut build = Builder::new(output_ident.clone());
@@ -41,22 +40,26 @@ impl Generator {
                     .iter()
                     .any(|markup| matches!(*markup, Markup::Let { .. }))
                 {
-                    build.push_tokens(self.block(Block {
-                        markups,
-                        outer_span,
-                    }));
+                    self.block(
+                        Block {
+                            markups,
+                            outer_span,
+                        },
+                        build,
+                    );
                 } else {
                     self.markups(markups, build);
                 }
             }
             Markup::Literal { content, .. } => build.push_escaped(&content),
             Markup::Symbol { symbol } => self.name(symbol, build),
-            Markup::Splice { expr, .. } => build.push_tokens(self.splice(expr)),
+            Markup::Splice { expr, .. } => self.splice(expr, build),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
             Markup::Let { tokens, .. } => build.push_tokens(tokens),
             Markup::Special { segments } => {
-                for segment in segments {
-                    build.push_tokens(self.special(segment));
+                for Special { head, body, .. } in segments {
+                    build.push_tokens(head);
+                    self.block(body, build);
                 }
             }
             Markup::Match {
@@ -65,12 +68,17 @@ impl Generator {
                 arms_span,
                 ..
             } => {
-                build.push_tokens({
-                    let body = arms.into_iter().map(|arm| self.match_arm(arm)).collect();
-                    let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
-                    body.set_span(arms_span.collapse());
-                    quote!(#head #body)
-                });
+                let body = {
+                    let mut build = self.builder();
+                    for MatchArm { head, body } in arms {
+                        build.push_tokens(head);
+                        self.block(body, &mut build);
+                    }
+                    build.finish()
+                };
+                let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
+                body.set_span(arms_span.collapse());
+                build.push_tokens(quote!(#head #body));
             }
         }
     }
@@ -81,20 +89,21 @@ impl Generator {
             markups,
             outer_span,
         }: Block,
-    ) -> TokenStream {
-        let mut build = self.builder();
-        self.markups(markups, &mut build);
-        let mut block = TokenTree::Group(Group::new(Delimiter::Brace, build.finish()));
+        build: &mut Builder,
+    ) {
+        let block = {
+            let mut build = self.builder();
+            self.markups(markups, &mut build);
+            build.finish()
+        };
+        let mut block = TokenTree::Group(Group::new(Delimiter::Brace, block));
         block.set_span(outer_span.collapse());
-        TokenStream::from(block)
+        build.push_tokens(TokenStream::from(block));
     }
 
-    fn splice(&self, expr: TokenStream) -> TokenStream {
+    fn splice(&self, expr: TokenStream, build: &mut Builder) {
         let output_ident = self.output_ident.clone();
-        quote!({
-            use maud::render::{RenderInternal, RenderWrapper};
-            RenderWrapper(&#expr).__maud_render_to(&mut #output_ident);
-        })
+        build.push_tokens(quote!(maud::macro_private::render_to!(&#expr, &mut #output_ident);));
     }
 
     fn element(&self, name: TokenStream, attrs: Vec<Attr>, body: ElementBody, build: &mut Builder) {
@@ -115,7 +124,7 @@ impl Generator {
     }
 
     fn attrs(&self, attrs: Vec<Attr>, build: &mut Builder) {
-        for Attribute { name, attr_type } in desugar_attrs(attrs) {
+        for NamedAttr { name, attr_type } in desugar_attrs(attrs) {
             match attr_type {
                 AttrType::Normal { value } => {
                     build.push_str(" ");
@@ -124,44 +133,48 @@ impl Generator {
                     self.markup(value, build);
                     build.push_str("\"");
                 }
+                AttrType::Optional {
+                    toggler: Toggler { cond, .. },
+                } => {
+                    let inner_value = quote!(inner_value);
+                    let body = {
+                        let mut build = self.builder();
+                        build.push_str(" ");
+                        self.name(name, &mut build);
+                        build.push_str("=\"");
+                        self.splice(inner_value.clone(), &mut build);
+                        build.push_str("\"");
+                        build.finish()
+                    };
+                    build.push_tokens(quote!(if let Some(#inner_value) = (#cond) { #body }));
+                }
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
                     self.name(name, build);
                 }
                 AttrType::Empty {
-                    toggler: Some(toggler),
+                    toggler: Some(Toggler { cond, .. }),
                 } => {
-                    let head = desugar_toggler(toggler);
-                    build.push_tokens({
+                    let body = {
                         let mut build = self.builder();
                         build.push_str(" ");
                         self.name(name, &mut build);
-                        let body = build.finish();
-                        quote!(#head { #body })
-                    })
+                        build.finish()
+                    };
+                    build.push_tokens(quote!(if (#cond) { #body }));
                 }
             }
         }
-    }
-
-    fn special(&self, Special { head, body, .. }: Special) -> TokenStream {
-        let body = self.block(body);
-        quote!(#head #body)
-    }
-
-    fn match_arm(&self, MatchArm { head, body }: MatchArm) -> TokenStream {
-        let body = self.block(body);
-        quote!(#head #body)
     }
 }
 
 ////////////////////////////////////////////////////////
 
-fn desugar_attrs(attrs: Vec<Attr>) -> Vec<Attribute> {
+fn desugar_attrs(attrs: Vec<Attr>) -> Vec<NamedAttr> {
     let mut classes_static = vec![];
     let mut classes_toggled = vec![];
     let mut ids = vec![];
-    let mut attributes = vec![];
+    let mut named_attrs = vec![];
     for attr in attrs {
         match attr {
             Attr::Class {
@@ -175,19 +188,19 @@ fn desugar_attrs(attrs: Vec<Attr>) -> Vec<Attribute> {
                 ..
             } => classes_static.push(name),
             Attr::Id { name, .. } => ids.push(name),
-            Attr::Attribute { attribute } => attributes.push(attribute),
+            Attr::Named { named_attr } => named_attrs.push(named_attr),
         }
     }
     let classes = desugar_classes_or_ids("class", classes_static, classes_toggled);
     let ids = desugar_classes_or_ids("id", ids, vec![]);
-    classes.into_iter().chain(ids).chain(attributes).collect()
+    classes.into_iter().chain(ids).chain(named_attrs).collect()
 }
 
 fn desugar_classes_or_ids(
     attr_name: &'static str,
     values_static: Vec<Markup>,
     values_toggled: Vec<(Markup, Toggler)>,
-) -> Option<Attribute> {
+) -> Option<NamedAttr> {
     if values_static.is_empty() && values_toggled.is_empty() {
         return None;
     }
@@ -196,21 +209,21 @@ fn desugar_classes_or_ids(
     for name in values_static {
         markups.extend(prepend_leading_space(name, &mut leading_space));
     }
-    for (name, toggler) in values_toggled {
+    for (name, Toggler { cond, cond_span }) in values_toggled {
         let body = Block {
             markups: prepend_leading_space(name, &mut leading_space),
-            outer_span: toggler.cond_span,
+            // TODO: is this correct?
+            outer_span: cond_span,
         };
-        let head = desugar_toggler(toggler);
         markups.push(Markup::Special {
             segments: vec![Special {
                 at_span: SpanRange::call_site(),
-                head,
+                head: quote!(if (#cond)),
                 body,
             }],
         });
     }
-    Some(Attribute {
+    Some(NamedAttr {
         name: TokenStream::from(TokenTree::Ident(Ident::new(attr_name, Span::call_site()))),
         attr_type: AttrType::Normal {
             value: Markup::Block(Block {
@@ -232,26 +245,6 @@ fn prepend_leading_space(name: Markup, leading_space: &mut bool) -> Vec<Markup> 
     *leading_space = true;
     markups.push(name);
     markups
-}
-
-fn desugar_toggler(
-    Toggler {
-        mut cond,
-        cond_span,
-    }: Toggler,
-) -> TokenStream {
-    // If the expression contains an opening brace `{`,
-    // wrap it in parentheses to avoid parse errors
-    if cond.clone().into_iter().any(is_braced_block) {
-        let mut wrapped_cond = TokenTree::Group(Group::new(Delimiter::Parenthesis, cond));
-        wrapped_cond.set_span(cond_span.collapse());
-        cond = TokenStream::from(wrapped_cond);
-    }
-    quote!(if #cond)
-}
-
-fn is_braced_block(token: TokenTree) -> bool {
-    matches!(token, TokenTree::Group(ref group) if group.delimiter() == Delimiter::Brace)
 }
 
 ////////////////////////////////////////////////////////
@@ -276,8 +269,7 @@ impl Builder {
     }
 
     fn push_escaped(&mut self, string: &str) {
-        use std::fmt::Write;
-        Escaper::new(&mut self.tail).write_str(string).unwrap();
+        escape::escape_to_string(string, &mut self.tail);
     }
 
     fn push_tokens(&mut self, tokens: TokenStream) {

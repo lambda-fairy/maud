@@ -83,3 +83,50 @@ fn issue_97() {
 
     assert_eq!(html! { (Pinkie) }.into_string(), "42");
 }
+
+#[test]
+fn only_display() {
+    use core::fmt::Display;
+
+    struct OnlyDisplay;
+    impl Display for OnlyDisplay {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "<hello>")
+        }
+    }
+
+    assert_eq!(html! { (OnlyDisplay) }.into_string(), "&lt;hello&gt;");
+    assert_eq!(html! { (&OnlyDisplay) }.into_string(), "&lt;hello&gt;");
+    assert_eq!(html! { (&&OnlyDisplay) }.into_string(), "&lt;hello&gt;");
+    assert_eq!(html! { (&&&OnlyDisplay) }.into_string(), "&lt;hello&gt;");
+    assert_eq!(html! { (&&&&OnlyDisplay) }.into_string(), "&lt;hello&gt;");
+}
+
+#[test]
+fn prefer_render_over_display() {
+    use core::fmt::Display;
+    use maud::Render;
+
+    struct RenderAndDisplay;
+    impl Display for RenderAndDisplay {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "<display>")
+        }
+    }
+    impl Render for RenderAndDisplay {
+        fn render_to(&self, buffer: &mut String) {
+            buffer.push_str("<render>");
+        }
+    }
+
+    assert_eq!(html! { (RenderAndDisplay) }.into_string(), "<render>");
+    assert_eq!(html! { (&RenderAndDisplay) }.into_string(), "<render>");
+    assert_eq!(html! { (&&RenderAndDisplay) }.into_string(), "<render>");
+    assert_eq!(html! { (&&&RenderAndDisplay) }.into_string(), "<render>");
+    assert_eq!(html! { (&&&&RenderAndDisplay) }.into_string(), "<render>");
+
+    assert_eq!(
+        html! { (maud::display(RenderAndDisplay)) }.into_string(),
+        "&lt;display&gt;"
+    );
+}

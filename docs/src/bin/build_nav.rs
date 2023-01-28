@@ -3,22 +3,16 @@ use docs::{
     page::{Page, COMRAK_OPTIONS},
     string_writer::StringWriter,
 };
-use serde_json;
 use std::{env, error::Error, fs, io, path::Path, str};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = env::args().collect::<Vec<_>>();
-    if args.len() < 2 || !args[2..].iter().all(|arg| arg.contains(":")) {
+    if args.len() < 2 || !args[2..].iter().all(|arg| arg.contains(':')) {
         return Err("invalid arguments".into());
     }
     let entries = args[2..]
         .iter()
-        .map(|arg| {
-            let mut splits = arg.splitn(2, ":");
-            let slug = splits.next().unwrap();
-            let input_path = splits.next().unwrap();
-            (slug, input_path)
-        })
+        .map(|arg| arg.split_once(':').unwrap())
         .collect::<Vec<_>>();
     build_nav(&entries, &args[1])
 }
@@ -35,7 +29,7 @@ fn build_nav(entries: &[(&str, &str)], nav_path: &str) -> Result<(), Box<dyn Err
         .collect::<io::Result<Vec<_>>>()?;
 
     // Only write if different to avoid spurious rebuilds
-    let old_string = fs::read_to_string(nav_path).unwrap_or(String::new());
+    let old_string = fs::read_to_string(nav_path).unwrap_or_default();
     let new_string = serde_json::to_string_pretty(&nav)?;
     if old_string != new_string {
         fs::create_dir_all(Path::new(nav_path).parent().unwrap())?;

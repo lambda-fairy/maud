@@ -16,13 +16,6 @@ html! {
 # ;
 ```
 
-Before version 0.18,
-Maud allowed the curly braces to be omitted.
-This syntax was [removed][#137]
-and now causes an error instead.
-
-[#137]: https://github.com/lambda-fairy/maud/pull/137
-
 ## Void elements: `br;`
 
 Terminate a void element using a semicolon:
@@ -46,13 +39,6 @@ html! {
 
 The result will be rendered with HTML syntax –
 `<br>` not `<br />`.
-
-Maud also supports ending a void element with a slash:
-`br /`.
-This syntax is [deprecated][#96]
-and should not be used in new code.
-
-[#96]: https://github.com/lambda-fairy/maud/pull/96
 
 ## Custom elements and `data` attributes
 
@@ -101,6 +87,27 @@ html! {
 # ;
 ```
 
+## Optional attributes: `title=[Some("value")]`
+
+Add optional attributes to an element using `attr=[value]` syntax,
+with *square* brackets.
+These are only rendered if the value is `Some<T>`,
+and entirely omitted if the value is `None`.
+
+```rust
+# let _ = maud::
+html! {
+    p title=[Some("Good password")] { "Correct horse" }
+
+    @let value = Some(42);
+    input value=[value];
+
+    @let title: Option<&str> = None;
+    p title=[title] { "Battery staple" }
+}
+# ;
+```
+
 ## Empty attributes: `checked`
 
 Declare an empty attribute by omitting the value.
@@ -135,7 +142,25 @@ and mix and match them with other attributes:
 ```rust
 # let _ = maud::
 html! {
-    input#cannon.big.scary.bright-red type="button" value="Launch Party Cannon";
+    input #cannon .big.scary.bright-red type="button" value="Launch Party Cannon";
+}
+# ;
+```
+
+In Rust 2021,
+the `#` symbol must be preceded by a space,
+to avoid conflicts with [reserved syntax]:
+
+[reserved syntax]: https://doc.rust-lang.org/edition-guide/rust-2021/reserving-syntax.html
+
+```rust,edition2018
+# let _ = maud::
+html! {
+    // Works on all Rust editions
+    input #pinkie;
+
+    // Works on Rust 2018 and older only
+    input#pinkie;
 }
 # ;
 ```

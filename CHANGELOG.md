@@ -2,15 +2,42 @@
 
 ## [Unreleased]
 
+- Remove `html_debug!`
+  [#357](https://github.com/lambda-fairy/maud/pull/357)
+- Support `axum` v0.6 through `axum-core` v0.3
+  [#361](https://github.com/lambda-fairy/maud/pull/361)
+
+## [0.24.0] - 2022-08-12
+
+- Remove blanket `Render` impl for `T: Display`
+  [#320](https://github.com/lambda-fairy/maud/pull/320)
+- Support `axum` v0.5 through `axum-core` v0.2
+  [#325](https://github.com/lambda-fairy/maud/pull/325)
+  [#337](https://github.com/lambda-fairy/maud/pull/337)
+- Update to `actix-web` 4.0.
+  [#331](https://github.com/lambda-fairy/maud/pull/331)
+- Add a `maud::display` adapter that forwards to the `Display` impl
+  [#350](https://github.com/lambda-fairy/maud/pull/350)
+
+## [0.23.0] - 2021-11-10
+
 - Update to support axum 0.2
   [#303](https://github.com/lambda-fairy/maud/pull/303)
+- Add support for `Option<T>` attributes using the `attr=[value]` syntax.
+  [#306](https://github.com/lambda-fairy/maud/pull/306)
+- Update to Rust 2021
+  [#309](https://github.com/lambda-fairy/maud/pull/309)
+- Remove Iron support
+  [#289](https://github.com/lambda-fairy/maud/pull/289)
+- Disallow slashes (`/`) in void elements
+  [#315](https://github.com/lambda-fairy/maud/pull/315)
 
 ## [0.22.3] - 2021-09-27
 
 - Support `no_std` + `alloc`.
   [#278](https://github.com/lambda-fairy/maud/issues/278)
 - Provide Tide support.
-  [#280](https://github.com/lambda-fairy/maud/pull/280) 
+  [#280](https://github.com/lambda-fairy/maud/pull/280)
 - Provide Axum support.
   [#284](https://github.com/lambda-fairy/maud/pull/284)
 
@@ -258,7 +285,9 @@
 - Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.22.3...HEAD
+[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.24.0...HEAD
+[0.24.0]: https://github.com/lambda-fairy/maud/compare/v0.23.0...v0.24.0
+[0.23.0]: https://github.com/lambda-fairy/maud/compare/v0.22.3...v0.23.0
 [0.22.3]: https://github.com/lambda-fairy/maud/compare/v0.22.2...v0.22.3
 [0.22.2]: https://github.com/lambda-fairy/maud/compare/v0.22.1...v0.22.2
 [0.22.1]: https://github.com/lambda-fairy/maud/compare/v0.22.0...v0.22.1
