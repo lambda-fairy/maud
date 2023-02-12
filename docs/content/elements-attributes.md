@@ -37,8 +37,7 @@ html! {
 # ;
 ```
 
-The result will be rendered with HTML syntax –
-`<br>` not `<br />`.
+The result will be rendered with HTML syntax – `<br>` not `<br />`.
 
 ## Custom elements and `data` attributes
 
@@ -62,11 +61,9 @@ html! {
 
 ## Non-empty attributes: `title="yay"`
 
-Add attributes using the syntax:
-`attr="value"`.
+Add attributes using the syntax: `attr="value"`.
 You can attach any number of attributes to an element.
-The values must be quoted:
-they are parsed as string literals.
+The values must be quoted: they are parsed as string literals.
 
 ```rust
 # let _ = maud::
@@ -89,10 +86,8 @@ html! {
 
 ## Optional attributes: `title=[Some("value")]`
 
-Add optional attributes to an element using `attr=[value]` syntax,
-with *square* brackets.
-These are only rendered if the value is `Some<T>`,
-and entirely omitted if the value is `None`.
+Add optional attributes to an element using `attr=[value]` syntax, with *square* brackets.
+These are only rendered if the value is `Some<T>`, and entirely omitted if the value is `None`.
 
 ```rust
 # let _ = maud::
@@ -124,20 +119,15 @@ html! {
 # ;
 ```
 
-Before version 0.22.2,
-Maud required a `?` suffix on empty attributes:
-`checked?`.
-This is no longer necessary ([#238]),
-but still supported for backward compatibility.
+Before version 0.22.2, Maud required a `?` suffix on empty attributes: `checked?`.
+This is no longer necessary ([#238]), but still supported for backward compatibility.
 
 [#238]: https://github.com/lambda-fairy/maud/pull/238
 
 ## Classes and IDs: `.foo` `#bar`
 
-Add classes and IDs to an element
-using `.foo` and `#bar` syntax.
-You can chain multiple classes and IDs together,
-and mix and match them with other attributes:
+Add classes and IDs to an element using `.foo` and `#bar` syntax.
+You can chain multiple classes and IDs together, and mix and match them with other attributes:
 
 ```rust
 # let _ = maud::
@@ -147,9 +137,7 @@ html! {
 # ;
 ```
 
-In Rust 2021,
-the `#` symbol must be preceded by a space,
-to avoid conflicts with [reserved syntax]:
+In Rust 2021, the `#` symbol must be preceded by a space, to avoid conflicts with [reserved syntax]:
 
 [reserved syntax]: https://doc.rust-lang.org/edition-guide/rust-2021/reserving-syntax.html
 
@@ -166,8 +154,7 @@ html! {
 ```
 
 The classes and IDs can be quoted.
-This is useful for names with numbers or symbols
-which otherwise wouldn't parse:
+This is useful for names with numbers or symbols which otherwise wouldn't parse:
 
 ```rust
 # let _ = maud::
@@ -179,9 +166,7 @@ html! {
 
 ## Implicit `div` elements
 
-If the element name is omitted,
-but there is a class or ID,
-then it is assumed to be a `div`.
+If the element name is omitted, but there is a class or ID, then it is assumed to be a `div`.
 
 ```rust
 # let _ = maud::

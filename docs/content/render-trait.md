@@ -8,8 +8,7 @@ Feel free to use these snippets in your own project!
 
 ## Example: a shorthand for including CSS stylesheets
 
-When writing a web page,
-it can be annoying to write `link rel="stylesheet"` over and over again.
+When writing a web page, it can be annoying to write `link rel="stylesheet"` over and over again.
 This example provides a shorthand for linking to CSS stylesheets.
 
 ```rust
@@ -29,15 +28,12 @@ impl Render for Css {
 
 ## Example: a wrapper that calls `std::fmt::Debug`
 
-When debugging an application,
-it can be useful to see its internal state.
+When debugging an application, it can be useful to see its internal state.
 But these internal data types often don't implement `Display`.
 This wrapper lets us use the [`Debug`][Debug] trait instead.
 
-To avoid extra allocation,
-we override the `.render_to()` method instead of `.render()`.
-This doesn't do any escaping by default,
-so we wrap the output in an `Escaper` as well.
+To avoid extra allocation, we override the `.render_to()` method instead of `.render()`.
+This doesn't do any escaping by default, so we wrap the output in an `Escaper` as well.
 
 ```rust
 use maud::{Escaper, html, Render};
@@ -57,11 +53,9 @@ impl<T: fmt::Debug> Render for Debug<T> {
 
 ## Example: rendering Markdown using `pulldown-cmark` and `ammonia`
 
-[`pulldown-cmark`][pulldown-cmark] is a popular library
-for converting Markdown to HTML.
+[`pulldown-cmark`][pulldown-cmark] is a popular library for converting Markdown to HTML.
 
-We also use the [`ammonia`][ammonia] library,
-which sanitizes the resulting markup.
+We also use the [`ammonia`][ammonia] library, which sanitizes the resulting markup.
 
 ```rust
 use ammonia;
