@@ -20,8 +20,7 @@ html! {
 ```
 
 Arbitrary Rust code can be included in a splice by using a [block].
-This can be helpful for complex expressions
-that would be difficult to read otherwise.
+This can be helpful for complex expressions that would be difficult to read otherwise.
 
 ```rust
 # struct Foo;
@@ -61,8 +60,7 @@ html! {
 # ;
 ```
 
-To concatenate multiple values within an attribute,
-wrap the whole thing in braces.
+To concatenate multiple values within an attribute, wrap the whole thing in braces.
 This syntax is useful for building URLs.
 
 ```rust
@@ -95,14 +93,10 @@ html! {
 ### What can be spliced?
 
 You can splice any value that implements [`Render`][Render].
-Most primitive types (such as `str` and `i32`) implement this trait,
-so they should work out of the box.
+Most primitive types (such as `str` and `i32`) implement this trait, so they should work out of the box.
 
-To get this behavior for a custom type,
-you can implement the [`Render`][Render] trait by hand.
-The [`PreEscaped`][PreEscaped] wrapper type,
-which outputs its argument without escaping,
-works this way.
+To get this behavior for a custom type, you can implement the [`Render`][Render] trait by hand.
+The [`PreEscaped`][PreEscaped] wrapper type, which outputs its argument without escaping, works this way.
 See the [traits](render-trait.md) section for details.
 
 ```rust
@@ -121,8 +115,7 @@ html! {
 
 ## Toggles: `[foo]`
 
-Use `[foo]` syntax to show or hide something
-based on a boolean expression `foo`.
+Use `[foo]` syntax to show or hide something based on a boolean expression `foo`.
 
 This works on empty attributes:
 

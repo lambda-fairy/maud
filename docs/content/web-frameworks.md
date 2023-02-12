@@ -1,7 +1,6 @@
 # Web framework integration
 
-Maud includes support for these web frameworks:
-[Actix], [Rocket], [Rouille], and [Tide].
+Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], and [Tide].
 
 [Actix]: https://actix.rs/
 [Rocket]: https://rocket.rs/
@@ -19,8 +18,7 @@ maud = { version = "*", features = ["actix-web"] }
 # ...
 ```
 
-Actix request handlers can use a `Markup`
-that implements the `actix_web::Responder` trait.
+Actix request handlers can use a `Markup` that implements the `actix_web::Responder` trait.
 
 ```rust,no_run
 use actix_web::{get, App, HttpServer, Result as AwResult};
@@ -49,8 +47,7 @@ async fn main() -> io::Result<()> {
 
 # Rocket
 
-Rocket works in a similar way,
-except using the `rocket` feature:
+Rocket works in a similar way, except using the `rocket` feature:
 
 ```toml
 # ...
@@ -59,8 +56,7 @@ maud = { version = "*", features = ["rocket"] }
 # ...
 ```
 
-This adds a `Responder` implementation for the `Markup` type,
-so you can return the result directly:
+This adds a `Responder` implementation for the `Markup` type, so you can return the result directly:
 
 ```rust,no_run
 #![feature(decl_macro)]
@@ -84,8 +80,7 @@ fn main() {
 
 # Rouille
 
-Unlike with the other frameworks,
-Rouille doesn't need any extra features at all!
+Unlike with the other frameworks, Rouille doesn't need any extra features at all!
 Calling `Response::html` on the rendered `Markup` will Just Work®.
 
 ```rust,no_run
@@ -118,10 +113,8 @@ maud = { version = "*", features = ["tide"] }
 # ...
 ```
 
-This adds an implementation of `From<PreEscaped<String>>`
-for the `Response` struct.
-Once provided,
-callers may return results of `html!` directly as responses:
+This adds an implementation of `From<PreEscaped<String>>` for the `Response` struct.
+Once provided, callers may return results of `html!` directly as responses:
 
 ```rust,no_run
 use maud::html;

@@ -1,14 +1,11 @@
 # Control structures
 
-Maud provides various control structures
-for adding dynamic elements to your templates.
+Maud provides various control structures for adding dynamic elements to your templates.
 
 ## Branching with `@if` and `@else`
 
 Use `@if` and `@else` to branch on a boolean expression.
-As with Rust,
-braces are mandatory
-and the `@else` clause is optional.
+As with Rust, braces are mandatory and the `@else` clause is optional.
 
 ```rust
 #[derive(PartialEq)]
