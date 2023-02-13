@@ -142,3 +142,22 @@ html! {
 }
 # ;
 ```
+
+### Optional attributes with values: `title=[Some("value")]`
+
+Add optional attributes to an element using `attr=[value]` syntax, with *square* brackets.
+These are only rendered if the value is `Some<T>`, and entirely omitted if the value is `None`.
+
+```rust
+# let _ = maud::
+html! {
+    p title=[Some("Good password")] { "Correct horse" }
+
+    @let value = Some(42);
+    input value=[value];
+
+    @let title: Option<&str> = None;
+    p title=[title] { "Battery staple" }
+}
+# ;
+```
