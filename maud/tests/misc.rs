@@ -130,3 +130,10 @@ fn prefer_render_over_display() {
         "&lt;display&gt;"
     );
 }
+
+#[test]
+fn default() {
+    use maud::{Markup, PreEscaped};
+    assert_eq!(Markup::default().0, String::from(""));
+    assert_eq!(PreEscaped::<&'static str>::default().0, "");
+}
