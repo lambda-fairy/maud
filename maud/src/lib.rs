@@ -376,18 +376,42 @@ pub mod macro_private {
         }
     }
 
+    pub trait AsMutString {
+        fn as_mut_string(&mut self) -> &mut String;
+    }
+
     impl<T: Render> ViaRender for &ChooseRenderOrDisplay<T> {}
     impl<T: Display> ViaDisplay for ChooseRenderOrDisplay<T> {}
 
+    impl AsMutString for &mut String {
+        fn as_mut_string(&mut self) -> &mut String {
+            self
+        }
+    }
+    
+    impl AsMutString for String {
+        fn as_mut_string(&mut self) -> &mut String {
+            self
+        }
+    }
+
     impl ViaRenderTag {
-        pub fn render_to<T: Render + ?Sized>(self, value: &T, buffer: &mut String) {
-            value.render_to(buffer);
+        pub fn render_to<T, B>(self, value: &T, mut buffer: B)
+        where 
+            T: Render + ?Sized,
+            B: AsMutString
+        {
+            value.render_to(buffer.as_mut_string());
         }
     }
 
     impl ViaDisplayTag {
-        pub fn render_to<T: Display + ?Sized>(self, value: &T, buffer: &mut String) {
-            display(value).render_to(buffer);
+        pub fn render_to<T, B>(self, value: &T, mut buffer: B)
+        where 
+            T: Display + ?Sized,
+            B: AsMutString
+        {
+            display(value).render_to(buffer.as_mut_string());
         }
     }
 }

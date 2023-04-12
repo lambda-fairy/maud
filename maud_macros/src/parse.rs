@@ -6,8 +6,9 @@ use syn::Lit;
 
 use crate::ast;
 
-pub fn parse(input: TokenStream) -> Vec<ast::Markup> {
-    Parser::new(input).markups()
+pub fn parse(input: TokenStream) -> (Option<Ident>, Vec<ast::Markup>) {
+    let mut parser = Parser::new(input);
+    (parser.buffer_ident(), parser.markups())
 }
 
 #[derive(Clone)]
@@ -80,6 +81,20 @@ impl Parser {
             }
         }
         result
+    }
+
+    /// Try to parse an output buffer ident
+    fn buffer_ident(&mut self) -> Option<Ident> {
+        match self.peek2()  {
+            Some((
+                TokenTree::Ident(ident), 
+                Some(TokenTree::Punct(ref punct)),
+            )) if punct.as_char() == ',' => {
+                self.advance2();
+                Some(ident)
+            },
+            _ => None,
+        }
     }
 
     /// Parses a single block of markup.
