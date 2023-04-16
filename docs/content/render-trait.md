@@ -1,7 +1,8 @@
 # The `Render` trait
 
-Maud uses the [`Render`][Render] trait to convert [`(spliced)`](splices-toggles.md) values to HTML.
-This is implemented for many Rust primitive types (`&str`, `i32`) by default, but you can implement it for your own types as well.
+For most types, Maud will use the [`std::fmt::Display`][Display] trait to convert [`(spliced)`](splices-toggles.md) values to HTML.
+(The result will be escaped automatically.)
+If you'd like to override this behavior for your own type, then you can implement the [`Render`][Render] trait instead.
 
 Below are some examples of implementing `Render`.
 Feel free to use these snippets in your own project!
