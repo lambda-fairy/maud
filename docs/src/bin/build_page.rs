@@ -13,8 +13,7 @@ use std::{
     fs::{self, File},
     io::BufReader,
     path::Path,
-    str::{self, Utf8Error},
-    string::FromUtf8Error,
+    str,
 };
 use syntect::{
     highlighting::{Color, ThemeSet},
@@ -69,8 +68,8 @@ fn build_page(
 
 fn postprocess<'a>(content: &'a AstNode<'a>) -> Result<(), Box<dyn Error>> {
     lower_headings(content);
-    rewrite_md_links(content)?;
-    strip_hidden_code(content)?;
+    rewrite_md_links(content);
+    strip_hidden_code(content);
     highlight_code(content)?;
     Ok(())
 }
@@ -84,33 +83,29 @@ fn lower_headings<'a>(root: &'a AstNode<'a>) {
     }
 }
 
-fn rewrite_md_links<'a>(root: &'a AstNode<'a>) -> Result<(), FromUtf8Error> {
+fn rewrite_md_links<'a>(root: &'a AstNode<'a>) {
     for node in root.descendants() {
         let mut data = node.data.borrow_mut();
         if let NodeValue::Link(NodeLink { url, .. }) = &mut data.value {
-            let mut url_string = String::from_utf8(std::mem::take(url))?;
-            if url_string.ends_with(".md") {
-                url_string.truncate(url_string.len() - ".md".len());
-                url_string.push_str(".html");
+            if url.ends_with(".md") {
+                url.truncate(url.len() - ".md".len());
+                url.push_str(".html");
             }
-            *url = url_string.into_bytes();
         }
     }
-    Ok(())
 }
 
-fn strip_hidden_code<'a>(root: &'a AstNode<'a>) -> Result<(), Box<dyn Error>> {
+fn strip_hidden_code<'a>(root: &'a AstNode<'a>) {
     for node in root.descendants() {
         let mut data = node.data.borrow_mut();
         if let NodeValue::CodeBlock(NodeCodeBlock { info, literal, .. }) = &mut data.value {
-            let info = parse_code_block_info(info)?;
+            let info = parse_code_block_info(info);
             if !info.contains(&"rust") {
                 continue;
             }
-            *literal = strip_hidden_code_inner(str::from_utf8(literal)?).into_bytes();
+            *literal = strip_hidden_code_inner(literal);
         }
     }
-    Ok(())
 }
 
 fn strip_hidden_code_inner(literal: &str) -> String {
@@ -137,20 +132,20 @@ fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), Box<dyn Error>> {
     for node in root.descendants() {
         let mut data = node.data.borrow_mut();
         if let NodeValue::CodeBlock(NodeCodeBlock { info, literal, .. }) = &mut data.value {
-            let info = parse_code_block_info(info)?;
+            let info = parse_code_block_info(info);
             let syntax = info
                 .into_iter()
                 .filter_map(|token| ss.find_syntax_by_token(token))
                 .next()
                 .unwrap_or_else(|| ss.find_syntax_plain_text());
-            let mut literal = String::from_utf8(std::mem::take(literal))?;
+            let mut literal = std::mem::take(literal);
             if !literal.ends_with('\n') {
                 // Syntect expects a trailing newline
                 literal.push('\n');
             }
             let html = highlighted_html_for_string(&literal, &ss, syntax, &theme)?;
             data.value = NodeValue::HtmlBlock(NodeHtmlBlock {
-                literal: html.into_bytes(),
+                literal: html,
                 ..Default::default()
             });
         }
@@ -158,6 +153,6 @@ fn highlight_code<'a>(root: &'a AstNode<'a>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn parse_code_block_info(info: &[u8]) -> Result<Vec<&str>, Utf8Error> {
-    str::from_utf8(info).map(|info| info.split(',').map(str::trim).collect())
+fn parse_code_block_info(info: &str) -> Vec<&str> {
+    info.split(',').map(str::trim).collect()
 }
