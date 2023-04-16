@@ -241,6 +241,12 @@ impl<T: AsRef<str> + Into<String>> From<PreEscaped<T>> for String {
     }
 }
 
+impl<T: AsRef<str> + Default> Default for PreEscaped<T> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
+
 /// The literal string `<!DOCTYPE html>`.
 ///
 /// # Example
