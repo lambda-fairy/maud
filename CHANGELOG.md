@@ -2,8 +2,12 @@
 
 ## [Unreleased]
 
+## [0.25.0] - 2023-04-16
+
 - Remove `html_debug!`
   [#357](https://github.com/lambda-fairy/maud/pull/357)
+- Render with `Display` using autoref specialization
+  [#359](https://github.com/lambda-fairy/maud/pull/359)
 - Support `axum` v0.6 through `axum-core` v0.3
   [#361](https://github.com/lambda-fairy/maud/pull/361)
 - Implement `Default` for `PreEscaped`
@@ -287,7 +291,8 @@
 - Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.24.0...HEAD
+[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.25.0...HEAD
+[0.25.0]: https://github.com/lambda-fairy/maud/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/lambda-fairy/maud/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/lambda-fairy/maud/compare/v0.22.3...v0.23.0
 [0.22.3]: https://github.com/lambda-fairy/maud/compare/v0.22.2...v0.22.3
