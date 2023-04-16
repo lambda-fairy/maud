@@ -134,6 +134,6 @@ fn prefer_render_over_display() {
 #[test]
 fn default() {
     use maud::{Markup, PreEscaped};
-    assert_eq!(Markup::default().0, String::from(""));
+    assert_eq!(Markup::default().0, "");
     assert_eq!(PreEscaped::<&'static str>::default().0, "");
 }
