@@ -8,7 +8,7 @@ license = "CC-BY-SA-4.0"
 repository = "https://github.com/lambda-fairy/maud"
 description = "Documentation for Maud."
 
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 comrak = { version = "*", default-features = false }

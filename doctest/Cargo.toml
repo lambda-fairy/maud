@@ -2,7 +2,7 @@
 name = "doctest"
 version = "0.1.0"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 actix-web = { version = "4.0.0-rc.2", default-features = false, features = ["macros"] }
