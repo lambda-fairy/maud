@@ -11,7 +11,7 @@
 
 extern crate alloc;
 
-use alloc::{borrow::Cow, boxed::Box, string::String};
+use alloc::{borrow::Cow, boxed::Box, string::String, sync::Arc};
 use core::fmt::{self, Arguments, Display, Write};
 
 pub use maud_macros::html;
@@ -145,6 +145,12 @@ impl<'a, T: Render + ?Sized> Render for &'a mut T {
 }
 
 impl<T: Render + ?Sized> Render for Box<T> {
+    fn render_to(&self, w: &mut String) {
+        T::render_to(self, w);
+    }
+}
+
+impl<T: Render + ?Sized> Render for Arc<T> {
     fn render_to(&self, w: &mut String) {
         T::render_to(self, w);
     }

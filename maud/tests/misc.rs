@@ -137,3 +137,9 @@ fn default() {
     assert_eq!(Markup::default().0, "");
     assert_eq!(PreEscaped::<&'static str>::default().0, "");
 }
+
+#[test]
+fn render_arc() {
+    let arc = std::sync::Arc::new("foo");
+    assert_eq!(html! { (arc) }.into_string(), "foo");
+}
