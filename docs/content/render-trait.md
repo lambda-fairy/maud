@@ -64,7 +64,7 @@ use maud::{Markup, PreEscaped, Render};
 use pulldown_cmark::{Parser, html};
 
 /// Renders a block of Markdown using `pulldown-cmark`.
-struct Markdown<T: AsRef<str>>(T);
+struct Markdown<T>(T);
 
 impl<T: AsRef<str>> Render for Markdown<T> {
     fn render(&self) -> Markup {

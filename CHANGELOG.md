@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Remove `AsRef<str>` restriction from `PreEscaped`
+  [#377](https://github.com/lambda-fairy/maud/pull/377)
+
 ## [0.25.0] - 2023-04-16
 
 - Remove `html_debug!`

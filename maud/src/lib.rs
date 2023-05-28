@@ -221,7 +221,7 @@ pub fn display(value: impl Display) -> impl Render {
 
 /// A wrapper that renders the inner value without escaping.
 #[derive(Debug, Clone, Copy)]
-pub struct PreEscaped<T: AsRef<str>>(pub T);
+pub struct PreEscaped<T>(pub T);
 
 impl<T: AsRef<str>> Render for PreEscaped<T> {
     fn render_to(&self, w: &mut String) {
@@ -234,20 +234,20 @@ impl<T: AsRef<str>> Render for PreEscaped<T> {
 /// The `html!` macro expands to an expression of this type.
 pub type Markup = PreEscaped<String>;
 
-impl<T: AsRef<str> + Into<String>> PreEscaped<T> {
+impl<T: Into<String>> PreEscaped<T> {
     /// Converts the inner value to a string.
     pub fn into_string(self) -> String {
         self.0.into()
     }
 }
 
-impl<T: AsRef<str> + Into<String>> From<PreEscaped<T>> for String {
+impl<T: Into<String>> From<PreEscaped<T>> for String {
     fn from(value: PreEscaped<T>) -> String {
         value.into_string()
     }
 }
 
-impl<T: AsRef<str> + Default> Default for PreEscaped<T> {
+impl<T: Default> Default for PreEscaped<T> {
     fn default() -> Self {
         Self(Default::default())
     }
