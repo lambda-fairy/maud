@@ -124,3 +124,9 @@ fn nested_macro_invocation() {
     let result = html! { (format!("{best_pony} is best pony")) };
     assert_eq!(result.into_string(), "Pinkie Pie is best pony");
 }
+
+#[test]
+fn expression_grouping() {
+    let result = html! { (1 + 1) };
+    assert_eq!(result.into_string(), "2");
+}
