@@ -152,7 +152,7 @@ fn match_expr_with_guards() {
     for &(input, output) in &[(Some(1), "one"), (None, "none"), (Some(2), "2")] {
         let result = html! {
             @match input {
-                Some(value) if value == 1 => "one",
+                Some(value) if value % 3 == 1 => "one",
                 Some(value) => (value),
                 None => "none",
             }
