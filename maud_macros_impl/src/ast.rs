@@ -4,9 +4,6 @@ use proc_macro_error::SpanRange;
 #[derive(Debug)]
 pub enum Markup {
     /// Used as a placeholder value on parse error.
-    ParseError {
-        span: SpanRange,
-    },
     Block(Block),
     Literal {
         content: String,
@@ -42,7 +39,6 @@ pub enum Markup {
 impl Markup {
     pub fn span(&self) -> SpanRange {
         match *self {
-            Markup::ParseError { span } => span,
             Markup::Block(ref block) => block.span(),
             Markup::Literal { span, .. } => span,
             Markup::Symbol { ref symbol } => span_tokens(symbol.clone()),

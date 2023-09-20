@@ -1,5 +1,5 @@
 [package]
-name = "maud_macros"
+name = "maud_macros_impl"
 # When releasing a new version, please update html_root_url in src/lib.rs
 version = "0.25.0"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
@@ -11,12 +11,10 @@ description = "Compile-time HTML templates."
 edition = "2021"
 
 [dependencies]
-maud_macros_impl = { path = "../maud_macros_impl" }
 syn = "1.0.8"
 quote = "1.0.7"
 proc-macro2 = "1.0.23"
 proc-macro-error = "1.0.0"
 
 [lib]
-name = "maud_macros"
-proc-macro = true
+name = "maud_macros_impl"

@@ -16,6 +16,21 @@ use core::fmt::{self, Arguments, Display, Write};
 
 pub use maud_macros::html;
 
+#[cfg(feature = "hotreload")]
+pub use maud_macros::html_hotreload;
+
+#[cfg(feature = "hotreload")]
+pub use maud_macros_impl::expand;
+
+#[cfg(feature = "hotreload")]
+pub use maud_macros_impl::gather_html_macro_invocations;
+
+#[cfg(feature = "hotreload")]
+pub use maud_macros_impl::format_str;
+
+#[cfg(feature = "hotreload")]
+pub use maud_macros_impl::parse;
+
 mod escape;
 
 /// An adapter that escapes HTML special characters.
