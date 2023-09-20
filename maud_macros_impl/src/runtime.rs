@@ -201,7 +201,7 @@ impl RuntimeBuilder {
         self.format_str.clone()
     }
 
-    fn finish(mut self) -> TokenStream {
+    fn finish(self) -> TokenStream {
         let tokens = self.tokens.into_iter().collect::<TokenStream>();
         quote! {
             #tokens

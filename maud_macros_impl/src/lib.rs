@@ -40,9 +40,13 @@ pub fn expand(input: TokenStream) -> TokenStream {
 // normal version, but it can be miles faster to iterate on.
 pub fn expand_runtime(input: TokenStream) -> TokenStream {
     let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
-    let markups = parse::parse(input);
+    let markups = parse::parse(input.clone());
     let stmts = runtime::generate(markups);
+    let expand_compile_time = expand(input);
     quote!({
+        // Epic Hack Template compile time check
+        #expand_compile_time;
+
         extern crate alloc;
         extern crate maud;
         let mut #output_ident = String::new();
@@ -50,14 +54,33 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
 
         let input = ::maud::gather_html_macro_invocations(file!(), line!());
 
-        let markups = ::maud::parse(input.parse().unwrap());
+        let res = ::std::panic::catch_unwind(|| {
+            ::maud::parse(input.parse().unwrap())
+        });
+
+        let markups = if res.is_ok() {
+            ::maud::parse(input.parse().unwrap())
+        } else {
+            return ::maud::PreEscaped(format!("<h3 color=\"red\">Template Errors:</h1><pre>{:?}<pre>", res.unwrap_err()));
+        };
+
         let format_str = ::maud::format_str(markups);
 
         #stmts
 
-        let template = ::leon::Template::parse(&format_str).unwrap();
+        let template = if let Ok(template) = ::leon::Template::parse(&format_str) {
+            template
+        } else {
+            std::process::exit(1);
+        };
 
-        maud::PreEscaped(template.render(&vars).unwrap())
+        let template = if let Ok(template) = template.render(&vars) {
+            template
+        } else {
+            std::process::exit(1);
+        };
+
+        maud::PreEscaped(template)
     })
 }
 
@@ -67,7 +90,7 @@ pub fn gather_html_macro_invocations(file_path: &'static str, start_column: u32)
 
     let mut braces_diff = 0;
 
-    let mut html_invocation = buf_reader
+    let html_invocation = buf_reader
         .lines()
         .skip(start_column as usize)
         .take_while(|line| {
