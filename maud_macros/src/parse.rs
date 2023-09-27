@@ -148,7 +148,7 @@ impl Parser {
                         if let Some(attr_name) = &self.current_attr {
                             emit_error!(
                                 ident,
-                                r#"attribute value must be a string"#;
+                                "attribute value must be a string";
                                 help = "to declare an empty attribute, omit the equals sign: `{}`",
                                 attr_name;
                                 help = "to toggle the attribute, use square brackets: `{}[some_boolean_flag]`",
