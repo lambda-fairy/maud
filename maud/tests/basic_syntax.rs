@@ -103,7 +103,7 @@ fn toggle_empty_attributes_braces() {
         rocks: bool,
     }
     let result = html! { input checked[Maud { rocks: true }.rocks]; };
-    assert_eq!(result.into_string(), r#"<input checked>"#);
+    assert_eq!(result.into_string(), "<input checked>");
 }
 
 #[test]
@@ -121,7 +121,7 @@ fn optional_attribute_some() {
 #[test]
 fn optional_attribute_none() {
     let result = html! { input value=[None as Option<&str>]; };
-    assert_eq!(result.into_string(), r#"<input>"#);
+    assert_eq!(result.into_string(), "<input>");
 }
 
 #[test]
