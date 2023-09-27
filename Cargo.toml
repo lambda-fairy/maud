@@ -7,3 +7,4 @@ exclude = [
     "docs",
     "doctest",
 ]
+resolver = "2"
