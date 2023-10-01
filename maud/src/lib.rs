@@ -31,6 +31,9 @@ pub use maud_macros_impl::format_str;
 #[cfg(feature = "hotreload")]
 pub use maud_macros_impl::parse;
 
+#[cfg(feature = "hotreload")]
+pub use leon;
+
 mod escape;
 
 /// An adapter that escapes HTML special characters.

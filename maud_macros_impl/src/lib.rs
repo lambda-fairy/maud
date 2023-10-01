@@ -68,7 +68,7 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
 
         #stmts
 
-        let template = if let Ok(template) = ::leon::Template::parse(&format_str) {
+        let template = if let Ok(template) = ::maud::leon::Template::parse(&format_str) {
             template
         } else {
             std::process::exit(1);
