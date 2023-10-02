@@ -708,17 +708,26 @@ impl Parser {
         } else {
             return None;
         }
-        let mut expect_ident = false;
+        let mut expect_ident_or_number = false;
         loop {
-            expect_ident = match self.peek() {
+            expect_ident_or_number = match self.peek() {
                 Some(TokenTree::Punct(ref punct)) if punct.as_char() == '-' => {
                     self.advance();
                     result.push(TokenTree::Punct(punct.clone()));
                     true
                 }
-                Some(TokenTree::Ident(ref ident)) if expect_ident => {
+                Some(TokenTree::Ident(ref ident)) if expect_ident_or_number => {
                     self.advance();
                     result.push(TokenTree::Ident(ident.clone()));
+                    false
+                }
+                Some(TokenTree::Literal(ref lit))
+                    if expect_ident_or_number
+                        // wtf why isn't there a way to get literal type from Literal
+                        && lit.to_string().chars().all(|c| c.is_numeric()) =>
+                {
+                    self.advance();
+                    result.push(TokenTree::Literal(lit.clone()));
                     false
                 }
                 _ => break,
