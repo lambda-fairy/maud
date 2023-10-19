@@ -217,5 +217,13 @@ pub fn join_ranges<I: IntoIterator<Item = SpanRange>>(ranges: I) -> SpanRange {
 }
 
 pub fn name_to_string(name: TokenStream) -> String {
-    name.into_iter().map(|token| token.to_string()).collect()
+    name.into_iter()
+        .map(|token| {
+            if let TokenTree::Literal(literal) = token {
+                literal.to_string().trim_matches('"').to_string()
+            } else {
+                token.to_string()
+            }
+        })
+        .collect()
 }
