@@ -6,6 +6,8 @@
   [#377](https://github.com/lambda-fairy/maud/pull/377)
 - Implement `Render` for `Arc<T>`
   [#380](https://github.com/lambda-fairy/maud/pull/380)
+- Accept literals in attribute names
+  [#396](https://github.com/lambda-fairy/maud/pull/396)
 
 ## [0.25.0] - 2023-04-16
 
