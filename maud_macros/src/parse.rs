@@ -702,27 +702,28 @@ impl Parser {
     /// Parses an identifier, without dealing with namespaces.
     fn try_name(&mut self) -> Option<TokenStream> {
         let mut result = Vec::new();
-        match self.peek() {
-            Some(token @ TokenTree::Ident(_)) | Some(token @ TokenTree::Literal(_)) => {
-                self.advance();
-                result.push(token);
-            }
-            _ => return None,
-        };
-        let mut expect_ident = false;
+        let mut expect_ident_or_literal = true;
         loop {
-            expect_ident = match self.peek() {
+            expect_ident_or_literal = match self.peek() {
                 Some(TokenTree::Punct(ref punct)) if punct.as_char() == '-' => {
                     self.advance();
                     result.push(TokenTree::Punct(punct.clone()));
                     true
                 }
-                Some(TokenTree::Ident(ref ident)) if expect_ident => {
+                Some(token @ TokenTree::Ident(_)) | Some(token @ TokenTree::Literal(_))
+                    if expect_ident_or_literal =>
+                {
                     self.advance();
-                    result.push(TokenTree::Ident(ident.clone()));
+                    result.push(token);
                     false
                 }
-                _ => break,
+                _ => {
+                    if result.is_empty() {
+                        return None;
+                    } else {
+                        break;
+                    }
+                }
             };
         }
         Some(result.into_iter().collect())

@@ -210,6 +210,15 @@ fn other_literals_in_attribute_names() {
 }
 
 #[test]
+fn idents_and_literals_in_names() {
+    let result = html! { custom:element-001 test:123-"test"="123" .m-2.p-2 {} };
+    assert_eq!(
+        result.into_string(),
+        r#"<custom:element-001 class="m-2 p-2" test:123-test="123"></custom:element-001>"#
+    );
+}
+
+#[test]
 fn class_shorthand() {
     let result = html! { p { "Hi, " span.name { "Lyra" } "!" } };
     assert_eq!(
