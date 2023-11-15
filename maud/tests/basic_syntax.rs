@@ -201,11 +201,10 @@ fn raw_string_literals_in_attribute_names() {
 
 #[test]
 fn other_literals_in_attribute_names() {
-    let result =
-        html! { this b"byte_string"="false" 123="123" 2.5 true 'a'="a" b'b'="b" of-course {} };
+    let result = html! { this r#"byte_string"#="false" 123="123" "2.5" true of-course {} };
     assert_eq!(
         result.into_string(),
-        r#"<this byte_string="false" 123="123" 2.5 true a="a" b="b" of-course></this>"#
+        r#"<this byte_string="false" 123="123" 2.5 true of-course></this>"#
     );
 }
 

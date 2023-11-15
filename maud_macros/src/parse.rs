@@ -716,11 +716,15 @@ impl Parser {
                     result.push(TokenTree::Punct(punct.clone()));
                     true
                 }
-                Some(token @ TokenTree::Ident(_)) | Some(token @ TokenTree::Literal(_))
-                    if expect_ident_or_literal =>
-                {
+                Some(token @ TokenTree::Ident(_)) if expect_ident_or_literal => {
                     self.advance();
                     result.push(token);
+                    false
+                }
+                Some(TokenTree::Literal(ref literal)) if expect_ident_or_literal => {
+                    self.literal(literal.clone());
+                    self.advance();
+                    result.push(TokenTree::Literal(literal.clone()));
                     false
                 }
                 _ => {
