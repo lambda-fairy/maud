@@ -204,7 +204,13 @@ impl Parser {
             }
             // Boolean literals are idents, so `Lit::Bool` is handled in
             // `markup`, not here.
-            Lit::Int(..) | Lit::Float(..) => {
+            Lit::Int(lit_int) => {
+                return ast::Markup::Literal {
+                    content: lit_int.to_string(),
+                    span: SpanRange::single_span(literal.span()),
+                };
+            }
+            Lit::Float(..) => {
                 emit_error!(literal, r#"literal must be double-quoted: `"{}"`"#, literal);
             }
             Lit::Char(lit_char) => {
