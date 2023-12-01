@@ -353,6 +353,19 @@ mod axum_support {
     }
 }
 
+#[cfg(feature = "warp")]
+mod warp_support {
+    use crate::PreEscaped;
+    use alloc::string::String;
+    use warp::reply::{self, Response, Reply};
+
+    impl Reply for PreEscaped<String> {
+        fn into_response(self) -> Response {
+            reply::html(self.into_string()).into_response()
+        }
+    }
+}
+
 #[doc(hidden)]
 pub mod macro_private {
     use crate::{display, Render};
