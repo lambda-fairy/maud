@@ -9,7 +9,7 @@
 - Accept literals in attribute names
   [#396](https://github.com/lambda-fairy/maud/pull/396)
 - Add support for `warp` v0.3.6
-  [#]()
+  [#404](https://github.com/lambda-fairy/maud/pull/404)
 
 ## [0.25.0] - 2023-04-16
 
