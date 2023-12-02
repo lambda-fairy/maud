@@ -357,7 +357,7 @@ mod axum_support {
 mod warp_support {
     use crate::PreEscaped;
     use alloc::string::String;
-    use warp::reply::{self, Response, Reply};
+    use warp::reply::{self, Reply, Response};
 
     impl Reply for PreEscaped<String> {
         fn into_response(self) -> Response {
