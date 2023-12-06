@@ -9,7 +9,7 @@ actix-web = { version = "4.0.0-rc.2", default-features = false, features = ["mac
 ammonia = "3"
 maud = { path = "../maud", features = ["actix-web", "rocket", "tide", "axum"] }
 pulldown-cmark = "0.8"
-rocket = "0.4"
+rocket = "0.5"
 rouille = "3"
 tide = "0.16"
 tokio = { version = "1.9.0", features = ["rt", "macros", "rt-multi-thread"] }
