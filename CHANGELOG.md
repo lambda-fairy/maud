@@ -8,6 +8,8 @@
   [#380](https://github.com/lambda-fairy/maud/pull/380)
 - Accept literals in attribute names
   [#396](https://github.com/lambda-fairy/maud/pull/396)
+- Support `rocket` v0.5
+  [#406](https://github.com/lambda-fairy/maud/pull/406)
 
 ## [0.25.0] - 2023-04-16
 
