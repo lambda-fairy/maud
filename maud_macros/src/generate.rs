@@ -134,7 +134,7 @@ impl Generator {
                             #output.push_str(key);
                             #output.push_str("=\"");
                             // Not sure if this should be escaped or not
-                            #output.push_str(value);
+                            #output.push_str(&value.to_string());
                             #output.push_str("\"");
                         }
                     };
