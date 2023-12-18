@@ -152,4 +152,8 @@ fn dynamic_attr() {
         html! { p (..)=[attrs] {} }.into_string(),
         r#"<p id="foo" class="bar"></p>"#
     );
+    assert_eq!(
+        html! { p (..)=[[("id", "foo2"), ("class", "bar2")]] {} }.into_string(),
+        r#"<p id="foo2" class="bar2"></p>"#
+    );
 }
