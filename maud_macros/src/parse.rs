@@ -640,15 +640,14 @@ impl Parser {
                         if paran_group.delimiter() == Delimiter::Parenthesis
                             && paran_group.stream().to_string() == ".." =>
                     {
-                        self.advance();
                         // Check `=` follows directly after `(..)`
-                        if let Some(TokenTree::Punct(ref punct)) = self.peek() {
+                        if let Some((_, Some(TokenTree::Punct(ref punct)))) = self.peek2() {
                             if punct.as_char() == '=' {
                                 self.advance();
                                 // Check for `[expr]`
-                                if let Some(TokenTree::Group(group)) = self.peek() {
+                                if let Some((_, Some(TokenTree::Group(group)))) = self.peek2() {
                                     if group.delimiter() == Delimiter::Bracket {
-                                        self.advance();
+                                        self.advance2();
                                         attrs.push(ast::Attr::Dynamic {
                                             dyn_attr: ast::DynAttr {
                                                 paren_span: SpanRange::single_span(
