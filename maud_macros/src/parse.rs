@@ -663,7 +663,8 @@ impl Parser {
                         }
                         // If we get here, the syntax was not correctly followed by `=`
                         break;
-                    } // If it's not a valid attribute, backtrack and bail out
+                    }
+                    // If it's not a valid attribute, backtrack and bail out
                     _ => break,
                 }
             }
