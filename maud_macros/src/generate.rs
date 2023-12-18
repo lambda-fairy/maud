@@ -124,45 +124,60 @@ impl Generator {
     }
 
     fn attrs(&self, attrs: Vec<Attr>, build: &mut Builder) {
-        for NamedAttr { name, attr_type } in desugar_attrs(attrs) {
-            match attr_type {
-                AttrType::Normal { value } => {
-                    build.push_str(" ");
-                    self.name(name, build);
-                    build.push_str("=\"");
-                    self.markup(value, build);
-                    build.push_str("\"");
+        for attr in desugar_attrs(attrs) {
+            match attr {
+                EitherAttr::Dynamic(DynAttr { expr, .. }) => {
+                    let output = &self.output_ident;
+                    let tokens = quote! {
+                        for (key, value) in #expr {
+                            #output.push_str(" ");
+                            #output.push_str(key);
+                            #output.push_str("=\"");
+                            #output.push_str(value);
+                            #output.push_str("\"");
+                        }
+                    };
+                    build.push_tokens(tokens);
                 }
-                AttrType::Optional {
-                    toggler: Toggler { cond, .. },
-                } => {
-                    let inner_value = quote!(inner_value);
-                    let body = {
-                        let mut build = self.builder();
+                EitherAttr::Named(NamedAttr { name, attr_type }) => match attr_type {
+                    AttrType::Normal { value } => {
                         build.push_str(" ");
-                        self.name(name, &mut build);
+                        self.name(name, build);
                         build.push_str("=\"");
-                        self.splice(inner_value.clone(), &mut build);
+                        self.markup(value, build);
                         build.push_str("\"");
-                        build.finish()
-                    };
-                    build.push_tokens(quote!(if let Some(#inner_value) = (#cond) { #body }));
-                }
-                AttrType::Empty { toggler: None } => {
-                    build.push_str(" ");
-                    self.name(name, build);
-                }
-                AttrType::Empty {
-                    toggler: Some(Toggler { cond, .. }),
-                } => {
-                    let body = {
-                        let mut build = self.builder();
+                    }
+                    AttrType::Optional {
+                        toggler: Toggler { cond, .. },
+                    } => {
+                        let inner_value = quote!(inner_value);
+                        let body = {
+                            let mut build = self.builder();
+                            build.push_str(" ");
+                            self.name(name, &mut build);
+                            build.push_str("=\"");
+                            self.splice(inner_value.clone(), &mut build);
+                            build.push_str("\"");
+                            build.finish()
+                        };
+                        build.push_tokens(quote!(if let Some(#inner_value) = (#cond) { #body }));
+                    }
+                    AttrType::Empty { toggler: None } => {
                         build.push_str(" ");
-                        self.name(name, &mut build);
-                        build.finish()
-                    };
-                    build.push_tokens(quote!(if (#cond) { #body }));
-                }
+                        self.name(name, build);
+                    }
+                    AttrType::Empty {
+                        toggler: Some(Toggler { cond, .. }),
+                    } => {
+                        let body = {
+                            let mut build = self.builder();
+                            build.push_str(" ");
+                            self.name(name, &mut build);
+                            build.finish()
+                        };
+                        build.push_tokens(quote!(if (#cond) { #body }));
+                    }
+                },
             }
         }
     }
@@ -170,11 +185,12 @@ impl Generator {
 
 ////////////////////////////////////////////////////////
 
-fn desugar_attrs(attrs: Vec<Attr>) -> Vec<NamedAttr> {
+fn desugar_attrs(attrs: Vec<Attr>) -> Vec<EitherAttr> {
     let mut classes_static = vec![];
     let mut classes_toggled = vec![];
     let mut ids = vec![];
     let mut named_attrs = vec![];
+    let mut dyn_attrs = vec![];
     for attr in attrs {
         match attr {
             Attr::Class {
@@ -188,12 +204,19 @@ fn desugar_attrs(attrs: Vec<Attr>) -> Vec<NamedAttr> {
                 ..
             } => classes_static.push(name),
             Attr::Id { name, .. } => ids.push(name),
-            Attr::Named { named_attr } => named_attrs.push(named_attr),
+            Attr::Named { named_attr } => named_attrs.push(EitherAttr::Named(named_attr)),
+            Attr::Dynamic { dyn_attr } => dyn_attrs.push(EitherAttr::Dynamic(dyn_attr)),
         }
     }
-    let classes = desugar_classes_or_ids("class", classes_static, classes_toggled);
-    let ids = desugar_classes_or_ids("id", ids, vec![]);
-    classes.into_iter().chain(ids).chain(named_attrs).collect()
+    let classes =
+        desugar_classes_or_ids("class", classes_static, classes_toggled).map(EitherAttr::Named);
+    let ids = desugar_classes_or_ids("id", ids, vec![]).map(EitherAttr::Named);
+    classes
+        .into_iter()
+        .chain(ids)
+        .chain(named_attrs)
+        .chain(dyn_attrs)
+        .collect()
 }
 
 fn desugar_classes_or_ids(

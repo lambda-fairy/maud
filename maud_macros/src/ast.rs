@@ -80,6 +80,9 @@ pub enum Attr {
     Named {
         named_attr: NamedAttr,
     },
+    Dynamic {
+        dyn_attr: DynAttr,
+    },
 }
 
 impl Attr {
@@ -106,6 +109,7 @@ impl Attr {
                 hash_span.join_range(name_span)
             }
             Attr::Named { ref named_attr } => named_attr.span(),
+            Attr::Dynamic { ref dyn_attr } => dyn_attr.span(),
         }
     }
 }
@@ -151,6 +155,11 @@ impl Special {
     }
 }
 
+pub enum EitherAttr {
+    Named(NamedAttr),
+    Dynamic(DynAttr),
+}
+
 #[derive(Debug)]
 pub struct NamedAttr {
     pub name: TokenStream,
@@ -165,6 +174,19 @@ impl NamedAttr {
         } else {
             name_span
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct DynAttr {
+    pub paren_span: SpanRange,
+    pub expr: TokenStream,
+}
+
+impl DynAttr {
+    fn span(&self) -> SpanRange {
+        let expr_span = span_tokens(self.expr.clone());
+        self.paren_span.join_range(expr_span)
     }
 }
 

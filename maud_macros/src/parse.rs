@@ -635,7 +635,36 @@ impl Parser {
                             name,
                         });
                     }
-                    // If it's not a valid attribute, backtrack and bail out
+                    // Dynamic attributes (..)=[expr]
+                    Some(TokenTree::Group(ref paran_group))
+                        if paran_group.delimiter() == Delimiter::Parenthesis
+                            && paran_group.stream().to_string() == ".." =>
+                    {
+                        self.advance();
+                        // Check `=` follows directly after `(..)`
+                        if let Some(TokenTree::Punct(ref punct)) = self.peek() {
+                            if punct.as_char() == '=' {
+                                self.advance();
+                                // Check for `[expr]`
+                                if let Some(TokenTree::Group(group)) = self.peek() {
+                                    if group.delimiter() == Delimiter::Bracket {
+                                        self.advance();
+                                        attrs.push(ast::Attr::Dynamic {
+                                            dyn_attr: ast::DynAttr {
+                                                paren_span: SpanRange::single_span(
+                                                    paran_group.span(),
+                                                ),
+                                                expr: group.stream(),
+                                            },
+                                        });
+                                        continue; // Proceed with the next token
+                                    }
+                                }
+                            }
+                        }
+                        // If we get here, the syntax was not correctly followed by `=`
+                        break;
+                    } // If it's not a valid attribute, backtrack and bail out
                     _ => break,
                 }
             }
@@ -660,6 +689,8 @@ impl Parser {
                     .into_iter()
                     .map(|token| token.to_string())
                     .collect(),
+                // Skip dynamic attributes since they are only known runtime
+                ast::Attr::Dynamic { .. } => continue,
             };
             let entry = attr_map.entry(name).or_default();
             entry.push(attr.span());
