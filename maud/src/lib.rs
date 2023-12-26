@@ -338,11 +338,11 @@ mod tide_support {
 mod axum_support {
     use crate::PreEscaped;
     use alloc::string::String;
-    use axum_core::{body::BoxBody, response::IntoResponse};
+    use axum_core::{body::Body, response::IntoResponse};
     use http::{header, HeaderMap, HeaderValue, Response};
 
     impl IntoResponse for PreEscaped<String> {
-        fn into_response(self) -> Response<BoxBody> {
+        fn into_response(self) -> Response<Body> {
             let mut headers = HeaderMap::new();
             headers.insert(
                 header::CONTENT_TYPE,
