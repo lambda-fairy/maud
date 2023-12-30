@@ -8,6 +8,8 @@
   [#380](https://github.com/lambda-fairy/maud/pull/380)
 - Accept literals in attribute names
   [#396](https://github.com/lambda-fairy/maud/pull/396)
+- Support `axum` v0.7 through `axum-core` v0.4 and `http` v1
+  [#401](https://github.com/lambda-fairy/maud/pull/401)
 - Support `rocket` v0.5
   [#406](https://github.com/lambda-fairy/maud/pull/406)
 
