@@ -201,11 +201,19 @@ fn raw_string_literals_in_attribute_names() {
 
 #[test]
 fn other_literals_in_attribute_names() {
-    let result =
-        html! { this b"byte_string"="false" 123="123" 2.5 true 'a'="a" b'b'="b" of-course {} };
+    let result = html! { this r#"raw_string"#="false" 123="123" 123usize "2.5" true of-course {} };
     assert_eq!(
         result.into_string(),
-        r#"<this byte_string="false" 123="123" 2.5 true a="a" b="b" of-course></this>"#
+        r#"<this raw_string="false" 123="123" 123usize 2.5 true of-course></this>"#
+    );
+}
+
+#[test]
+fn idents_and_literals_in_names() {
+    let result = html! { custom:element-001 test:123-"test"="123" .m-2.p-2 {} };
+    assert_eq!(
+        result.into_string(),
+        r#"<custom:element-001 class="m-2 p-2" test:123-test="123"></custom:element-001>"#
     );
 }
 
