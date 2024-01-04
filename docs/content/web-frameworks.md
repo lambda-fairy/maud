@@ -61,22 +61,21 @@ maud = { version = "*", features = ["rocket"] }
 This adds a `Responder` implementation for the `Markup` type, so you can return the result directly:
 
 ```rust,no_run
-#![feature(decl_macro)]
-
 use maud::{html, Markup};
 use rocket::{get, routes};
 use std::borrow::Cow;
 
 #[get("/<name>")]
-fn hello<'a>(name: Cow<'a, str>) -> Markup {
+fn hello(name: &str) -> Markup {
     html! {
         h1 { "Hello, " (name) "!" }
         p { "Nice to meet you!" }
     }
 }
 
-fn main() {
-    rocket::ignite().mount("/", routes![hello]).launch();
+#[rocket::launch]
+fn launch() -> _ {
+    rocket::build().mount("/", routes![hello])
 }
 ```
 
@@ -168,10 +167,9 @@ async fn main() {
     let app = Router::new().route("/", get(hello_world));
 
     // run it with hyper on localhost:3000
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+
+    axum::serve(listener, app.into_make_service()).await.unwrap();
 }
 ```
 

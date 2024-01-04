@@ -284,17 +284,17 @@ mod rocket_support {
     use crate::PreEscaped;
     use alloc::string::String;
     use rocket::{
-        http::{ContentType, Status},
+        http::ContentType,
         request::Request,
         response::{Responder, Response},
     };
     use std::io::Cursor;
 
-    impl Responder<'static> for PreEscaped<String> {
-        fn respond_to(self, _: &Request) -> Result<Response<'static>, Status> {
+    impl<'r> Responder<'r, 'static> for PreEscaped<String> {
+        fn respond_to(self, _: &Request) -> rocket::response::Result<'static> {
             Response::build()
                 .header(ContentType::HTML)
-                .sized_body(Cursor::new(self.0))
+                .sized_body(self.0.len(), Cursor::new(self.0))
                 .ok()
         }
     }
@@ -338,11 +338,11 @@ mod tide_support {
 mod axum_support {
     use crate::PreEscaped;
     use alloc::string::String;
-    use axum_core::{body::BoxBody, response::IntoResponse};
-    use http::{header, HeaderMap, HeaderValue, Response};
+    use axum_core::response::{IntoResponse, Response};
+    use http::{header, HeaderMap, HeaderValue};
 
     impl IntoResponse for PreEscaped<String> {
-        fn into_response(self) -> Response<BoxBody> {
+        fn into_response(self) -> Response {
             let mut headers = HeaderMap::new();
             headers.insert(
                 header::CONTENT_TYPE,
