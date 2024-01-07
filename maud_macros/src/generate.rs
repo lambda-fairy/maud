@@ -50,24 +50,6 @@ impl Generator {
             Markup::Splice { expr, .. } => self.splice(expr, build),
             Markup::Element(element) => self.element(element, build),
             Markup::ControlFlow(control_flow) => self.control_flow(control_flow, build),
-            // Markup::Match {
-            //     head,
-            //     arms,
-            //     arms_span,
-            //     ..
-            // } => {
-            //     let body = {
-            //         let mut build = self.builder();
-            //         for MatchArm { head, body } in arms {
-            //             build.push_tokens(head);
-            //             self.block(body, &mut build);
-            //         }
-            //         build.finish()
-            //     };
-            //     let mut body = TokenTree::Group(Group::new(Delimiter::Brace, body));
-            //     body.set_span(arms_span.collapse());
-            //     build.push_tokens(quote!(#head #body));
-            // }
             Markup::Semi(_) => {}
         }
     }

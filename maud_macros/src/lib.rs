@@ -9,21 +9,45 @@ mod ast;
 mod escape;
 mod generate;
 
+use ast::DiagnosticParse;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
-use syn::parse_macro_input;
+use syn::{
+    parse::{ParseStream, Parser},
+    parse_macro_input, Error,
+};
 
 #[proc_macro]
 pub fn html(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    expand(input.into()).into()
+}
+
+fn expand(input: TokenStream) -> TokenStream {
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
     let size_hint = input.to_string().len();
-    let markups = parse_macro_input!(input as ast::Markups);
 
-    expand(size_hint, markups).into()
-}
+    let mut diagnostics = Vec::new();
+    let markups = match Parser::parse2(
+        |input: ParseStream| ast::Markups::diagnostic_parse(input, &mut diagnostics),
+        input,
+    ) {
+        Ok(data) => data,
+        Err(err) => return err.to_compile_error(),
+    };
 
-fn expand(size_hint: usize, markups: ast::Markups) -> TokenStream {
+    let mut diagnostics = diagnostics.into_iter();
+
+    let error = if let Some(diag) = diagnostics.next() {
+        let mut error = Error::from(diag);
+        for diagnostic in diagnostics {
+            error.combine(diagnostic.into());
+        }
+        Some(error.to_compile_error())
+    } else {
+        None
+    };
+
     let output_ident = Ident::new("__maud_output", Span::mixed_site());
     let stmts = generate::generate(markups, output_ident.clone());
     quote! {{
@@ -31,6 +55,7 @@ fn expand(size_hint: usize, markups: ast::Markups) -> TokenStream {
         extern crate maud;
         let mut #output_ident = alloc::string::String::with_capacity(#size_hint);
         #stmts
+        #error
         maud::PreEscaped(#output_ident)
     }}
 }
