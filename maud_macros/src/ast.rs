@@ -1,7 +1,4 @@
-use std::{
-    default,
-    fmt::{self, Display, Formatter},
-};
+use std::fmt::{self, Display, Formatter};
 
 use proc_macro2::TokenStream;
 use proc_macro2_diagnostics::{Diagnostic, SpanDiagnosticExt};
@@ -665,10 +662,7 @@ pub enum HtmlNamePunct {
 }
 
 impl DiagnosticParse for HtmlNamePunct {
-    fn diagnostic_parse(
-        input: ParseStream,
-        diagnostics: &mut Vec<Diagnostic>,
-    ) -> syn::Result<Self> {
+    fn diagnostic_parse(input: ParseStream, _: &mut Vec<Diagnostic>) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
 
         if lookahead.peek(Token![:]) {
@@ -706,10 +700,7 @@ pub struct Toggler {
 }
 
 impl DiagnosticParse for Toggler {
-    fn diagnostic_parse(
-        input: ParseStream,
-        diagnostics: &mut Vec<Diagnostic>,
-    ) -> syn::Result<Self> {
+    fn diagnostic_parse(input: ParseStream, _: &mut Vec<Diagnostic>) -> syn::Result<Self> {
         let content;
         Ok(Self {
             bracket_token: bracketed!(content in input),
