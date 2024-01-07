@@ -1,5 +1,5 @@
-error: unexpected end of input, expected one of: curly braces, string literal, integer literal, parentheses, identifier, `.`, `#`, `@`, `;`
- --> $DIR/class-shorthand-missing-value.rs:4:5
+error: unexpected end of input, expected one of: curly braces, literal, parentheses, identifier, `.`, `#`, `@`, `;`
+ --> tests/warnings/class-shorthand-missing-value.rs:4:5
   |
 4 | /     html! {
 5 | |         p.

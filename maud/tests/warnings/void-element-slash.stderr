@@ -1,16 +1,15 @@
 error: void elements must use `;`, not `/`
        = help: change this to `;`
        = help: see https://github.com/lambda-fairy/maud/pull/315 for details
- --> $DIR/void-element-slash.rs:5:12
+ --> tests/warnings/void-element-slash.rs:5:12
   |
 5 |         br /
   |            ^
 
 error: void elements must use `;`, not `/`
-         = help: change this to `;`
-         = help: see https://github.com/lambda-fairy/maud/pull/315 for details
- --> $DIR/void-element-slash.rs:7:27
+       = help: change this to `;`
+       = help: see https://github.com/lambda-fairy/maud/pull/315 for details
+ --> tests/warnings/void-element-slash.rs:7:27
   |
 7 |         input type="text" /
   |                           ^
-  |
