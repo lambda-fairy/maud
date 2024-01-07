@@ -11,11 +11,9 @@ mod generate;
 
 use ast::DiagnosticParse;
 use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2_diagnostics::Diagnostic;
 use quote::quote;
-use syn::{
-    parse::{ParseStream, Parser},
-    Error,
-};
+use syn::parse::{ParseStream, Parser};
 
 #[proc_macro]
 pub fn html(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -33,20 +31,18 @@ fn expand(input: TokenStream) -> TokenStream {
         input,
     ) {
         Ok(data) => data,
-        Err(err) => return err.to_compile_error(),
-    };
+        Err(err) => {
+            let err = err.to_compile_error();
+            let diag_tokens = diagnostics.into_iter().map(Diagnostic::emit_as_expr_tokens);
 
-    let mut diagnostics = diagnostics.into_iter();
-
-    let error = if let Some(diag) = diagnostics.next() {
-        let mut error = Error::from(diag);
-        for diagnostic in diagnostics {
-            error.combine(diagnostic.into());
+            return quote! {{
+                #err
+                #(#diag_tokens)*
+            }};
         }
-        Some(error.to_compile_error())
-    } else {
-        None
     };
+
+    let diag_tokens = diagnostics.into_iter().map(Diagnostic::emit_as_expr_tokens);
 
     let output_ident = Ident::new("__maud_output", Span::mixed_site());
     let stmts = generate::generate(markups, output_ident.clone());
@@ -55,7 +51,7 @@ fn expand(input: TokenStream) -> TokenStream {
         extern crate maud;
         let mut #output_ident = alloc::string::String::with_capacity(#size_hint);
         #stmts
-        #error
+        #(#diag_tokens)*
         maud::PreEscaped(#output_ident)
     }}
 }
