@@ -1,4 +1,4 @@
-error: unexpected end of input
+error: unexpected end of input, expected one of: curly braces, string literal, integer literal, parentheses, identifier, `.`, `#`, `@`, `;`
  --> $DIR/attribute-missing-value.rs:4:5
   |
 4 | /     html! {
