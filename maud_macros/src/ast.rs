@@ -62,11 +62,11 @@ impl Markup {
             || input.peek(Token![match])
         {
             let kw = input.call(Ident::parse_any)?;
-            return Err(kw
-                .span()
-                .error(format!("found keyword `{kw}`"))
-                .help(format!("should this be a `@{kw}`?"))
-                .into());
+            diagnostics.push(
+                kw.span()
+                    .error(format!("found keyword `{kw}`"))
+                    .help(format!("should this be a `@{kw}`?")),
+            );
         }
 
         let lookahead = input.lookahead1();
