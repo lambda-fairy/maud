@@ -1,5 +1,5 @@
 error: unexpected end of input, expected one of: curly braces, literal, parentheses, identifier, `.`, `#`, `@`, `;`
- --> tests/warnings/attribute-missing-value.rs:4:5
+ --> $DIR/attribute-missing-value.rs:4:5
   |
 4 | /     html! {
 5 | |         a href=
