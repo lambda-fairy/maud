@@ -303,6 +303,7 @@ impl Generator {
 
 ////////////////////////////////////////////////////////
 
+#[allow(clippy::type_complexity)]
 fn split_attrs(
     attrs: Vec<Attribute>,
 ) -> (
