@@ -14,7 +14,7 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use syn::{
     parse::{ParseStream, Parser},
-    parse_macro_input, Error,
+    Error,
 };
 
 #[proc_macro]
