@@ -1,5 +1,5 @@
 error: found keyword `if`
- --> tests/warnings/keyword-without-at.rs:5:9
+ --> $DIR/keyword-without-at.rs:5:9
   |
 5 |         if {}
   |         ^^
