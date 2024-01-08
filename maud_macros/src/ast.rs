@@ -325,19 +325,20 @@ impl DiagnosticParse for Attribute {
             })
         } else {
             let name = input.diagnostic_parse::<AttributeName>(diagnostics)?;
+            let name_display = name.to_string();
             let fork = input.fork();
 
             let attr = Self::Named {
                 name: name.clone(),
-                attr_type: { input.diagnostic_parse(diagnostics)? },
+                attr_type: input.diagnostic_parse(diagnostics)?,
             };
 
             if fork.peek(Token![=]) && fork.peek2(LitBool) {
                 diagnostics.push(
                     attr.span()
                         .error("attribute value must be a string")
-                        .help(format!("to declare an empty attribute, omit the equals sign: `{name}`"))
-                        .help(format!("to toggle the attribute, use square brackets: `{name}[some_boolean_flag]`"))
+                        .help(format!("to declare an empty attribute, omit the equals sign: `{name_display}`"))
+                        .help(format!("to toggle the attribute, use square brackets: `{name_display}[some_boolean_flag]`"))
                 );
             }
 
@@ -795,7 +796,7 @@ impl DiagnosticParse for If {
             cond: input.call(Expr::parse_without_eager_brace)?,
             then_branch: input.diagnostic_parse(diagnostics)?,
             else_branch: {
-                if input.peek(Token![@]) {
+                if input.peek(Token![@]) && input.peek2(Token![else]) {
                     Some((
                         input.parse()?,
                         input.parse()?,
