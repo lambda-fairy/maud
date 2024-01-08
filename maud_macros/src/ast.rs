@@ -104,12 +104,13 @@ impl DiagnosticParse for Markup {
         let markup = Self::diagnostic_parse_in_block(input, diagnostics)?;
 
         if let Self::ControlFlow(ControlFlow {
-            kind: ControlFlowKind::Let(expr),
+            kind: ControlFlowKind::Let(_),
             ..
         }) = &markup
         {
             diagnostics.push(
-                expr.span()
+                markup
+                    .span()
                     .error("`@let` bindings are only allowed inside blocks"),
             )
         }
