@@ -26,7 +26,7 @@ impl DiagnosticParse for Markups {
     ) -> syn::Result<Self> {
         let mut markups = Vec::new();
         while !input.is_empty() {
-            markups.push(Markup::diagonstic_parse_with_let(input, diagnostics)?)
+            markups.push(Markup::diagnostic_parse_in_block(input, diagnostics)?)
         }
         Ok(Self { markups })
     }
@@ -51,7 +51,7 @@ pub enum Markup {
 }
 
 impl Markup {
-    pub fn diagonstic_parse_with_let(
+    pub fn diagnostic_parse_in_block(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
     ) -> syn::Result<Self> {
@@ -101,20 +101,20 @@ impl DiagnosticParse for Markup {
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
     ) -> syn::Result<Self> {
-        let markup = Self::diagonstic_parse_with_let(input, diagnostics)?;
+        let markup = Self::diagnostic_parse_in_block(input, diagnostics)?;
 
         if let Self::ControlFlow(ControlFlow {
             kind: ControlFlowKind::Let(expr),
             ..
         }) = &markup
         {
-            Err(Error::new_spanned(
-                expr,
-                "`@let` bindings are only allowed inside blocks",
-            ))
-        } else {
-            Ok(markup)
+            diagnostics.push(
+                expr.span()
+                    .error("`@let` bindings are only allowed inside blocks"),
+            )
         }
+
+        Ok(markup)
     }
 }
 
@@ -986,7 +986,7 @@ impl DiagnosticParse for MatchArm {
                 }
             },
             fat_arrow_token: input.parse()?,
-            body: input.diagnostic_parse(diagnostics)?,
+            body: Markup::diagnostic_parse_in_block(input, diagnostics)?,
             comma_token: if input.peek(Token![,]) {
                 Some(input.parse()?)
             } else {
