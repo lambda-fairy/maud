@@ -11,10 +11,10 @@ description = "Compile-time HTML templates."
 edition = "2021"
 
 [dependencies]
-syn = "2"
+syn = { version = "2", features = ["extra-traits", "full"] }
 quote = "1.0.7"
 proc-macro2 = "1.0.23"
-proc-macro-error = { version = "1.0.0", default-features = false }
+proc-macro2-diagnostics = { version = "0.10", default-features = false }
 
 [lib]
 name = "maud_macros"
