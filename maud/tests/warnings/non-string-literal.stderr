@@ -1,3 +1,15 @@
+error: literal must be double-quoted: `"42"`
+ --> tests/warnings/non-string-literal.rs:5:9
+  |
+5 |         42
+  |         ^^
+
+error: literal must be double-quoted: `"42usize"`
+ --> tests/warnings/non-string-literal.rs:6:9
+  |
+6 |         42usize
+  |         ^^^^^^^
+
 error: literal must be double-quoted: `"42.0"`
  --> tests/warnings/non-string-literal.rs:7:9
   |
