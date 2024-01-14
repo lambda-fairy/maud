@@ -94,7 +94,7 @@ impl Parser {
             // Literal
             TokenTree::Literal(literal) => {
                 self.advance();
-                self.literal(literal)
+                self.literal(literal, false)
             }
             // Special form
             TokenTree::Punct(ref punct) if punct.as_char() == '@' => {
@@ -194,7 +194,10 @@ impl Parser {
     }
 
     /// Parses a literal string.
-    fn literal(&mut self, literal: Literal) -> ast::Markup {
+    ///
+    /// If `allow_int_literal` is `true`, then integer literals (like `123`) will be accepted and
+    /// returned.
+    fn literal(&mut self, literal: Literal, allow_int_literal: bool) -> ast::Markup {
         match Lit::new(literal.clone()) {
             Lit::Str(lit_str) => {
                 return ast::Markup::Literal {
@@ -204,13 +207,13 @@ impl Parser {
             }
             // Boolean literals are idents, so `Lit::Bool` is handled in
             // `markup`, not here.
-            Lit::Int(lit_int) => {
+            Lit::Int(lit_int) if allow_int_literal => {
                 return ast::Markup::Literal {
                     content: lit_int.to_string(),
                     span: SpanRange::single_span(literal.span()),
                 };
             }
-            Lit::Float(..) => {
+            Lit::Int(..) | Lit::Float(..) => {
                 emit_error!(literal, r#"literal must be double-quoted: `"{}"`"#, literal);
             }
             Lit::Char(lit_char) => {
@@ -722,7 +725,7 @@ impl Parser {
                     false
                 }
                 Some(TokenTree::Literal(ref literal)) if expect_ident_or_literal => {
-                    self.literal(literal.clone());
+                    self.literal(literal.clone(), true);
                     self.advance();
                     result.push(TokenTree::Literal(literal.clone()));
                     false
