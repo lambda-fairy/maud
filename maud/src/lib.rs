@@ -7,7 +7,7 @@
 //!
 //! [book]: https://maud.lambda.xyz/
 
-#![doc(html_root_url = "https://docs.rs/maud/0.25.0")]
+#![doc(html_root_url = "https://docs.rs/maud/0.26.0")]
 
 extern crate alloc;
 
