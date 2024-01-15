@@ -1,0 +1,83 @@
+html {
+  box-sizing: border-box;
+  font: 16px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif;
+  border-top: 0.75rem solid #808;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0 auto;
+  padding: 0 0 2rem;
+  max-width: 40rem;
+}
+
+header h1 {
+  margin: 0 0 1rem -0.25rem;
+  font-size: 5rem;
+  line-height: 0.75;
+}
+
+header h1 a:link, header h1 a:visited {
+  color: #808;
+}
+
+nav ul {
+  padding: 0;
+  list-style: none;
+}
+
+footer {
+  font-size: 0.75rem;
+}
+
+pre {
+  padding: 1rem;
+  font: 15px Consolas, monospace;
+  background: #fef;
+  overflow: auto;
+}
+
+a:link {
+  text-decoration: none;
+}
+
+a:link, a:visited {
+  color: #a0a;
+}
+
+a:focus, a:hover, a:active {
+  background: #fdd;
+}
+
+@media (min-width: 60rem) {
+  body {
+    max-width: 56rem; /* 15 + 1 + 40 */
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-columns: 15rem auto;
+    grid-gap: 0 1rem;
+  }
+
+  header {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  nav {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  main {
+    grid-column: 2;
+    grid-row: 1 / 4;
+  }
+
+  footer {
+    grid-column: 1;
+    grid-row: 3;
+  }
+}
