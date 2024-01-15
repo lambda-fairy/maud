@@ -143,3 +143,17 @@ fn render_arc() {
     let arc = std::sync::Arc::new("foo");
     assert_eq!(html! { (arc) }.into_string(), "foo");
 }
+
+#[test]
+fn dynamic_attr() {
+    let attrs = [("id", "foo"), ("class", "bar")];
+
+    assert_eq!(
+        html! { p (..)=[attrs] {} }.into_string(),
+        r#"<p id="foo" class="bar"></p>"#
+    );
+    assert_eq!(
+        html! { p (..)=[[("id", 1), ("class", 2)]] {} }.into_string(),
+        r#"<p id="1" class="2"></p>"#
+    );
+}
