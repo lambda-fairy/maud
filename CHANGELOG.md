@@ -2,12 +2,19 @@
 
 ## [Unreleased]
 
+## [0.26.0] - 2024-01-15
+
 - Remove `AsRef<str>` restriction from `PreEscaped`
   [#377](https://github.com/lambda-fairy/maud/pull/377)
 - Implement `Render` for `Arc<T>`
   [#380](https://github.com/lambda-fairy/maud/pull/380)
+- Fix missing parentheses around splices
+  [#382](https://github.com/lambda-fairy/maud/issues/382)
+  [#383](https://github.com/lambda-fairy/maud/pull/383)
 - Accept literals in attribute names
   [#396](https://github.com/lambda-fairy/maud/pull/396)
+  [#398](https://github.com/lambda-fairy/maud/pull/398)
+  [#415](https://github.com/lambda-fairy/maud/pull/415)
 - Support `axum` v0.7 through `axum-core` v0.4 and `http` v1
   [#401](https://github.com/lambda-fairy/maud/pull/401)
 - Add support for `warp` v0.3.6
@@ -304,7 +311,8 @@
 - Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.25.0...HEAD
+[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.26.0...HEAD
+[0.26.0]: https://github.com/lambda-fairy/maud/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/lambda-fairy/maud/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/lambda-fairy/maud/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/lambda-fairy/maud/compare/v0.22.3...v0.23.0
