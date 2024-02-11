@@ -366,6 +366,25 @@ mod warp_support {
     }
 }
 
+#[cfg(feature = "submillisecond")]
+mod submillisecond_support {
+    use crate::PreEscaped;
+    use alloc::string::String;
+    use submillisecond::response::{IntoResponse, Response};
+    use submillisecond::http::{header, HeaderMap, HeaderValue};
+
+    impl IntoResponse for PreEscaped<String> {
+        fn into_response(self) -> Response {
+            let mut headers = HeaderMap::new();
+            headers.insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("text/html; charset=utf-8"),
+            );
+            (headers, self.0).into_response()
+        }
+    }
+}
+
 #[doc(hidden)]
 pub mod macro_private {
     use crate::{display, Render};

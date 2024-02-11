@@ -11,6 +11,7 @@ maud = { path = "../maud", features = ["actix-web", "rocket", "tide", "axum", "w
 pulldown-cmark = "0.8"
 rocket = "0.5"
 rouille = "3"
+submillisecond = "0.4.1"
 tide = "0.16"
 tokio = { version = "1.9.0", features = ["rt", "macros", "rt-multi-thread"] }
 axum = "0.7"

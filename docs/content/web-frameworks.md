@@ -8,6 +8,7 @@ Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], [T
 [Tide]: https://docs.rs/tide/
 [Axum]: https://docs.rs/axum/
 [Warp]: https://seanmonstar.com/blog/warp/
+[Submillisecond]: https://github.com/lunatic-solutions/submillisecond
 
 # Actix
 
@@ -195,5 +196,38 @@ use warp::Filter;
 async fn main() {
     let hello = warp::any().map(|| html! { h1 { "Hello, world!" } });
     warp::serve(hello).run(([127, 0, 0, 1], 8000)).await;
+}
+```
+# Submillisecond
+
+Submillisecond support is available with the "submillisecond" feature:
+
+```toml
+# ...
+[dependencies]
+maud = { version = "*", features = ["submillisecond"] }
+# ...
+```
+
+This adds an implementation of `IntoResponse` for `Markup`/`PreEscaped<String>`.
+This then allows you to use it directly as a response!
+
+```rust,no_run
+use maud::{html, Markup};
+use std::io::Result;
+use submillisecond::{router, Application};
+
+fn main() -> Result<()> {
+    Application::new(router! {
+
+        GET "/hello" => helloworld
+    })
+    .serve("0.0.0.0:3000")
+}
+
+fn helloworld() -> Markup {
+    html! {
+        h1 { "Hello, World!" }
+    }
 }
 ```
