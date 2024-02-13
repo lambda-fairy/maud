@@ -370,8 +370,10 @@ mod warp_support {
 mod submillisecond_support {
     use crate::PreEscaped;
     use alloc::string::String;
-    use submillisecond::response::{IntoResponse, Response};
-    use submillisecond::http::{header, HeaderMap, HeaderValue};
+    use submillisecond::{
+        http::{header, HeaderMap, HeaderValue},
+        response::{IntoResponse, Response},
+    };
 
     impl IntoResponse for PreEscaped<String> {
         fn into_response(self) -> Response {
