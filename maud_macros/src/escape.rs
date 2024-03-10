@@ -2,10 +2,6 @@
 // !!!!!!!! PLEASE KEEP THIS IN SYNC WITH `maud/src/escape.rs` !!!!!!!!!
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-extern crate alloc;
-
-use alloc::string::String;
-
 pub fn escape_to_string(input: &str, output: &mut String) {
     for b in input.bytes() {
         match b {
@@ -20,10 +16,7 @@ pub fn escape_to_string(input: &str, output: &mut String) {
 
 #[cfg(test)]
 mod test {
-    extern crate alloc;
-
     use super::escape_to_string;
-    use alloc::string::String;
 
     #[test]
     fn it_works() {
