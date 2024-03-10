@@ -1,4 +1,4 @@
-use comrak::{self, nodes::AstNode, Arena};
+use comrak::{nodes::AstNode, Arena};
 use docs::{
     page::{Page, COMRAK_OPTIONS},
     string_writer::StringWriter,

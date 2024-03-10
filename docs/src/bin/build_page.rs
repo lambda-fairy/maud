@@ -1,5 +1,4 @@
 use comrak::{
-    self,
     nodes::{AstNode, NodeCodeBlock, NodeHeading, NodeHtmlBlock, NodeLink, NodeValue},
     Arena,
 };
