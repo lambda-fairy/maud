@@ -1,4 +1,4 @@
-use maud::{self, html, Render};
+use maud::{html, Render};
 
 #[test]
 fn issue_13() {
