@@ -2,14 +2,15 @@
 name = "maud"
 # When releasing a new version, please update html_root_url in src/lib.rs
 version = "0.26.0"
-authors = ["Chris Wong <lambda.fairy@gmail.com>"]
-license = "MIT/Apache-2.0"
 documentation = "https://docs.rs/maud/"
-homepage = "https://maud.lambda.xyz/"
-repository = "https://github.com/lambda-fairy/maud"
 description = "Compile-time HTML templates."
 categories = ["template-engine"]
-edition = "2021"
+
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
 
 [features]
 default = []

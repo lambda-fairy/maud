@@ -8,3 +8,10 @@ exclude = [
     "doctest",
 ]
 resolver = "2"
+
+[workspace.package]
+authors = ["Chris Wong <lambda.fairy@gmail.com>"]
+license = "MIT OR Apache-2.0"
+homepage = "https://maud.lambda.xyz/"
+repository = "https://github.com/lambda-fairy/maud"
+edition = "2021"
