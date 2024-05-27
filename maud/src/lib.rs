@@ -302,9 +302,34 @@ mod rocket_support {
 
 #[cfg(feature = "actix-web")]
 mod actix_support {
+    use core::{
+        pin::Pin,
+        task::{Context, Poll},
+    };
+
     use crate::PreEscaped;
-    use actix_web_dep::{http::header, HttpRequest, HttpResponse, Responder};
+    use actix_web_dep::{
+        body::{BodySize, MessageBody},
+        http::header,
+        web::Bytes,
+        HttpRequest, HttpResponse, Responder,
+    };
     use alloc::string::String;
+
+    impl MessageBody for PreEscaped<String> {
+        type Error = <String as MessageBody>::Error;
+
+        fn size(&self) -> BodySize {
+            self.0.size()
+        }
+
+        fn poll_next(
+            mut self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+        ) -> Poll<Option<Result<Bytes, Self::Error>>> {
+            Pin::new(&mut self.0).poll_next(cx)
+        }
+    }
 
     impl Responder for PreEscaped<String> {
         type Body = String;
