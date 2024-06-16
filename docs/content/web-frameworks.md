@@ -198,6 +198,7 @@ async fn main() {
     warp::serve(hello).run(([127, 0, 0, 1], 8000)).await;
 }
 ```
+
 # Submillisecond
 
 Submillisecond support is available with the "submillisecond" feature:
