@@ -3,7 +3,7 @@ use maud::{html, Markup, PreEscaped, Render, DOCTYPE};
 use std::str;
 
 use crate::{
-    page::{Page, COMRAK_OPTIONS},
+    page::{default_comrak_options, Page},
     string_writer::StringWriter,
 };
 
@@ -11,18 +11,23 @@ struct Comrak<'a>(&'a AstNode<'a>);
 
 impl<'a> Render for Comrak<'a> {
     fn render_to(&self, buffer: &mut String) {
-        comrak::format_html(self.0, &COMRAK_OPTIONS, &mut StringWriter(buffer)).unwrap();
+        comrak::format_html(self.0, &default_comrak_options(), &mut StringWriter(buffer)).unwrap();
     }
 }
 
-/// Hack! Comrak wraps a single line of input in `<p>` tags, which is great in
-/// general but not suitable for links in the navigation bar.
+/// Hack! The page title is wrapped in a `Paragraph` node, which introduces an
+/// extra `<p>` tag that we don't want most of the time.
 struct ComrakRemovePTags<'a>(&'a AstNode<'a>);
 
 impl<'a> Render for ComrakRemovePTags<'a> {
     fn render(&self) -> Markup {
         let mut buffer = String::new();
-        comrak::format_html(self.0, &COMRAK_OPTIONS, &mut StringWriter(&mut buffer)).unwrap();
+        comrak::format_html(
+            self.0,
+            &default_comrak_options(),
+            &mut StringWriter(&mut buffer),
+        )
+        .unwrap();
         assert!(buffer.starts_with("<p>") && buffer.ends_with("</p>\n"));
         PreEscaped(
             buffer
@@ -37,7 +42,8 @@ struct ComrakText<'a>(&'a AstNode<'a>);
 
 impl<'a> Render for ComrakText<'a> {
     fn render_to(&self, buffer: &mut String) {
-        comrak::format_commonmark(self.0, &COMRAK_OPTIONS, &mut StringWriter(buffer)).unwrap();
+        comrak::format_commonmark(self.0, &default_comrak_options(), &mut StringWriter(buffer))
+            .unwrap();
     }
 }
 
@@ -103,7 +109,7 @@ pub fn main<'a>(
         main {
             @if let Some(title) = page.title {
                 h2 {
-                    (Comrak(title))
+                    (ComrakRemovePTags(title))
                 }
             }
             (Comrak(page.content))
