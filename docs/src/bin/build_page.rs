@@ -3,7 +3,7 @@ use comrak::{
     Arena,
 };
 use docs::{
-    page::{Page, COMRAK_OPTIONS},
+    page::{default_comrak_options, Page},
     views,
 };
 use std::{
@@ -48,7 +48,7 @@ fn build_page(
         .iter()
         .filter_map(|(slug, title)| {
             title.as_ref().map(|title| {
-                let title = comrak::parse_document(&arena, title, &COMRAK_OPTIONS);
+                let title = comrak::parse_document(&arena, title, &default_comrak_options());
                 (slug.as_str(), title)
             })
         })

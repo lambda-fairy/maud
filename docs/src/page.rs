@@ -1,8 +1,8 @@
 use comrak::{
     nodes::{AstNode, NodeHeading, NodeValue},
-    Arena, ComrakOptions,
+    Arena, Options,
 };
-use std::{fs, io, path::Path, sync::LazyLock};
+use std::{fs, io, path::Path};
 
 pub struct Page<'a> {
     pub title: Option<&'a AstNode<'a>>,
@@ -12,7 +12,7 @@ pub struct Page<'a> {
 impl<'a> Page<'a> {
     pub fn load(arena: &'a Arena<AstNode<'a>>, path: impl AsRef<Path>) -> io::Result<Self> {
         let buffer = fs::read_to_string(path)?;
-        let content = comrak::parse_document(arena, &buffer, &COMRAK_OPTIONS);
+        let content = comrak::parse_document(arena, &buffer, &default_comrak_options());
 
         let title = content.first_child().filter(|node| {
             let mut data = node.data.borrow_mut();
@@ -29,9 +29,9 @@ impl<'a> Page<'a> {
     }
 }
 
-pub static COMRAK_OPTIONS: LazyLock<ComrakOptions> = LazyLock::new(|| {
-    let mut options = ComrakOptions::default();
+pub fn default_comrak_options() -> Options<'static> {
+    let mut options = Options::default();
     options.extension.header_ids = Some("".to_string());
     options.render.unsafe_ = true;
     options
-});
+}
