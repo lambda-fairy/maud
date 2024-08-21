@@ -15,8 +15,8 @@ impl<'a> Render for Comrak<'a> {
     }
 }
 
-/// Hack! Comrak wraps a single line of input in `<p>` tags, which is great in
-/// general but not suitable for links in the navigation bar.
+/// Hack! The page title is wrapped in a `Paragraph` node, which introduces an
+/// extra `<p>` tag that we don't want most of the time.
 struct ComrakRemovePTags<'a>(&'a AstNode<'a>);
 
 impl<'a> Render for ComrakRemovePTags<'a> {
@@ -109,7 +109,7 @@ pub fn main<'a>(
         main {
             @if let Some(title) = page.title {
                 h2 {
-                    (Comrak(title))
+                    (ComrakRemovePTags(title))
                 }
             }
             (Comrak(page.content))

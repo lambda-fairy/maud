@@ -17,8 +17,10 @@ impl<'a> Page<'a> {
         let title = content.first_child().filter(|node| {
             let mut data = node.data.borrow_mut();
             if let NodeValue::Heading(NodeHeading { level: 1, .. }) = data.value {
-                node.detach();
-                data.value = NodeValue::Document;
+                // Split the title into a separate document
+                data.value = NodeValue::Paragraph;
+                let title_document = arena.alloc(NodeValue::Document.into());
+                title_document.append(node);
                 true
             } else {
                 false
