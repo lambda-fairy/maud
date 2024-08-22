@@ -63,7 +63,7 @@ fn build_page(
 fn postprocess<'a>(content: &'a AstNode<'a>) {
     lower_headings(content);
     rewrite_md_links(content);
-    strip_hidden_code(content);
+    strip_rustdoc_idioms(content);
 }
 
 fn lower_headings<'a>(root: &'a AstNode<'a>) {
@@ -87,25 +87,24 @@ fn rewrite_md_links<'a>(root: &'a AstNode<'a>) {
     }
 }
 
-fn strip_hidden_code<'a>(root: &'a AstNode<'a>) {
+fn strip_rustdoc_idioms<'a>(root: &'a AstNode<'a>) {
     for node in root.descendants() {
         let mut data = node.data.borrow_mut();
         if let NodeValue::CodeBlock(NodeCodeBlock { info, literal, .. }) = &mut data.value {
-            if info.split(',').map(str::trim).all(|lang| lang != "rust") {
-                continue;
+            // Rustdoc uses commas, but CommonMark uses spaces
+            *info = info.replace(",", " ");
+
+            // Rustdoc uses "#" to represent hidden setup code
+            if info.split_whitespace().next() == Some("rust") {
+                *literal = literal
+                    .split('\n')
+                    .filter(|line| {
+                        let line = line.trim();
+                        line != "#" && !line.starts_with("# ")
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
             }
-            *literal = strip_hidden_code_inner(literal);
         }
     }
-}
-
-fn strip_hidden_code_inner(literal: &str) -> String {
-    let lines = literal
-        .split('\n')
-        .filter(|line| {
-            let line = line.trim();
-            line != "#" && !line.starts_with("# ")
-        })
-        .collect::<Vec<_>>();
-    lines.join("\n")
 }
