@@ -3,6 +3,7 @@ use maud::{html, Markup, PreEscaped, Render, DOCTYPE};
 use std::str;
 
 use crate::{
+    highlight::Highlighter,
     page::{default_comrak_options, Page},
     string_writer::StringWriter,
 };
@@ -89,7 +90,14 @@ struct Comrak<'a>(&'a AstNode<'a>);
 
 impl<'a> Render for Comrak<'a> {
     fn render_to(&self, buffer: &mut String) {
-        comrak::format_html(self.0, &default_comrak_options(), &mut StringWriter(buffer)).unwrap();
+        let highlighter = Highlighter::get();
+        comrak::format_html_with_plugins(
+            self.0,
+            &default_comrak_options(),
+            &mut StringWriter(buffer),
+            &highlighter.as_plugins(),
+        )
+        .unwrap();
     }
 }
 
@@ -100,10 +108,12 @@ struct ComrakRemovePTags<'a>(&'a AstNode<'a>);
 impl<'a> Render for ComrakRemovePTags<'a> {
     fn render(&self) -> Markup {
         let mut buffer = String::new();
-        comrak::format_html(
+        let highlighter = Highlighter::get();
+        comrak::format_html_with_plugins(
             self.0,
             &default_comrak_options(),
             &mut StringWriter(&mut buffer),
+            &highlighter.as_plugins(),
         )
         .unwrap();
         assert!(buffer.starts_with("<p>") && buffer.ends_with("</p>\n"));
