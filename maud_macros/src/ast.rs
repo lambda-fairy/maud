@@ -1,5 +1,5 @@
 use proc_macro2::{TokenStream, TokenTree};
-use proc_macro_error::SpanRange;
+use proc_macro_error2::SpanRange;
 use syn::Lit;
 
 #[derive(Debug)]

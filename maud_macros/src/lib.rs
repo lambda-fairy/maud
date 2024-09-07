@@ -11,7 +11,7 @@ mod generate;
 mod parse;
 
 use proc_macro2::{Ident, Span, TokenStream, TokenTree};
-use proc_macro_error::proc_macro_error;
+use proc_macro_error2::proc_macro_error;
 use quote::quote;
 
 #[proc_macro]

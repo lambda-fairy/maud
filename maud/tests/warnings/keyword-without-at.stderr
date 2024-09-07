@@ -1,7 +1,8 @@
 error: found keyword `if`
+
+         = help: should this be a `@if`?
+
  --> $DIR/keyword-without-at.rs:5:9
   |
 5 |         if {}
   |         ^^
-  |
-  = help: should this be a `@if`?
