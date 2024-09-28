@@ -13,7 +13,7 @@ pub fn parse(input: TokenStream) -> Vec<ast::Markup> {
 #[derive(Clone)]
 struct Parser {
     /// If we're inside an attribute, then this contains the attribute name.
-    current_attr: Option<String>,
+    current_attr: Option<ast::AttrName>,
     input: <TokenStream as IntoIterator>::IntoIter,
 }
 
@@ -580,48 +580,7 @@ impl Parser {
         let mut attrs = Vec::new();
         loop {
             if let Some(name) = self.try_namespaced_name() {
-                // Attribute
-                match self.peek() {
-                    // Non-empty attribute
-                    Some(TokenTree::Punct(ref punct)) if punct.as_char() == '=' => {
-                        self.advance();
-                        // Parse a value under an attribute context
-                        assert!(self.current_attr.is_none());
-                        self.current_attr = Some(ast::name_to_string(name.clone()));
-                        let attr_type = match self.attr_toggler() {
-                            Some(toggler) => ast::AttrType::Optional { toggler },
-                            None => {
-                                let value = self.markup();
-                                ast::AttrType::Normal { value }
-                            }
-                        };
-                        self.current_attr = None;
-                        attrs.push(ast::Attr::Named {
-                            named_attr: ast::NamedAttr { name, attr_type },
-                        });
-                    }
-                    // Empty attribute (legacy syntax)
-                    Some(TokenTree::Punct(ref punct)) if punct.as_char() == '?' => {
-                        self.advance();
-                        let toggler = self.attr_toggler();
-                        attrs.push(ast::Attr::Named {
-                            named_attr: ast::NamedAttr {
-                                name: name.clone(),
-                                attr_type: ast::AttrType::Empty { toggler },
-                            },
-                        });
-                    }
-                    // Empty attribute (new syntax)
-                    _ => {
-                        let toggler = self.attr_toggler();
-                        attrs.push(ast::Attr::Named {
-                            named_attr: ast::NamedAttr {
-                                name: name.clone(),
-                                attr_type: ast::AttrType::Empty { toggler },
-                            },
-                        });
-                    }
-                }
+                attrs.push(self.attr(ast::AttrName::Fixed { value: name }));
             } else {
                 match self.peek() {
                     // Class shorthand
@@ -644,6 +603,18 @@ impl Parser {
                             name,
                         });
                     }
+                    // Spliced attribute name
+                    Some(TokenTree::Group(ref group))
+                        if group.delimiter() == Delimiter::Parenthesis =>
+                    {
+                        match self.markup() {
+                            ast::Markup::Splice { expr, .. } => {
+                                attrs.push(self.attr(ast::AttrName::Splice { expr }));
+                            }
+                            // If it's not a splice, backtrack and bail out
+                            _ => break,
+                        }
+                    }
                     // If it's not a valid attribute, backtrack and bail out
                     _ => break,
                 }
@@ -665,7 +636,7 @@ impl Parser {
                 ast::Attr::Id { .. } => "id".to_string(),
                 ast::Attr::Named { named_attr } => named_attr
                     .name
-                    .clone()
+                    .tokens()
                     .into_iter()
                     .map(|token| token.to_string())
                     .collect(),
@@ -683,6 +654,50 @@ impl Parser {
         }
 
         attrs
+    }
+
+    fn attr(&mut self, name: ast::AttrName) -> ast::Attr {
+        match self.peek() {
+            // Non-empty attribute
+            Some(TokenTree::Punct(ref punct)) if punct.as_char() == '=' => {
+                self.advance();
+                // Parse a value under an attribute context
+                assert!(self.current_attr.is_none());
+                self.current_attr = Some(name.clone());
+                let attr_type = match self.attr_toggler() {
+                    Some(toggler) => ast::AttrType::Optional { toggler },
+                    None => {
+                        let value = self.markup();
+                        ast::AttrType::Normal { value }
+                    }
+                };
+                self.current_attr = None;
+                ast::Attr::Named {
+                    named_attr: ast::NamedAttr { name, attr_type },
+                }
+            }
+            // Empty attribute (legacy syntax)
+            Some(TokenTree::Punct(ref punct)) if punct.as_char() == '?' => {
+                self.advance();
+                let toggler = self.attr_toggler();
+                ast::Attr::Named {
+                    named_attr: ast::NamedAttr {
+                        name,
+                        attr_type: ast::AttrType::Empty { toggler },
+                    },
+                }
+            }
+            // Empty attribute (new syntax)
+            _ => {
+                let toggler = self.attr_toggler();
+                ast::Attr::Named {
+                    named_attr: ast::NamedAttr {
+                        name,
+                        attr_type: ast::AttrType::Empty { toggler },
+                    },
+                }
+            }
+        }
     }
 
     /// Parses the name of a class or ID.
