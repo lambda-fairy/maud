@@ -41,7 +41,7 @@ mod btn {
         }
     }
 
-    impl<'a> Render for Button<'a> {
+    impl Render for Button<'_> {
         fn render(&self) -> Markup {
             match self.req_meth {
                 RequestMethod::Get => {

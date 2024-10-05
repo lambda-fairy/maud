@@ -50,7 +50,7 @@ impl<'a> Escaper<'a> {
     }
 }
 
-impl<'a> fmt::Write for Escaper<'a> {
+impl fmt::Write for Escaper<'_> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         escape::escape_to_string(s, self.0);
         Ok(())
@@ -120,25 +120,25 @@ impl Render for String {
     }
 }
 
-impl<'a> Render for Cow<'a, str> {
+impl Render for Cow<'_, str> {
     fn render_to(&self, w: &mut String) {
         str::render_to(self, w);
     }
 }
 
-impl<'a> Render for Arguments<'a> {
+impl Render for Arguments<'_> {
     fn render_to(&self, w: &mut String) {
         let _ = Escaper::new(w).write_fmt(*self);
     }
 }
 
-impl<'a, T: Render + ?Sized> Render for &'a T {
+impl<T: Render + ?Sized> Render for &T {
     fn render_to(&self, w: &mut String) {
         T::render_to(self, w);
     }
 }
 
-impl<'a, T: Render + ?Sized> Render for &'a mut T {
+impl<T: Render + ?Sized> Render for &mut T {
     fn render_to(&self, w: &mut String) {
         T::render_to(self, w);
     }
@@ -290,7 +290,7 @@ mod rocket_support {
     };
     use std::io::Cursor;
 
-    impl<'r> Responder<'r, 'static> for PreEscaped<String> {
+    impl Responder<'_, 'static> for PreEscaped<String> {
         fn respond_to(self, _: &Request) -> rocket::response::Result<'static> {
             Response::build()
                 .header(ContentType::HTML)

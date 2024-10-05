@@ -88,7 +88,7 @@ pub fn main<'a>(
 
 struct Comrak<'a>(&'a AstNode<'a>);
 
-impl<'a> Render for Comrak<'a> {
+impl Render for Comrak<'_> {
     fn render_to(&self, buffer: &mut String) {
         let highlighter = Highlighter::get();
         comrak::format_html_with_plugins(
@@ -105,7 +105,7 @@ impl<'a> Render for Comrak<'a> {
 /// extra `<p>` tag that we don't want most of the time.
 struct ComrakRemovePTags<'a>(&'a AstNode<'a>);
 
-impl<'a> Render for ComrakRemovePTags<'a> {
+impl Render for ComrakRemovePTags<'_> {
     fn render(&self) -> Markup {
         let mut buffer = String::new();
         let highlighter = Highlighter::get();
@@ -128,7 +128,7 @@ impl<'a> Render for ComrakRemovePTags<'a> {
 
 struct ComrakText<'a>(&'a AstNode<'a>);
 
-impl<'a> Render for ComrakText<'a> {
+impl Render for ComrakText<'_> {
     fn render_to(&self, buffer: &mut String) {
         comrak::format_commonmark(self.0, &default_comrak_options(), &mut StringWriter(buffer))
             .unwrap();
