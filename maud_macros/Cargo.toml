@@ -15,7 +15,7 @@ edition.workspace = true
 syn = "2"
 quote = "1.0.7"
 proc-macro2 = "1.0.23"
-proc-macro-error = { version = "1.0.0", default-features = false }
+proc-macro-error2 = { version = "2.0.1", default-features = false }
 
 [lib]
 name = "maud_macros"

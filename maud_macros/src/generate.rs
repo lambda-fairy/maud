@@ -1,5 +1,5 @@
 use proc_macro2::{Delimiter, Group, Ident, Literal, Span, TokenStream, TokenTree};
-use proc_macro_error::SpanRange;
+use proc_macro_error2::SpanRange;
 use quote::quote;
 
 use crate::{ast::*, escape};
