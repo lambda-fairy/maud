@@ -90,6 +90,21 @@ html! {
 # ;
 ```
 
+### Splices in attribute name
+
+You can also use splices in the attribute name:
+
+```rust
+let tuple = ("hx-get", "/pony");
+# let _ = maud::
+html! {
+    button (tuple.0)=(tuple.1) {
+        "Get a pony!"
+    }
+}
+# ;
+```
+
 ### What can be spliced?
 
 You can splice any value that implements [`Render`][Render].
@@ -145,7 +160,7 @@ html! {
 
 ### Optional attributes with values: `title=[Some("value")]`
 
-Add optional attributes to an element using `attr=[value]` syntax, with *square* brackets.
+Add optional attributes to an element using `attr=[value]` syntax, with _square_ brackets.
 These are only rendered if the value is `Some<T>`, and entirely omitted if the value is `None`.
 
 ```rust

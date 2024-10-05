@@ -153,18 +153,43 @@ impl Special {
 
 #[derive(Debug)]
 pub struct NamedAttr {
-    pub name: TokenStream,
+    pub name: AttrName,
     pub attr_type: AttrType,
 }
 
 impl NamedAttr {
     fn span(&self) -> SpanRange {
-        let name_span = span_tokens(self.name.clone());
+        let name_span = span_tokens(self.name.tokens());
         if let Some(attr_type_span) = self.attr_type.span() {
             name_span.join_range(attr_type_span)
         } else {
             name_span
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum AttrName {
+    Fixed { value: TokenStream },
+    Splice { expr: TokenStream },
+}
+
+impl AttrName {
+    pub fn tokens(&self) -> TokenStream {
+        match self {
+            AttrName::Fixed { value } => value.clone(),
+            AttrName::Splice { expr, .. } => expr.clone(),
+        }
+    }
+}
+
+impl std::fmt::Display for AttrName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AttrName::Fixed { value } => f.write_str(&value.to_string())?,
+            AttrName::Splice { expr, .. } => f.write_str(&expr.to_string())?,
+        };
+        Ok(())
     }
 }
 
