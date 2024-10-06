@@ -1,4 +1,4 @@
-error: expected `;`, found end of macro
+error: unexpected end of input, expected one of: identifier, literal, `.`, `#`, curly braces, `;`
  --> $DIR/non-closed-element.rs:4:5
   |
 4 | /     html! {
