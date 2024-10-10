@@ -156,14 +156,10 @@ impl<T: Render + ?Sized> Render for Arc<T> {
     }
 }
 
-impl<T: Render + ?Sized> Render for Option<T> {
-    fn render_to(&self, w: &mut String) { if let Some(inner) = self { T::render_to(inner, w); } }
-}
-
-impl <T: Render + ?Sized, I: ExactSizeIterator + ?Sized> Render for I where I::Item: AsRef<T> {
+impl<T: Render> Render for Option<T> {
     fn render_to(&self, w: &mut String) {
-        for item in self {
-            item.as_ref().render_to(w);
+        if let Some(inner) = self {
+            T::render_to(inner, w);
         }
     }
 }
