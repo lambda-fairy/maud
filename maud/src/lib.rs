@@ -418,6 +418,67 @@ pub mod macro_private {
     use alloc::string::String;
     use core::fmt::Display;
 
+    pub fn strip_to_attr_name(input: &str, output: &mut String) {
+        for c in input.chars() {
+            match c {
+                ' '
+                | '"'
+                | '\''
+                | '>'
+                | '/'
+                | '='
+                | '\u{0000}'..='\u{001F}'
+                | '\u{FDD0}'..='\u{FDEF}'
+                | '\u{FFFE}'
+                | '\u{FFFF}'
+                | '\u{1FFFE}'
+                | '\u{1FFFF}'
+                | '\u{2FFFE}'
+                | '\u{2FFFF}'
+                | '\u{3FFFE}'
+                | '\u{3FFFF}'
+                | '\u{4FFFE}'
+                | '\u{4FFFF}'
+                | '\u{5FFFE}'
+                | '\u{5FFFF}'
+                | '\u{6FFFE}'
+                | '\u{6FFFF}'
+                | '\u{7FFFE}'
+                | '\u{7FFFF}'
+                | '\u{8FFFE}'
+                | '\u{8FFFF}'
+                | '\u{9FFFE}'
+                | '\u{9FFFF}'
+                | '\u{AFFFE}'
+                | '\u{AFFFF}'
+                | '\u{BFFFE}'
+                | '\u{BFFFF}'
+                | '\u{CFFFE}'
+                | '\u{CFFFF}'
+                | '\u{DFFFE}'
+                | '\u{DFFFF}'
+                | '\u{EFFFE}'
+                | '\u{EFFFF}'
+                | '\u{FFFFE}'
+                | '\u{FFFFF}'
+                | '\u{10FFFE}'
+                | '\u{10FFFF}' => (),
+                _ => output.push(c),
+            }
+        }
+    }
+
+    #[doc(hidden)]
+    #[macro_export]
+    macro_rules! render_attr_name {
+        ($x:expr, $buffer:expr) => {{
+            use $crate::macro_private::strip_to_attr_name;
+            strip_to_attr_name(($x), $buffer);
+        }};
+    }
+
+    pub use render_attr_name;
+
     #[doc(hidden)]
     #[macro_export]
     macro_rules! render_to {

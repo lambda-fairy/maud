@@ -106,6 +106,13 @@ impl Generator {
         build.push_tokens(quote!(maud::macro_private::render_to!(&(#expr), &mut #output_ident);));
     }
 
+    fn splice_attr_name(&self, expr: TokenStream, build: &mut Builder) {
+        let output_ident = self.output_ident.clone();
+        build.push_tokens(
+            quote!(maud::macro_private::render_attr_name!(&(#expr), &mut #output_ident);),
+        );
+    }
+
     fn element(&self, name: TokenStream, attrs: Vec<Attr>, body: ElementBody, build: &mut Builder) {
         build.push_str("<");
         self.name(name.clone(), build);
@@ -126,7 +133,7 @@ impl Generator {
     fn attr_name(&self, name: AttrName, build: &mut Builder) {
         match name {
             AttrName::Fixed { value } => self.name(value, build),
-            AttrName::Splice { expr, .. } => self.splice(expr, build),
+            AttrName::Splice { expr, .. } => self.splice_attr_name(expr, build),
         }
     }
 
