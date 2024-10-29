@@ -160,7 +160,7 @@ html! {
 
 ### Optional attributes with values: `title=[Some("value")]`
 
-Add optional attributes to an element using `attr=[value]` syntax, with _square_ brackets.
+Add optional attributes to an element using `attr=[value]` syntax, with *square* brackets.
 These are only rendered if the value is `Some<T>`, and entirely omitted if the value is `None`.
 
 ```rust
