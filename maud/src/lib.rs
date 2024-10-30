@@ -418,8 +418,8 @@ pub mod macro_private {
     use alloc::string::String;
     use core::fmt::Display;
 
-    pub fn strip_to_attr_name(input: &str, output: &mut String) {
-        for c in input.chars() {
+    pub fn strip_to_attr_name(input: impl Display, output: &mut String) {
+        for c in alloc::format!("{}", input).chars() {
             match c {
                 ' '
                 | '"'
@@ -473,7 +473,7 @@ pub mod macro_private {
     macro_rules! render_attr_name {
         ($x:expr, $buffer:expr) => {{
             use $crate::macro_private::strip_to_attr_name;
-            strip_to_attr_name(($x), $buffer);
+            strip_to_attr_name($x, $buffer);
         }};
     }
 
