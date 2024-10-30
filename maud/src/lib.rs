@@ -418,8 +418,8 @@ pub mod macro_private {
     use alloc::string::String;
     use core::fmt::Display;
 
-    pub fn strip_to_attr_name(input: impl Display, output: &mut String) {
-        for c in alloc::format!("{}", input).chars() {
+    pub fn strip_to_attr_name(input: impl AsRef<str>, output: &mut String) {
+        for c in input.as_ref().chars() {
             match c {
                 ' '
                 | '"'
