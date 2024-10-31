@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+- Add `script!` and `style!` inline tag helpers
+  [#448](https://github.com/lambda-fairy/maud/pull/448)
 
 ## [0.26.0] - 2024-01-15
 
