@@ -428,6 +428,7 @@ pub mod macro_private {
                 | '/'
                 | '='
                 | '\u{0000}'..='\u{001F}'
+                | '\u{007F}'..='\u{009F}'
                 | '\u{FDD0}'..='\u{FDEF}'
                 | '\u{FFFE}'
                 | '\u{FFFF}'
