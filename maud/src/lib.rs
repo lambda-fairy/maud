@@ -462,3 +462,48 @@ pub mod macro_private {
         }
     }
 }
+
+/// Inline script tag
+///
+/// # Usage
+/// ```
+/// let page = maud::html! {
+///    (maud::script!{
+///        console.log("Hello,");
+///        console.log("world!");
+///    })
+/// };
+/// assert_eq!(
+///     page.into_string(),
+///     r#"<script>console.log("Hello,"); console.log("world!");</script>"#
+/// );
+/// ```
+#[macro_export]
+macro_rules! script {
+    ($($t:tt)*) => {
+        $crate::PreEscaped(concat!("<script>", stringify!($($t)*), "</script>"))
+    };
+}
+
+/// Inline style tag
+///
+/// # Usage
+///
+/// ```
+/// let page = maud::html! {
+///    (maud::style!{
+///        .red { color: red }
+///        .green { color: green }
+///    })
+/// };
+/// assert_eq!(
+///     page.into_string(),
+///     "<style>.red { color: red }.green { color: green }</style>"
+/// );
+/// ```
+#[macro_export]
+macro_rules! style {
+    ($($t:tt)*) => {
+        $crate::PreEscaped(concat!("<style>", stringify!($($t)*), "</style>"))
+    };
+}
