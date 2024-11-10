@@ -43,7 +43,7 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
     let markups = parse::parse(input.clone());
     let stmts = runtime::generate(markups);
     let expand_compile_time = expand(input);
-    quote!('maud_hotreload: {
+    quote!({
         // Epic Hack Template compile time check
         #expand_compile_time;
 
@@ -58,29 +58,28 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
             ::maud::parse(input.parse().unwrap())
         });
 
-        let markups = if res.is_ok() {
-            ::maud::parse(input.parse().unwrap())
+        if res.is_ok() {
+            let markups = ::maud::parse(input.parse().unwrap());
+            let format_str = ::maud::format_str(markups);
+
+            #stmts
+
+            let template = if let Ok(template) = ::maud::leon::Template::parse(&format_str) {
+                template
+            } else {
+                std::process::exit(1);
+            };
+
+            let template = if let Ok(template) = template.render(&vars) {
+                template
+            } else {
+                std::process::exit(1);
+            };
+
+            maud::PreEscaped(template)
         } else {
-            break 'maud_hotreload ::maud::PreEscaped(format!("<h3 color=\"red\">Template Errors:</h1><pre>{:?}<pre>", res.unwrap_err()));
-        };
-
-        let format_str = ::maud::format_str(markups);
-
-        #stmts
-
-        let template = if let Ok(template) = ::maud::leon::Template::parse(&format_str) {
-            template
-        } else {
-            std::process::exit(1);
-        };
-
-        let template = if let Ok(template) = template.render(&vars) {
-            template
-        } else {
-            std::process::exit(1);
-        };
-
-        maud::PreEscaped(template)
+            ::maud::PreEscaped(format!("<h3 color=\"red\">Template Errors:</h1><pre>{:?}<pre>", res.unwrap_err()))
+        }
     })
 }
 
