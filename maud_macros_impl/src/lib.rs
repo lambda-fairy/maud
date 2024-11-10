@@ -17,6 +17,8 @@ use quote::quote;
 pub use parse::parse_at_runtime;
 pub use runtime::format_str;
 
+use crate::ast::Markup;
+
 pub fn expand(input: TokenStream) -> TokenStream {
     let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
     // Heuristic: the size of the resulting markup tends to correlate with the
@@ -24,6 +26,10 @@ pub fn expand(input: TokenStream) -> TokenStream {
     let size_hint = input.to_string().len();
     let markups = parse::parse(input);
 
+    expand_from_parsed(markups, output_ident, size_hint)
+}
+
+fn expand_from_parsed(markups: Vec<Markup>, output_ident: TokenTree, size_hint: usize) -> TokenStream {
     let stmts = generate::generate(markups, output_ident.clone());
     quote!({
         extern crate alloc;
@@ -42,11 +48,7 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
     let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
     let markups = parse::parse(input.clone());
     let stmts = runtime::generate(markups);
-    let expand_compile_time = expand(input);
     quote!({
-        // Epic Hack Template compile time check
-        #expand_compile_time;
-
         extern crate alloc;
         extern crate maud;
         let mut #output_ident = String::new();

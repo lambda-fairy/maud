@@ -1,8 +1,8 @@
 use proc_macro2::{Ident, Span, TokenStream, TokenTree};
 use proc_macro_error::SpanRange;
-use quote::quote;
+use quote::{quote};
 
-use crate::{ast::*, escape};
+use crate::{ast::*, escape, expand_from_parsed};
 
 pub fn generate(markups: Vec<Markup>) -> TokenStream {
     let mut build = RuntimeBuilder::new();
@@ -32,18 +32,19 @@ impl RuntimeGenerator {
     fn markup(&self, markup: Markup, build: &mut RuntimeBuilder) {
         match markup {
             Markup::ParseError { .. } => {},
-            Markup::Block(Block { markups, .. }) => {
-                for markup in markups {
-                    self.markup(markup, build);
-                }
-            }
+            Markup::Block(Block { markups, .. }) => self.markups(markups, build),
             Markup::Literal { content, .. } => build.push_escaped(&content),
             Markup::Symbol { symbol } => build.push_str(&symbol.to_string()),
             Markup::Splice { expr, .. } => build.push_format_arg(expr),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
             Markup::Let { tokens, .. } => build.push_format_arg(tokens),
-            Markup::Special { .. } => {} // TODO
-            Markup::Match { .. } => {} // TODO
+            // fallback case: use static generator to render a subset of the template
+            markup => {
+                let output_ident = TokenTree::Ident(Ident::new("__maud_fallback_output", Span::mixed_site()));
+                let tt = expand_from_parsed(vec![markup], output_ident, 0);
+
+                build.push_format_arg(tt);
+            }
         }
     }
 

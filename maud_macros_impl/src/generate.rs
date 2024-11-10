@@ -56,7 +56,7 @@ impl Generator {
             Markup::Splice { expr, .. } => self.splice(expr, build),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
             Markup::Let { tokens, .. } => build.push_tokens(tokens),
-            Markup::Special { segments } => {
+            Markup::Special { segments, .. } => {
                 for Special { head, body, .. } in segments {
                     build.push_tokens(head);
                     self.block(body, build);

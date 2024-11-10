@@ -58,7 +58,7 @@ impl Markup {
                 at_span,
                 ref tokens,
             } => at_span.join_range(span_tokens(tokens.clone())),
-            Markup::Special { ref segments } => join_ranges(segments.iter().map(Special::span)),
+            Markup::Special { ref segments, .. } => join_ranges(segments.iter().map(Special::span)),
             Markup::Match {
                 at_span, arms_span, ..
             } => at_span.join_range(arms_span),
