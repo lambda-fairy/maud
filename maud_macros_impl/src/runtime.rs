@@ -189,10 +189,14 @@ impl RuntimeBuilder {
         escape::escape_to_string(string, &mut self.format_str);
     }
 
-    fn push_format_arg(&mut self, tokens_expr: TokenStream) {
+    fn push_format_arg(&mut self, expr: TokenStream) {
         let arg_track = self.arg_track.to_string();
         self.tokens.extend(quote! {
-            vars.insert(#arg_track, { #tokens_expr }.into());
+            vars.insert(#arg_track, {
+                let mut buf = String::new();
+                ::maud::macro_private::render_to!(&(#expr), &mut buf);
+                buf
+            });
         });
         self.arg_track = self.arg_track + 1;
         self.format_str.push_str(&format!("{{{}}}", arg_track));
