@@ -10,11 +10,16 @@ pub fn parse(input: TokenStream) -> Vec<ast::Markup> {
     Parser::new(input).markups()
 }
 
+pub fn parse_at_runtime(input: TokenStream) -> Vec<ast::Markup> {
+    Parser::new_at_runtime(input).markups()
+}
+
 #[derive(Clone)]
 struct Parser {
     /// If we're inside an attribute, then this contains the attribute name.
     current_attr: Option<String>,
     input: <TokenStream as IntoIterator>::IntoIter,
+    is_runtime: bool,
 }
 
 impl Iterator for Parser {
@@ -30,6 +35,15 @@ impl Parser {
         Parser {
             current_attr: None,
             input: input.into_iter(),
+            is_runtime: false,
+        }
+    }
+
+    fn new_at_runtime(input: TokenStream) -> Parser {
+        Parser {
+            current_attr: None,
+            input: input.into_iter(),
+            is_runtime: true,
         }
     }
 
@@ -37,6 +51,7 @@ impl Parser {
         Parser {
             current_attr: self.current_attr.clone(),
             input: input.into_iter(),
+            is_runtime: self.is_runtime,
         }
     }
 
@@ -499,8 +514,12 @@ impl Parser {
     /// The element name should already be consumed.
     fn element(&mut self, name: TokenStream) -> ast::Markup {
         if self.current_attr.is_some() {
-            let span = ast::span_tokens(name);
-            abort!(span, "unexpected element");
+            if self.is_runtime {
+                panic!("unexpected element: {}", name);
+            } else {
+                let span = ast::span_tokens(name);
+                abort!(span, "unexpected element");
+            }
         }
         let attrs = self.attrs();
         let body = match self.peek() {
@@ -510,12 +529,16 @@ impl Parser {
                 // Void element
                 self.advance();
                 if punct.as_char() == '/' {
-                    emit_error!(
-                        punct,
-                        "void elements must use `;`, not `/`";
-                        help = "change this to `;`";
-                        help = "see https://github.com/lambda-fairy/maud/pull/315 for details";
-                    );
+                    if self.is_runtime {
+                        panic!("void elements must use `;`, not `/`");
+                    } else {
+                        emit_error!(
+                            punct,
+                            "void elements must use `;`, not `/`";
+                            help = "change this to `;`";
+                            help = "see https://github.com/lambda-fairy/maud/pull/315 for details";
+                        );
+                    }
                 }
                 ast::ElementBody::Void {
                     semi_span: SpanRange::single_span(punct.span()),
@@ -524,14 +547,24 @@ impl Parser {
             Some(markup) => match self.markup() {
                 ast::Markup::Block(block) => ast::ElementBody::Block { block },
                 _markup => {
-                    abort!(
-                        markup,
-                        "element body must be wrapped in braces";
-                        help = "see https://github.com/lambda-fairy/maud/pull/137 for details"
-                    )
+                    if self.is_runtime {
+                        panic!("element body must be wrapped in braces")
+                    } else {
+                        abort!(
+                            markup,
+                            "element body must be wrapped in braces";
+                            help = "see https://github.com/lambda-fairy/maud/pull/137 for details"
+                        )
+                    }
                 }
             },
-            None => abort_call_site!("expected `;`, found end of macro"),
+            None => {
+                if self.is_runtime {
+                    panic!("expected `;`, found end of macro: {}", name)
+                } else {
+                    abort_call_site!("expected `;`, found end of macro")
+                }
+            },
         };
         ast::Markup::Element { name, attrs, body }
     }

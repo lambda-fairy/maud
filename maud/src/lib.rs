@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(feature = "hotreload"), no_std)]
 
 //! A macro for writing HTML templates.
 //!
@@ -14,20 +14,15 @@ extern crate alloc;
 use alloc::{borrow::Cow, boxed::Box, string::String, sync::Arc};
 use core::fmt::{self, Arguments, Display, Write};
 
+pub use maud_macros::html as html_static;
+
 #[cfg(not(feature = "hotreload"))]
 pub use maud_macros::html;
 
 #[cfg(feature = "hotreload")]
-pub use maud_macros::html_hotreload as html;
-
-#[doc(hidden)]
-#[cfg(feature = "hotreload")]
 pub use {
-    maud_macros_impl::expand,
-    maud_macros_impl::gather_html_macro_invocations,
-    maud_macros_impl::format_str,
-    maud_macros_impl::parse,
-    leon,
+    maud_macros::html_hotreload,
+    maud_macros::html_hotreload as html,
 };
 
 mod escape;
@@ -475,4 +470,21 @@ pub mod macro_private {
             display(value).render_to(buffer);
         }
     }
+
+    #[cfg(feature = "hotreload")]
+    pub fn render_runtime_error(e: &str) -> crate::Markup {
+        // print error to console, as we have no guarantee that the error will be seen in the
+        // browser (arbitrary styles may be applied)
+        println!("TEMPLATE ERROR: {}", e);
+        crate::PreEscaped(alloc::format!("<div style='background: black; position: absolute; top: 0; left: 0; z-index: 1000'><h1 style='red'>Template Errors:</h1><pre>{}</pre></div>", e))
+    }
+
+    #[cfg(feature = "hotreload")]
+    pub use {
+        maud_macros_impl::expand,
+        maud_macros_impl::gather_html_macro_invocations,
+        maud_macros_impl::format_str,
+        maud_macros_impl::parse_at_runtime,
+        leon,
+    };
 }

@@ -14,7 +14,7 @@ use std::{io::{BufReader, BufRead}, fs::File};
 use proc_macro2::{Ident, Span, TokenStream, TokenTree};
 use quote::quote;
 
-pub use parse::parse;
+pub use parse::parse_at_runtime;
 pub use runtime::format_str;
 
 pub fn expand(input: TokenStream) -> TokenStream {
@@ -52,24 +52,41 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
         let mut #output_ident = String::new();
         let mut vars: ::std::collections::HashMap<&'static str, String> = ::std::collections::HashMap::new();
 
-        let input = ::maud::gather_html_macro_invocations(file!(), line!());
+        let input = ::maud::macro_private::gather_html_macro_invocations(file!(), line!());
 
         let res = ::std::panic::catch_unwind(|| {
-            ::maud::parse(input.parse().unwrap())
+            ::maud::macro_private::parse_at_runtime(input.parse().unwrap())
         });
 
-        if res.is_ok() {
-            let markups = ::maud::parse(input.parse().unwrap());
-            let format_str = ::maud::format_str(markups);
+        if let Err(e) = res {
+            if let Some(s) = e
+                // Try to convert it to a String, then turn that into a str
+                .downcast_ref::<String>()
+                .map(String::as_str)
+                // If that fails, try to turn it into a &'static str
+                .or_else(|| e.downcast_ref::<&'static str>().map(::std::ops::Deref::deref))
+            {
+                ::maud::macro_private::render_runtime_error(s)
+            } else {
+                ::maud::macro_private::render_runtime_error("unknown panic")
+            }
+        } else {
+            let markups = ::maud::macro_private::parse_at_runtime(input.parse().unwrap());
+            let format_str = ::maud::macro_private::format_str(markups);
 
             #stmts
 
-            let template = ::maud::leon::Template::parse(&format_str).unwrap();
-            let template = template.render(&vars).unwrap();
-
-            maud::PreEscaped(template)
-        } else {
-            ::maud::PreEscaped(format!("<h3 color=\"red\">Template Errors:</h1><pre>{:?}<pre>", res.unwrap_err()))
+            // cannot use return here, and block labels come with strings attached (cant nest them
+            // without compiler warnings)
+            match ::maud::macro_private::leon::Template::parse(&format_str) {
+                Ok(template) => {
+                    match template.render(&vars) {
+                        Ok(template) => maud::PreEscaped(template),
+                        Err(e) => ::maud::macro_private::render_runtime_error(&e.to_string())
+                    }
+                },
+                Err(e) => ::maud::macro_private::render_runtime_error(&e.to_string())
+            }
         }
     })
 }
