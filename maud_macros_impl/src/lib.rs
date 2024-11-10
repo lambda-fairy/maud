@@ -6,18 +6,19 @@
 mod ast;
 mod escape;
 mod generate;
+#[cfg(feature = "hotreload")]
 mod runtime;
 mod parse;
 
-use std::{io::{BufReader, BufRead}, fs::File};
+use std::{io::{BufReader, BufRead}, fs::File, collections::HashMap};
 
 use proc_macro2::{Ident, Span, TokenStream, TokenTree};
 use quote::quote;
 
-pub use parse::parse_at_runtime;
-pub use runtime::format_str;
+use crate::{ast::Markup, parse::parse_at_runtime};
 
-use crate::ast::Markup;
+#[cfg(feature = "hotreload")]
+use crate::runtime::format_str;
 
 pub fn expand(input: TokenStream) -> TokenStream {
     let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
@@ -36,7 +37,7 @@ fn expand_from_parsed(markups: Vec<Markup>, output_ident: TokenTree, size_hint: 
         extern crate maud;
         let mut #output_ident = alloc::string::String::with_capacity(#size_hint);
         #stmts
-        maud::PreEscaped(#output_ident)
+        ::maud::PreEscaped(#output_ident)
     })
 }
 
@@ -44,6 +45,7 @@ fn expand_from_parsed(markups: Vec<Markup>, output_ident: TokenTree, size_hint: 
 // that will render any markup-only changes. Any other changes will
 // require a recompile. Of course, this is miles slower than the
 // normal version, but it can be miles faster to iterate on.
+#[cfg(feature = "hotreload")]
 pub fn expand_runtime(input: TokenStream) -> TokenStream {
     let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
     let markups = parse::parse(input.clone());
@@ -52,48 +54,63 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
         extern crate alloc;
         extern crate maud;
         let mut #output_ident = String::new();
+        let file_info = file!();
+        let line_info = line!();
+
+        let input = ::maud::macro_private::gather_html_macro_invocations(file_info, line_info);
         let mut vars: ::std::collections::HashMap<&'static str, String> = ::std::collections::HashMap::new();
+        #stmts;
 
-        let input = ::maud::macro_private::gather_html_macro_invocations(file!(), line!());
-        if let Some(input) = input {
-            let res = ::std::panic::catch_unwind(|| {
-                ::maud::macro_private::parse_at_runtime(input.parse().unwrap())
-            });
-
-            if let Err(e) = res {
-                if let Some(s) = e
-                    // Try to convert it to a String, then turn that into a str
-                    .downcast_ref::<String>()
-                    .map(String::as_str)
-                    // If that fails, try to turn it into a &'static str
-                    .or_else(|| e.downcast_ref::<&'static str>().map(::std::ops::Deref::deref))
-                {
-                    ::maud::macro_private::render_runtime_error(&input, s)
-                } else {
-                    ::maud::macro_private::render_runtime_error(&input, "unknown panic")
-                }
-            } else {
-                let markups = ::maud::macro_private::parse_at_runtime(input.parse().unwrap());
-                let format_str = ::maud::macro_private::format_str(markups);
-
-                #stmts
-
-                // cannot use return here, and block labels come with strings attached (cant nest them
-                // without compiler warnings)
-                match ::maud::macro_private::leon::Template::parse(&format_str) {
-                    Ok(template) => {
-                        match template.render(&vars) {
-                            Ok(template) => maud::PreEscaped(template),
-                            Err(e) => ::maud::macro_private::render_runtime_error(&input, &e.to_string())
-                        }
-                    },
-                    Err(e) => ::maud::macro_private::render_runtime_error(&input, &e.to_string())
-                }
-            }
-        } else {
-            ::maud::macro_private::render_runtime_error("", &format!("can't find template source at {}:{}, please recompile", file!(), line!()))
+        match ::maud::macro_private::expand_runtime_main(
+            vars,
+            input.as_deref(),
+            file_info,
+            line_info,
+        ) {
+            Ok(x) => ::maud::PreEscaped(x),
+            Err(e) => ::maud::macro_private::render_runtime_error(&input.unwrap_or_default(), &e),
         }
     })
+}
+
+#[cfg(feature = "hotreload")]
+pub fn expand_runtime_main(vars: HashMap<&'static str, String>, input: Option<&str>, file_info: &str, line_info: u32) -> Result<String, String> {
+    if let Some(input) = input {
+        let res = ::std::panic::catch_unwind(|| {
+            parse_at_runtime(input.parse().unwrap())
+        });
+
+        if let Err(e) = res {
+            if let Some(s) = e
+                // Try to convert it to a String, then turn that into a str
+                .downcast_ref::<String>()
+                .map(String::as_str)
+                // If that fails, try to turn it into a &'static str
+                .or_else(|| e.downcast_ref::<&'static str>().map(::std::ops::Deref::deref))
+            {
+                return Err(s.to_string());
+            } else {
+                return Err("unknown panic".to_owned());
+            }
+        } else {
+            let markups = parse_at_runtime(input.parse().unwrap());
+            let format_str = format_str(markups);
+
+            // cannot use return here, and block labels come with strings attached (cant nest them
+            // without compiler warnings)
+            match leon::Template::parse(&format_str) {
+                Ok(template) => {
+                    match template.render(&vars) {
+                        Ok(template) => Ok(template),
+                        Err(e) => Err(e.to_string())
+                    }
+                },
+                Err(e) => Err(e.to_string())
+            }
+        }
+    } else {
+        Err(format!("can't find template source at {}:{}, please recompile", file_info, line_info))
+    }
 }
 
 /// Grabs the inside of an html! {} invocation and returns it as a string

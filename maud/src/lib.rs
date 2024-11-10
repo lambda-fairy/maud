@@ -471,21 +471,19 @@ pub mod macro_private {
         }
     }
 
+
+    #[cfg(feature = "hotreload")]
+    pub use {
+        maud_macros_impl::*,
+    };
+
     #[cfg(feature = "hotreload")]
     pub fn render_runtime_error(input: &str, e: &str) -> crate::Markup {
         // print error to console, as we have no guarantee that the error will be seen in the
         // browser (arbitrary styles may be applied)
         println!("TEMPLATE ERROR: {}", e);
         println!("for sub-template:\n{}", input);
-        crate::PreEscaped(alloc::format!("<div style='background: black; position: absolute; top: 0; left: 0; z-index: 1000'><h1 style='red'>Template Errors:</h1><pre>{}</pre></div>", e))
+        crate::PreEscaped(format!("<div style='background: black; position: absolute; top: 0; left: 0; z-index: 1000'><h1 style='red'>Template Errors:</h1><pre>{}</pre></div>", e))
     }
 
-    #[cfg(feature = "hotreload")]
-    pub use {
-        maud_macros_impl::expand,
-        maud_macros_impl::gather_html_macro_invocations,
-        maud_macros_impl::format_str,
-        maud_macros_impl::parse_at_runtime,
-        leon,
-    };
 }

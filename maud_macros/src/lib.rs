@@ -13,6 +13,7 @@ pub fn html(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     maud_macros_impl::expand(input.into()).into()
 }
 
+#[cfg(feature = "hotreload")]
 #[proc_macro]
 #[proc_macro_error]
 pub fn html_hotreload(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

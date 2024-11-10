@@ -10,11 +10,15 @@ repository = "https://github.com/lambda-fairy/maud"
 description = "Compile-time HTML templates."
 edition = "2021"
 
+[features]
+hotreload = ["leon"]
+
 [dependencies]
 syn = "1.0.8"
 quote = "1.0.7"
 proc-macro2 = "1.0.23"
 proc-macro-error = "1.0.0"
+leon = { version = "2.0.1", optional = true }
 
 [lib]
 name = "maud_macros_impl"

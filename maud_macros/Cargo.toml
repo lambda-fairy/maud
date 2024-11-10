@@ -11,6 +11,9 @@ homepage.workspace = true
 repository.workspace = true
 edition.workspace = true
 
+[features]
+hotreload = ["maud_macros_impl/hotreload"]
+
 [dependencies]
 maud_macros_impl = { path = "../maud_macros_impl" }
 syn = "2"

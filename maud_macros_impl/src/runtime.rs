@@ -23,6 +23,10 @@ impl RuntimeGenerator {
         RuntimeGenerator {}
     }
 
+    fn builder(&self) -> RuntimeBuilder {
+        RuntimeBuilder::new()
+    }
+
     fn markups(&self, markups: Vec<Markup>, build: &mut RuntimeBuilder) {
         for markup in markups {
             self.markup(markup, build);
@@ -75,12 +79,12 @@ impl RuntimeGenerator {
                     self.markup(value, build);
                     build.push_str("\"");
                 }
-                AttrType::Optional { .. } => {}
+                AttrType::Optional { .. } => todo!(),
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
                     self.name(name, build);
                 }
-                AttrType::Empty { .. } => {}
+                AttrType::Empty { .. } => todo!(),
             }
         }
     }
