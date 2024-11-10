@@ -35,9 +35,13 @@ impl RuntimeGenerator {
 
     fn markup(&self, markup: Markup, build: &mut RuntimeBuilder) {
         match markup {
-            Markup::Block( .. ) => { }
+            Markup::Block(Block { markups, .. }) => {
+                for markup in markups {
+                    self.markup(markup, build);
+                }
+            }
             Markup::Literal { content, .. } => build.push_escaped(&content),
-            Markup::Symbol { symbol } => {} // don't gather
+            Markup::Symbol { symbol } => build.push_str(&symbol.to_string()),
             Markup::Splice { expr, .. } => build.push_format_arg(expr),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
             Markup::Let { tokens, .. } => build.push_format_arg(tokens),
