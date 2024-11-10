@@ -64,17 +64,8 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
 
             #stmts
 
-            let template = if let Ok(template) = ::maud::leon::Template::parse(&format_str) {
-                template
-            } else {
-                std::process::exit(1);
-            };
-
-            let template = if let Ok(template) = template.render(&vars) {
-                template
-            } else {
-                std::process::exit(1);
-            };
+            let template = ::maud::leon::Template::parse(&format_str).unwrap();
+            let template = template.render(&vars).unwrap();
 
             maud::PreEscaped(template)
         } else {
