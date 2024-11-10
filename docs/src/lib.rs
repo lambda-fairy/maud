@@ -1,5 +1,4 @@
-#![feature(lazy_cell)]
-
+pub mod highlight;
 pub mod page;
 pub mod string_writer;
 pub mod views;

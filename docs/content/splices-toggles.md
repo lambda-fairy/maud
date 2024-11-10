@@ -115,9 +115,9 @@ html! {
 
 ## Toggles: `[foo]`
 
-Use `[foo]` syntax to show or hide something based on a boolean expression `foo`.
+Use `[foo]` syntax to show or hide classes and [boolean attributes](https://developer.mozilla.org/en-US/docs/Glossary/Boolean/HTML) on a HTML element based on a boolean expression `foo`.
 
-This works on empty attributes:
+Toggle boolean attributes:
 
 ```rust
 let allow_editing = true;

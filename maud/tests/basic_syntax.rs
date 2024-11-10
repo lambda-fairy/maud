@@ -103,7 +103,7 @@ fn toggle_empty_attributes_braces() {
         rocks: bool,
     }
     let result = html! { input checked[Maud { rocks: true }.rocks]; };
-    assert_eq!(result.into_string(), r#"<input checked>"#);
+    assert_eq!(result.into_string(), "<input checked>");
 }
 
 #[test]
@@ -121,7 +121,7 @@ fn optional_attribute_some() {
 #[test]
 fn optional_attribute_none() {
     let result = html! { input value=[None as Option<&str>]; };
-    assert_eq!(result.into_string(), r#"<input>"#);
+    assert_eq!(result.into_string(), "<input>");
 }
 
 #[test]
@@ -178,6 +178,42 @@ fn hyphens_in_attribute_names() {
     assert_eq!(
         result.into_string(),
         r#"<this sentence-is="false" of-course></this>"#
+    );
+}
+
+#[test]
+fn string_literals_in_attribute_names() {
+    let result = html! { this "@sentence:-is.not"="false" of-course {} };
+    assert_eq!(
+        result.into_string(),
+        r#"<this @sentence:-is.not="false" of-course></this>"#
+    );
+}
+
+#[test]
+fn raw_string_literals_in_attribute_names() {
+    let result = html! { this r#"@sentence:-is.not"#="false" of-course {} };
+    assert_eq!(
+        result.into_string(),
+        r#"<this @sentence:-is.not="false" of-course></this>"#
+    );
+}
+
+#[test]
+fn other_literals_in_attribute_names() {
+    let result = html! { this r#"raw_string"#="false" 123="123" 123usize "2.5" true of-course {} };
+    assert_eq!(
+        result.into_string(),
+        r#"<this raw_string="false" 123="123" 123usize 2.5 true of-course></this>"#
+    );
+}
+
+#[test]
+fn idents_and_literals_in_names() {
+    let result = html! { custom:element-001 test:123-"test"="123" .m-2.p-2 {} };
+    assert_eq!(
+        result.into_string(),
+        r#"<custom:element-001 class="m-2 p-2" test:123-test="123"></custom:element-001>"#
     );
 }
 

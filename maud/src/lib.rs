@@ -7,7 +7,7 @@
 //!
 //! [book]: https://maud.lambda.xyz/
 
-#![doc(html_root_url = "https://docs.rs/maud/0.25.0")]
+#![doc(html_root_url = "https://docs.rs/maud/0.26.0")]
 
 extern crate alloc;
 
@@ -68,7 +68,7 @@ impl<'a> Escaper<'a> {
     }
 }
 
-impl<'a> fmt::Write for Escaper<'a> {
+impl fmt::Write for Escaper<'_> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         escape::escape_to_string(s, self.0);
         Ok(())
@@ -138,25 +138,25 @@ impl Render for String {
     }
 }
 
-impl<'a> Render for Cow<'a, str> {
+impl Render for Cow<'_, str> {
     fn render_to(&self, w: &mut String) {
         str::render_to(self, w);
     }
 }
 
-impl<'a> Render for Arguments<'a> {
+impl Render for Arguments<'_> {
     fn render_to(&self, w: &mut String) {
         let _ = Escaper::new(w).write_fmt(*self);
     }
 }
 
-impl<'a, T: Render + ?Sized> Render for &'a T {
+impl<T: Render + ?Sized> Render for &T {
     fn render_to(&self, w: &mut String) {
         T::render_to(self, w);
     }
 }
 
-impl<'a, T: Render + ?Sized> Render for &'a mut T {
+impl<T: Render + ?Sized> Render for &mut T {
     fn render_to(&self, w: &mut String) {
         T::render_to(self, w);
     }
@@ -302,17 +302,17 @@ mod rocket_support {
     use crate::PreEscaped;
     use alloc::string::String;
     use rocket::{
-        http::{ContentType, Status},
+        http::ContentType,
         request::Request,
         response::{Responder, Response},
     };
     use std::io::Cursor;
 
-    impl Responder<'static> for PreEscaped<String> {
-        fn respond_to(self, _: &Request) -> Result<Response<'static>, Status> {
+    impl Responder<'_, 'static> for PreEscaped<String> {
+        fn respond_to(self, _: &Request) -> rocket::response::Result<'static> {
             Response::build()
                 .header(ContentType::HTML)
-                .sized_body(Cursor::new(self.0))
+                .sized_body(self.0.len(), Cursor::new(self.0))
                 .ok()
         }
     }
@@ -320,9 +320,34 @@ mod rocket_support {
 
 #[cfg(feature = "actix-web")]
 mod actix_support {
+    use core::{
+        pin::Pin,
+        task::{Context, Poll},
+    };
+
     use crate::PreEscaped;
-    use actix_web_dep::{http::header, HttpRequest, HttpResponse, Responder};
+    use actix_web_dep::{
+        body::{BodySize, MessageBody},
+        http::header,
+        web::Bytes,
+        HttpRequest, HttpResponse, Responder,
+    };
     use alloc::string::String;
+
+    impl MessageBody for PreEscaped<String> {
+        type Error = <String as MessageBody>::Error;
+
+        fn size(&self) -> BodySize {
+            self.0.size()
+        }
+
+        fn poll_next(
+            mut self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+        ) -> Poll<Option<Result<Bytes, Self::Error>>> {
+            Pin::new(&mut self.0).poll_next(cx)
+        }
+    }
 
     impl Responder for PreEscaped<String> {
         type Body = String;
@@ -356,11 +381,45 @@ mod tide_support {
 mod axum_support {
     use crate::PreEscaped;
     use alloc::string::String;
-    use axum_core::{body::BoxBody, response::IntoResponse};
-    use http::{header, HeaderMap, HeaderValue, Response};
+    use axum_core::response::{IntoResponse, Response};
+    use http::{header, HeaderMap, HeaderValue};
 
     impl IntoResponse for PreEscaped<String> {
-        fn into_response(self) -> Response<BoxBody> {
+        fn into_response(self) -> Response {
+            let mut headers = HeaderMap::new();
+            headers.insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("text/html; charset=utf-8"),
+            );
+            (headers, self.0).into_response()
+        }
+    }
+}
+
+#[cfg(feature = "warp")]
+mod warp_support {
+    use crate::PreEscaped;
+    use alloc::string::String;
+    use warp::reply::{self, Reply, Response};
+
+    impl Reply for PreEscaped<String> {
+        fn into_response(self) -> Response {
+            reply::html(self.into_string()).into_response()
+        }
+    }
+}
+
+#[cfg(feature = "submillisecond")]
+mod submillisecond_support {
+    use crate::PreEscaped;
+    use alloc::string::String;
+    use submillisecond::{
+        http::{header, HeaderMap, HeaderValue},
+        response::{IntoResponse, Response},
+    };
+
+    impl IntoResponse for PreEscaped<String> {
+        fn into_response(self) -> Response {
             let mut headers = HeaderMap::new();
             headers.insert(
                 header::CONTENT_TYPE,

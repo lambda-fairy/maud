@@ -7,6 +7,8 @@ Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], [T
 [Rouille]: https://github.com/tomaka/rouille
 [Tide]: https://docs.rs/tide/
 [Axum]: https://docs.rs/axum/
+[Warp]: https://seanmonstar.com/blog/warp/
+[Submillisecond]: https://github.com/lunatic-solutions/submillisecond
 
 # Actix
 
@@ -60,22 +62,21 @@ maud = { version = "*", features = ["rocket"] }
 This adds a `Responder` implementation for the `Markup` type, so you can return the result directly:
 
 ```rust,no_run
-#![feature(decl_macro)]
-
 use maud::{html, Markup};
 use rocket::{get, routes};
 use std::borrow::Cow;
 
 #[get("/<name>")]
-fn hello<'a>(name: Cow<'a, str>) -> Markup {
+fn hello(name: &str) -> Markup {
     html! {
         h1 { "Hello, " (name) "!" }
         p { "Nice to meet you!" }
     }
 }
 
-fn main() {
-    rocket::ignite().mount("/", routes![hello]).launch();
+#[rocket::launch]
+fn launch() -> _ {
+    rocket::build().mount("/", routes![hello])
 }
 ```
 
@@ -167,9 +168,67 @@ async fn main() {
     let app = Router::new().route("/", get(hello_world));
 
     // run it with hyper on localhost:3000
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+
+    axum::serve(listener, app.into_make_service()).await.unwrap();
+}
+```
+
+# Warp
+
+Warp support is available with the "warp" feature:
+
+```toml
+# ...
+[dependencies]
+maud = { version = "*", features = ["warp"] }
+# ...
+```
+
+This enables `Markup` to be of type `warp::Reply`, making it possible to return it
+immediately from a handler.
+
+```rust,no_run
+use maud::html;
+use warp::Filter;
+
+#[tokio::main]
+async fn main() {
+    let hello = warp::any().map(|| html! { h1 { "Hello, world!" } });
+    warp::serve(hello).run(([127, 0, 0, 1], 8000)).await;
+}
+```
+
+# Submillisecond
+
+Submillisecond support is available with the "submillisecond" feature:
+
+```toml
+# ...
+[dependencies]
+maud = { version = "*", features = ["submillisecond"] }
+# ...
+```
+
+This adds an implementation of `IntoResponse` for `Markup`/`PreEscaped<String>`.
+This then allows you to use it directly as a response!
+
+```rust,no_run
+use maud::{html, Markup};
+use std::io::Result;
+use submillisecond::{router, Application};
+
+fn main() -> Result<()> {
+    Application::new(router! {
+
+        GET "/hello" => helloworld
+    })
+    .serve("0.0.0.0:3000")
+}
+
+fn helloworld() -> Markup {
+    html! {
+        h1 { "Hello, World!" }
+    }
 }
 ```

@@ -1,5 +1,6 @@
 use proc_macro2::{TokenStream, TokenTree};
 use proc_macro_error::SpanRange;
+use syn::Lit;
 
 #[derive(Debug)]
 pub enum Markup {
@@ -213,5 +214,16 @@ pub fn join_ranges<I: IntoIterator<Item = SpanRange>>(ranges: I) -> SpanRange {
 }
 
 pub fn name_to_string(name: TokenStream) -> String {
-    name.into_iter().map(|token| token.to_string()).collect()
+    name.into_iter()
+        .map(|token| {
+            if let TokenTree::Literal(literal) = token {
+                match Lit::new(literal.clone()) {
+                    Lit::Str(str) => str.value(),
+                    _ => literal.to_string(),
+                }
+            } else {
+                token.to_string()
+            }
+        })
+        .collect()
 }
