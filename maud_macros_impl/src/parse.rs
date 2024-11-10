@@ -19,6 +19,7 @@ struct Parser {
     /// If we're inside an attribute, then this contains the attribute name.
     current_attr: Option<String>,
     input: <TokenStream as IntoIterator>::IntoIter,
+    /// Whether this parsing is happening at runtime. Should only be used to control error reporting.
     is_runtime: bool,
 }
 
@@ -754,6 +755,7 @@ impl Parser {
         ast::Block {
             markups,
             outer_span,
+
         }
     }
 }

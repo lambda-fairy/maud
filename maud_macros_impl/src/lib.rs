@@ -12,7 +12,7 @@ mod parse;
 
 use std::{io::{BufReader, BufRead}, fs::File, collections::HashMap};
 
-use proc_macro2::{Ident, Span, TokenStream, TokenTree};
+use proc_macro2::{Ident, Span, TokenStream, TokenTree, Literal};
 use quote::quote;
 
 use crate::{ast::Markup, parse::parse_at_runtime};
@@ -21,16 +21,16 @@ use crate::{ast::Markup, parse::parse_at_runtime};
 use crate::runtime::format_str;
 
 pub fn expand(input: TokenStream) -> TokenStream {
-    let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
     let size_hint = input.to_string().len();
     let markups = parse::parse(input);
 
-    expand_from_parsed(markups, output_ident, size_hint)
+    expand_from_parsed(markups, size_hint)
 }
 
-fn expand_from_parsed(markups: Vec<Markup>, output_ident: TokenTree, size_hint: usize) -> TokenStream {
+fn expand_from_parsed(markups: Vec<Markup>, size_hint: usize) -> TokenStream {
+    let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
     let stmts = generate::generate(markups, output_ident.clone());
     quote!({
         extern crate alloc;
@@ -47,18 +47,24 @@ fn expand_from_parsed(markups: Vec<Markup>, output_ident: TokenTree, size_hint: 
 // normal version, but it can be miles faster to iterate on.
 #[cfg(feature = "hotreload")]
 pub fn expand_runtime(input: TokenStream) -> TokenStream {
-    let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
     let markups = parse::parse(input.clone());
+    expand_runtime_from_parsed(markups, "html!")
+}
+
+#[cfg(feature = "hotreload")]
+fn expand_runtime_from_parsed(markups: Vec<Markup>, skip_to_keyword: &str) -> TokenStream {
     let stmts = runtime::generate(markups);
-    quote!({
+
+    let skip_to_keyword = TokenTree::Literal(Literal::string(skip_to_keyword));
+
+    let tok = quote!({
         extern crate alloc;
         extern crate maud;
-        let mut #output_ident = String::new();
         let file_info = file!();
         let line_info = line!();
 
-        let input = ::maud::macro_private::gather_html_macro_invocations(file_info, line_info);
         let mut vars: ::std::collections::HashMap<&'static str, String> = ::std::collections::HashMap::new();
+        let input = ::maud::macro_private::gather_html_macro_invocations(file_info, line_info, #skip_to_keyword);
         #stmts;
 
         match ::maud::macro_private::expand_runtime_main(
@@ -70,7 +76,15 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
             Ok(x) => ::maud::PreEscaped(x),
             Err(e) => ::maud::macro_private::render_runtime_error(&input.unwrap_or_default(), &e),
         }
-    })
+    });
+
+    let s = tok.to_string();
+
+    if s.contains("unwrap_or_default") {
+        // panic!("{}", s);
+    }
+
+    tok
 }
 
 #[cfg(feature = "hotreload")]
@@ -114,7 +128,7 @@ pub fn expand_runtime_main(vars: HashMap<&'static str, String>, input: Option<&s
 }
 
 /// Grabs the inside of an html! {} invocation and returns it as a string
-pub fn gather_html_macro_invocations(file_path: &'static str, start_line: u32) -> Option<String> {
+pub fn gather_html_macro_invocations(file_path: &str, start_line: u32, skip_to_keyword: &str) -> Option<String> {
     let buf_reader = BufReader::new(File::open(file_path).unwrap());
 
     let mut braces_diff = 0;
@@ -125,20 +139,20 @@ pub fn gather_html_macro_invocations(file_path: &'static str, start_line: u32) -
         .map(|line| line.unwrap())
         // scan for beginning of the macro. start_line may point to it directly, but we want to
         // handle code flowing slightly downward.
-        .skip_while(|line| !line.contains("html!"))
+        .skip_while(|line| !line.contains(skip_to_keyword))
         .skip(1)
-        .take_while(|line| {
-            for c in line.chars() {
-                if c == '{' {
-                    braces_diff += 1;
-                } else if c == '}' {
-                    braces_diff -= 1;
-                }
+        .collect::<Vec<_>>()
+        .join("\n")
+        .chars()
+        .take_while(|&c| {
+            if c == '{' {
+                braces_diff += 1;
+            } else if c == '}' {
+                braces_diff -= 1;
             }
             braces_diff != -1
         })
-        .collect::<Vec<_>>()
-        .join("\n");
+        .collect::<String>();
 
     if !html_invocation.is_empty() {
         Some(html_invocation)

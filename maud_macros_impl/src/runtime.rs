@@ -1,8 +1,8 @@
 use proc_macro2::{Ident, Span, TokenStream, TokenTree};
 use proc_macro_error::SpanRange;
-use quote::{quote};
+use quote::quote;
 
-use crate::{ast::*, escape, expand_from_parsed};
+use crate::{ast::*, escape, expand_from_parsed, expand_runtime, expand_runtime_from_parsed};
 
 pub fn generate(markups: Vec<Markup>) -> TokenStream {
     let mut build = RuntimeBuilder::new();
@@ -23,10 +23,6 @@ impl RuntimeGenerator {
         RuntimeGenerator {}
     }
 
-    fn builder(&self) -> RuntimeBuilder {
-        RuntimeBuilder::new()
-    }
-
     fn markups(&self, markups: Vec<Markup>, build: &mut RuntimeBuilder) {
         for markup in markups {
             self.markup(markup, build);
@@ -39,17 +35,42 @@ impl RuntimeGenerator {
             Markup::Block(Block { markups, .. }) => self.markups(markups, build),
             Markup::Literal { content, .. } => build.push_escaped(&content),
             Markup::Symbol { symbol } => build.push_str(&symbol.to_string()),
-            Markup::Splice { expr, .. } => build.push_format_arg(expr),
+            Markup::Splice { expr, .. } => self.splice(expr, build),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
-            Markup::Let { tokens, .. } => build.push_format_arg(tokens),
+            Markup::Let { tokens, .. } => {
+                // this is a bit dicey
+                build.tokens.extend(tokens);
+            },
+            Markup::Special { segments, .. } => self.special(segments, build),
             // fallback case: use static generator to render a subset of the template
             markup => {
-                let output_ident = TokenTree::Ident(Ident::new("__maud_fallback_output", Span::mixed_site()));
-                let tt = expand_from_parsed(vec![markup], output_ident, 0);
+                let tt = expand_from_parsed(vec![markup], 0);
 
                 build.push_format_arg(tt);
             }
         }
+    }
+
+    fn special(&self, segments: Vec<Special>, build: &mut RuntimeBuilder) {
+        let output_ident = TokenTree::Ident(Ident::new("__maud_special_output", Span::mixed_site()));
+        let mut tt = TokenStream::new();
+        for Special { head, body, .. } in segments {
+            let body = expand_runtime_from_parsed(body.markups, &head.to_string());
+            tt.extend(quote! {
+                #head {
+                    ::maud::Render::render_to(&#body, &mut #output_ident);
+                }
+            });
+        }
+        build.push_format_arg(quote! {{
+            let mut #output_ident = String::new();
+            #tt
+            ::maud::PreEscaped(#output_ident)
+        }});
+    }
+
+    fn splice(&self, expr: TokenStream, build: &mut RuntimeBuilder) {
+        build.push_format_arg(expr);
     }
 
     fn element(&self, name: TokenStream, attrs: Vec<Attr>, body: ElementBody, build: &mut RuntimeBuilder) {
@@ -79,12 +100,32 @@ impl RuntimeGenerator {
                     self.markup(value, build);
                     build.push_str("\"");
                 }
-                AttrType::Optional { .. } => todo!(),
+                AttrType::Optional { toggler: Toggler { cond, .. } } => {
+                    let inner_value = quote!(inner_value);
+                    let name_tok = name_to_string(name);
+                    let body = expand_runtime(quote! {
+                        (::maud::PreEscaped(" "))
+                        (::maud::PreEscaped(#name_tok))
+                        (::maud::PreEscaped("=\""))
+                        (#inner_value)
+                        (::maud::PreEscaped("\""))
+                    });
+
+                    build.push_format_arg(quote!(if let Some(#inner_value) = (#cond) { #body }));
+                },
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
                     self.name(name, build);
                 }
-                AttrType::Empty { .. } => todo!(),
+                AttrType::Empty { toggler: Some(Toggler { cond, .. }) } => {
+                    let name_tok = name_to_string(name);
+                    let body = expand_runtime(quote! {
+                        " "
+                        (::maud::PreEscaped(#name_tok))
+                    });
+
+                    build.push_format_arg(quote!(if (#cond) { #body }));
+                }
             }
         }
     }
@@ -136,6 +177,7 @@ fn desugar_classes_or_ids(
             markups: prepend_leading_space(name, &mut leading_space),
             // TODO: is this correct?
             outer_span: cond_span,
+
         };
         markups.push(Markup::Special {
             segments: vec![Special {
@@ -151,6 +193,7 @@ fn desugar_classes_or_ids(
             value: Markup::Block(Block {
                 markups,
                 outer_span: SpanRange::call_site(),
+
             }),
         },
     })
