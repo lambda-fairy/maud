@@ -10,15 +10,24 @@ mod generate;
 mod runtime;
 mod parse;
 
-use std::{io::{BufReader, BufRead}, fs::File, collections::HashMap};
+use std::{io::{BufReader, BufRead}, fs::File};
 
-use proc_macro2::{Ident, Span, TokenStream, TokenTree, Literal};
+use proc_macro2::{Ident, Span, TokenStream, TokenTree};
 use quote::quote;
 
-use crate::{ast::Markup, parse::parse_at_runtime};
+
+use crate::ast::Markup;
 
 #[cfg(feature = "hotreload")]
-use crate::runtime::format_str;
+use {
+    std::collections::HashMap,
+    proc_macro2::Literal,
+    crate::parse::parse_at_runtime,
+    crate::runtime::format_str
+};
+
+
+pub use crate::escape::escape_to_string;
 
 pub fn expand(input: TokenStream) -> TokenStream {
     // Heuristic: the size of the resulting markup tends to correlate with the

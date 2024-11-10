@@ -10,6 +10,7 @@ pub fn parse(input: TokenStream) -> Vec<ast::Markup> {
     Parser::new(input).markups()
 }
 
+#[cfg(feature = "hotreload")]
 pub fn parse_at_runtime(input: TokenStream) -> Vec<ast::Markup> {
     Parser::new_at_runtime(input).markups()
 }
@@ -40,6 +41,7 @@ impl Parser {
         }
     }
 
+    #[cfg(feature = "hotreload")]
     fn new_at_runtime(input: TokenStream) -> Parser {
         Parser {
             current_attr: None,

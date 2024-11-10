@@ -22,7 +22,7 @@ axum = ["axum-core", "http"]
 
 [dependencies]
 maud_macros = { version = "0.26.0", path = "../maud_macros" }
-maud_macros_impl = { version = "0.26.0", path = "../maud_macros_impl", optional = true }
+maud_macros_impl = { version = "0.26.0", path = "../maud_macros_impl" }
 itoa = "1"
 rocket = { version = "0.5", optional = true }
 futures-util = { version = "0.3.0", optional = true, default-features = false }

@@ -25,8 +25,6 @@ pub use {
     maud_macros::html_hotreload as html,
 };
 
-mod escape;
-
 /// An adapter that escapes HTML special characters.
 ///
 /// The following characters are escaped:
@@ -61,7 +59,7 @@ impl<'a> Escaper<'a> {
 
 impl fmt::Write for Escaper<'_> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        escape::escape_to_string(s, self.0);
+        maud_macros_impl::escape_to_string(s, self.0);
         Ok(())
     }
 }
@@ -119,7 +117,7 @@ pub trait Render {
 
 impl Render for str {
     fn render_to(&self, w: &mut String) {
-        escape::escape_to_string(self, w);
+        maud_macros_impl::escape_to_string(self, w);
     }
 }
 
