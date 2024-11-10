@@ -500,9 +500,7 @@ impl Parser {
                 None => {
                     let mut span = ast::span_tokens(tokens);
                     span.first = at_span;
-                    panic!(
-                        "unexpected end of `@let` expression"
-                    );
+                    panic!("unexpected end of `@let` expression");
                 }
             }
         }
@@ -567,7 +565,7 @@ impl Parser {
                 } else {
                     abort_call_site!("expected `;`, found end of macro")
                 }
-            },
+            }
         };
         ast::Markup::Element { name, attrs, body }
     }
@@ -757,7 +755,6 @@ impl Parser {
         ast::Block {
             markups,
             outer_span,
-
         }
     }
 }

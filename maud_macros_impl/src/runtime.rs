@@ -1,8 +1,8 @@
 use proc_macro2::{Ident, Span, TokenStream, TokenTree};
 use quote::quote;
 
-use crate::{ast::*, escape, expand_from_parsed, expand_runtime, expand_runtime_from_parsed};
 use crate::generate::desugar_attrs;
+use crate::{ast::*, escape, expand_from_parsed, expand_runtime, expand_runtime_from_parsed};
 
 pub fn generate(markups: Vec<Markup>) -> TokenStream {
     let mut build = RuntimeBuilder::new();
@@ -31,7 +31,7 @@ impl RuntimeGenerator {
 
     fn markup(&self, markup: Markup, build: &mut RuntimeBuilder) {
         match markup {
-            Markup::ParseError { .. } => {},
+            Markup::ParseError { .. } => {}
             Markup::Block(Block { markups, .. }) => self.markups(markups, build),
             Markup::Literal { content, .. } => build.push_escaped(&content),
             Markup::Symbol { symbol } => build.push_str(&symbol.to_string()),
@@ -40,7 +40,7 @@ impl RuntimeGenerator {
             Markup::Let { tokens, .. } => {
                 // this is a bit dicey
                 build.tokens.extend(tokens);
-            },
+            }
             Markup::Special { segments, .. } => self.special(segments, build),
             // fallback case: use static generator to render a subset of the template
             markup => {
@@ -52,7 +52,8 @@ impl RuntimeGenerator {
     }
 
     fn special(&self, segments: Vec<Special>, build: &mut RuntimeBuilder) {
-        let output_ident = TokenTree::Ident(Ident::new("__maud_special_output", Span::mixed_site()));
+        let output_ident =
+            TokenTree::Ident(Ident::new("__maud_special_output", Span::mixed_site()));
         let mut tt = TokenStream::new();
         for Special { head, body, .. } in segments {
             let body = expand_runtime_from_parsed(body.markups, &head.to_string());
@@ -73,7 +74,13 @@ impl RuntimeGenerator {
         build.push_format_arg(expr);
     }
 
-    fn element(&self, name: TokenStream, attrs: Vec<Attr>, body: ElementBody, build: &mut RuntimeBuilder) {
+    fn element(
+        &self,
+        name: TokenStream,
+        attrs: Vec<Attr>,
+        body: ElementBody,
+        build: &mut RuntimeBuilder,
+    ) {
         build.push_str("<");
         self.name(name.clone(), build);
         self.attrs(attrs, build);
@@ -100,7 +107,9 @@ impl RuntimeGenerator {
                     self.markup(value, build);
                     build.push_str("\"");
                 }
-                AttrType::Optional { toggler: Toggler { cond, .. } } => {
+                AttrType::Optional {
+                    toggler: Toggler { cond, .. },
+                } => {
                     let inner_value = quote!(inner_value);
                     let name_tok = name_to_string(name);
                     let body = expand_runtime(quote! {
@@ -112,12 +121,14 @@ impl RuntimeGenerator {
                     });
 
                     build.push_format_arg(quote!(if let Some(#inner_value) = (#cond) { #body }));
-                },
+                }
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
                     self.name(name, build);
                 }
-                AttrType::Empty { toggler: Some(Toggler { cond, .. }) } => {
+                AttrType::Empty {
+                    toggler: Some(Toggler { cond, .. }),
+                } => {
                     let name_tok = name_to_string(name);
                     let body = expand_runtime(quote! {
                         " "

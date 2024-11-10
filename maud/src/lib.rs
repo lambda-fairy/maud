@@ -20,10 +20,7 @@ pub use maud_macros::html as html_static;
 pub use maud_macros::html;
 
 #[cfg(feature = "hotreload")]
-pub use {
-    maud_macros::html_hotreload,
-    maud_macros::html_hotreload as html,
-};
+pub use {maud_macros::html_hotreload, maud_macros::html_hotreload as html};
 
 /// An adapter that escapes HTML special characters.
 ///
@@ -469,11 +466,8 @@ pub mod macro_private {
         }
     }
 
-
     #[cfg(feature = "hotreload")]
-    pub use {
-        maud_macros_impl::*,
-    };
+    pub use maud_macros_impl::*;
 
     #[cfg(feature = "hotreload")]
     pub fn render_runtime_error(input: &str, e: &str) -> crate::Markup {
@@ -483,5 +477,4 @@ pub mod macro_private {
         println!("for sub-template:\n{}", input);
         crate::PreEscaped(format!("<div style='background: black; position: absolute; top: 0; left: 0; z-index: 1000'><h1 style='red'>Template Errors:</h1><pre>{}</pre></div>", e))
     }
-
 }

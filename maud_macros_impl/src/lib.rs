@@ -6,26 +6,25 @@
 mod ast;
 mod escape;
 mod generate;
+mod parse;
 #[cfg(feature = "hotreload")]
 mod runtime;
-mod parse;
 
-use std::{io::{BufReader, BufRead}, fs::File};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+};
 
 use proc_macro2::{Ident, Span, TokenStream, TokenTree};
 use quote::quote;
-
 
 use crate::ast::Markup;
 
 #[cfg(feature = "hotreload")]
 use {
+    crate::parse::parse_at_runtime, crate::runtime::format_str, proc_macro2::Literal,
     std::collections::HashMap,
-    proc_macro2::Literal,
-    crate::parse::parse_at_runtime,
-    crate::runtime::format_str
 };
-
 
 pub use crate::escape::escape_to_string;
 
@@ -97,11 +96,14 @@ fn expand_runtime_from_parsed(markups: Vec<Markup>, skip_to_keyword: &str) -> To
 }
 
 #[cfg(feature = "hotreload")]
-pub fn expand_runtime_main(vars: HashMap<&'static str, String>, input: Option<&str>, file_info: &str, line_info: u32) -> Result<String, String> {
+pub fn expand_runtime_main(
+    vars: HashMap<&'static str, String>,
+    input: Option<&str>,
+    file_info: &str,
+    line_info: u32,
+) -> Result<String, String> {
     if let Some(input) = input {
-        let res = ::std::panic::catch_unwind(|| {
-            parse_at_runtime(input.parse().unwrap())
-        });
+        let res = ::std::panic::catch_unwind(|| parse_at_runtime(input.parse().unwrap()));
 
         if let Err(e) = res {
             if let Some(s) = e
@@ -109,7 +111,10 @@ pub fn expand_runtime_main(vars: HashMap<&'static str, String>, input: Option<&s
                 .downcast_ref::<String>()
                 .map(String::as_str)
                 // If that fails, try to turn it into a &'static str
-                .or_else(|| e.downcast_ref::<&'static str>().map(::std::ops::Deref::deref))
+                .or_else(|| {
+                    e.downcast_ref::<&'static str>()
+                        .map(::std::ops::Deref::deref)
+                })
             {
                 return Err(s.to_string());
             } else {
@@ -122,22 +127,27 @@ pub fn expand_runtime_main(vars: HashMap<&'static str, String>, input: Option<&s
             // cannot use return here, and block labels come with strings attached (cant nest them
             // without compiler warnings)
             match leon::Template::parse(&format_str) {
-                Ok(template) => {
-                    match template.render(&vars) {
-                        Ok(template) => Ok(template),
-                        Err(e) => Err(e.to_string())
-                    }
+                Ok(template) => match template.render(&vars) {
+                    Ok(template) => Ok(template),
+                    Err(e) => Err(e.to_string()),
                 },
-                Err(e) => Err(e.to_string())
+                Err(e) => Err(e.to_string()),
             }
         }
     } else {
-        Err(format!("can't find template source at {}:{}, please recompile", file_info, line_info))
+        Err(format!(
+            "can't find template source at {}:{}, please recompile",
+            file_info, line_info
+        ))
     }
 }
 
 /// Grabs the inside of an html! {} invocation and returns it as a string
-pub fn gather_html_macro_invocations(file_path: &str, start_line: u32, skip_to_keyword: &str) -> Option<String> {
+pub fn gather_html_macro_invocations(
+    file_path: &str,
+    start_line: u32,
+    skip_to_keyword: &str,
+) -> Option<String> {
     let buf_reader = BufReader::new(File::open(file_path).unwrap());
 
     let mut braces_diff = 0;

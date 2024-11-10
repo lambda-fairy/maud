@@ -215,7 +215,6 @@ fn desugar_classes_or_ids(
             markups: prepend_leading_space(name, &mut leading_space),
             // TODO: is this correct?
             outer_span: cond_span,
-
         };
         markups.push(Markup::Special {
             segments: vec![Special {
@@ -231,7 +230,6 @@ fn desugar_classes_or_ids(
             value: Markup::Block(Block {
                 markups,
                 outer_span: SpanRange::call_site(),
-
             }),
         },
     })
