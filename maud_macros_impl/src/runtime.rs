@@ -1,8 +1,8 @@
 use proc_macro2::{Ident, Span, TokenStream, TokenTree};
-use proc_macro_error::SpanRange;
 use quote::quote;
 
 use crate::{ast::*, escape, expand_from_parsed, expand_runtime, expand_runtime_from_parsed};
+use crate::generate::desugar_attrs;
 
 pub fn generate(markups: Vec<Markup>) -> TokenStream {
     let mut build = RuntimeBuilder::new();
@@ -129,87 +129,6 @@ impl RuntimeGenerator {
             }
         }
     }
-}
-
-////////////////////////////////////////////////////////
-
-fn desugar_attrs(attrs: Vec<Attr>) -> Vec<NamedAttr> {
-    let mut classes_static = vec![];
-    let mut classes_toggled = vec![];
-    let mut ids = vec![];
-    let mut named_attrs = vec![];
-    for attr in attrs {
-        match attr {
-            Attr::Class {
-                name,
-                toggler: Some(toggler),
-                ..
-            } => classes_toggled.push((name, toggler)),
-            Attr::Class {
-                name,
-                toggler: None,
-                ..
-            } => classes_static.push(name),
-            Attr::Id { name, .. } => ids.push(name),
-            Attr::Named { named_attr } => named_attrs.push(named_attr),
-        }
-    }
-    let classes = desugar_classes_or_ids("class", classes_static, classes_toggled);
-    let ids = desugar_classes_or_ids("id", ids, vec![]);
-    classes.into_iter().chain(ids).chain(named_attrs).collect()
-}
-
-fn desugar_classes_or_ids(
-    attr_name: &'static str,
-    values_static: Vec<Markup>,
-    values_toggled: Vec<(Markup, Toggler)>,
-) -> Option<NamedAttr> {
-    if values_static.is_empty() && values_toggled.is_empty() {
-        return None;
-    }
-    let mut markups = Vec::new();
-    let mut leading_space = false;
-    for name in values_static {
-        markups.extend(prepend_leading_space(name, &mut leading_space));
-    }
-    for (name, Toggler { cond, cond_span }) in values_toggled {
-        let body = Block {
-            markups: prepend_leading_space(name, &mut leading_space),
-            // TODO: is this correct?
-            outer_span: cond_span,
-
-        };
-        markups.push(Markup::Special {
-            segments: vec![Special {
-                at_span: SpanRange::call_site(),
-                head: quote!(if (#cond)),
-                body,
-            }],
-        });
-    }
-    Some(NamedAttr {
-        name: TokenStream::from(TokenTree::Ident(Ident::new(attr_name, Span::call_site()))),
-        attr_type: AttrType::Normal {
-            value: Markup::Block(Block {
-                markups,
-                outer_span: SpanRange::call_site(),
-
-            }),
-        },
-    })
-}
-
-fn prepend_leading_space(name: Markup, leading_space: &mut bool) -> Vec<Markup> {
-    let mut markups = Vec::new();
-    if *leading_space {
-        markups.push(Markup::Literal {
-            content: " ".to_owned(),
-            span: name.span(),
-        });
-    }
-    *leading_space = true;
-    markups.push(name);
-    markups
 }
 
 ////////////////////////////////////////////////////////

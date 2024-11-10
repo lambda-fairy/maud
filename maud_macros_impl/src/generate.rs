@@ -171,7 +171,7 @@ impl Generator {
 
 ////////////////////////////////////////////////////////
 
-fn desugar_attrs(attrs: Vec<Attr>) -> Vec<NamedAttr> {
+pub fn desugar_attrs(attrs: Vec<Attr>) -> Vec<NamedAttr> {
     let mut classes_static = vec![];
     let mut classes_toggled = vec![];
     let mut ids = vec![];
