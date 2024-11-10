@@ -23,10 +23,6 @@ impl RuntimeGenerator {
         RuntimeGenerator {}
     }
 
-    fn builder(&self) -> RuntimeBuilder {
-        RuntimeBuilder::new()
-    }
-
     fn markups(&self, markups: Vec<Markup>, build: &mut RuntimeBuilder) {
         for markup in markups {
             self.markup(markup, build);
@@ -35,6 +31,7 @@ impl RuntimeGenerator {
 
     fn markup(&self, markup: Markup, build: &mut RuntimeBuilder) {
         match markup {
+            Markup::ParseError { .. } => {},
             Markup::Block(Block { markups, .. }) => {
                 for markup in markups {
                     self.markup(markup, build);

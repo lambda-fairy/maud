@@ -1,5 +1,5 @@
 use proc_macro2::{Delimiter, Ident, Literal, Spacing, Span, TokenStream, TokenTree};
-use proc_macro_error::{SpanRange, emit_error};
+use proc_macro_error::{abort, abort_call_site, emit_error, SpanRange};
 use std::collections::HashMap;
 
 use syn::Lit;
@@ -87,7 +87,7 @@ impl Parser {
         let token = match self.peek() {
             Some(token) => token,
             None => {
-                panic!("unexpected end of input");
+                abort_call_site!("unexpected end of input");
             }
         };
         let markup = match token {
@@ -130,8 +130,10 @@ impl Parser {
                 let ident_string = ident.to_string();
                 match ident_string.as_str() {
                     "if" | "while" | "for" | "match" | "let" => {
-                        panic!(
-                            "found keyword `{}`", ident_string
+                        abort!(
+                            ident,
+                            "found keyword `{}`", ident_string;
+                            help = "should this be a `@{}`?", ident_string
                         );
                     }
                     "true" | "false" => {
@@ -201,17 +203,21 @@ impl Parser {
                 };
             }
             Lit::Int(..) | Lit::Float(..) => {
-                panic!(r#"literal must be double-quoted: `"{}"`"#, literal);
+                emit_error!(literal, r#"literal must be double-quoted: `"{}"`"#, literal);
             }
             Lit::Char(lit_char) => {
-                panic!(
+                emit_error!(
+                    literal,
                     r#"literal must be double-quoted: `"{}"`"#,
                     lit_char.value(),
                 );
             }
             _ => {
-                panic!("expected string");
+                emit_error!(literal, "expected string");
             }
+        }
+        ast::Markup::ParseError {
+            span: SpanRange::single_span(literal.span()),
         }
     }
 
@@ -493,7 +499,8 @@ impl Parser {
     /// The element name should already be consumed.
     fn element(&mut self, name: TokenStream) -> ast::Markup {
         if self.current_attr.is_some() {
-            panic!("unexpected element");
+            let span = ast::span_tokens(name);
+            abort!(span, "unexpected element");
         }
         let attrs = self.attrs();
         let body = match self.peek() {
@@ -503,23 +510,28 @@ impl Parser {
                 // Void element
                 self.advance();
                 if punct.as_char() == '/' {
-                    panic!(
-                        "void elements must use `;`, not `/`"
+                    emit_error!(
+                        punct,
+                        "void elements must use `;`, not `/`";
+                        help = "change this to `;`";
+                        help = "see https://github.com/lambda-fairy/maud/pull/315 for details";
                     );
                 }
                 ast::ElementBody::Void {
                     semi_span: SpanRange::single_span(punct.span()),
                 }
             }
-            Some(_) => match self.markup() {
+            Some(markup) => match self.markup() {
                 ast::Markup::Block(block) => ast::ElementBody::Block { block },
                 _markup => {
-                    panic!(
-                        "element body must be wrapped in braces"
-                    );
+                    abort!(
+                        markup,
+                        "element body must be wrapped in braces";
+                        help = "see https://github.com/lambda-fairy/maud/pull/137 for details"
+                    )
                 }
             },
-            None => panic!("expected `;`, found end of macro"),
+            None => abort_call_site!("expected `;`, found end of macro"),
         };
         ast::Markup::Element { name, attrs, body }
     }

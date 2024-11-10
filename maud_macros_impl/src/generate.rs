@@ -31,6 +31,7 @@ impl Generator {
 
     fn markup(&self, markup: Markup, build: &mut Builder) {
         match markup {
+            Markup::ParseError { .. } => {}
             Markup::Block(Block {
                 markups,
                 outer_span,

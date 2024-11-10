@@ -14,25 +14,21 @@ extern crate alloc;
 use alloc::{borrow::Cow, boxed::Box, string::String, sync::Arc};
 use core::fmt::{self, Arguments, Display, Write};
 
+#[cfg(not(feature = "hotreload"))]
 pub use maud_macros::html;
 
 #[cfg(feature = "hotreload")]
-pub use maud_macros::html_hotreload;
+pub use maud_macros::html_hotreload as html;
 
+#[doc(hidden)]
 #[cfg(feature = "hotreload")]
-pub use maud_macros_impl::expand;
-
-#[cfg(feature = "hotreload")]
-pub use maud_macros_impl::gather_html_macro_invocations;
-
-#[cfg(feature = "hotreload")]
-pub use maud_macros_impl::format_str;
-
-#[cfg(feature = "hotreload")]
-pub use maud_macros_impl::parse;
-
-#[cfg(feature = "hotreload")]
-pub use leon;
+pub use {
+    maud_macros_impl::expand,
+    maud_macros_impl::gather_html_macro_invocations,
+    maud_macros_impl::format_str,
+    maud_macros_impl::parse,
+    leon,
+};
 
 mod escape;
 
