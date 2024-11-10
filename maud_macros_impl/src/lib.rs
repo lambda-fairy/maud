@@ -55,55 +55,62 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
         let mut vars: ::std::collections::HashMap<&'static str, String> = ::std::collections::HashMap::new();
 
         let input = ::maud::macro_private::gather_html_macro_invocations(file!(), line!());
+        if let Some(input) = input {
+            let res = ::std::panic::catch_unwind(|| {
+                ::maud::macro_private::parse_at_runtime(input.parse().unwrap())
+            });
 
-        let res = ::std::panic::catch_unwind(|| {
-            ::maud::macro_private::parse_at_runtime(input.parse().unwrap())
-        });
-
-        if let Err(e) = res {
-            if let Some(s) = e
-                // Try to convert it to a String, then turn that into a str
-                .downcast_ref::<String>()
-                .map(String::as_str)
-                // If that fails, try to turn it into a &'static str
-                .or_else(|| e.downcast_ref::<&'static str>().map(::std::ops::Deref::deref))
-            {
-                ::maud::macro_private::render_runtime_error(s)
+            if let Err(e) = res {
+                if let Some(s) = e
+                    // Try to convert it to a String, then turn that into a str
+                    .downcast_ref::<String>()
+                    .map(String::as_str)
+                    // If that fails, try to turn it into a &'static str
+                    .or_else(|| e.downcast_ref::<&'static str>().map(::std::ops::Deref::deref))
+                {
+                    ::maud::macro_private::render_runtime_error(&input, s)
+                } else {
+                    ::maud::macro_private::render_runtime_error(&input, "unknown panic")
+                }
             } else {
-                ::maud::macro_private::render_runtime_error("unknown panic")
+                let markups = ::maud::macro_private::parse_at_runtime(input.parse().unwrap());
+                let format_str = ::maud::macro_private::format_str(markups);
+
+                #stmts
+
+                // cannot use return here, and block labels come with strings attached (cant nest them
+                // without compiler warnings)
+                match ::maud::macro_private::leon::Template::parse(&format_str) {
+                    Ok(template) => {
+                        match template.render(&vars) {
+                            Ok(template) => maud::PreEscaped(template),
+                            Err(e) => ::maud::macro_private::render_runtime_error(&input, &e.to_string())
+                        }
+                    },
+                    Err(e) => ::maud::macro_private::render_runtime_error(&input, &e.to_string())
+                }
             }
         } else {
-            let markups = ::maud::macro_private::parse_at_runtime(input.parse().unwrap());
-            let format_str = ::maud::macro_private::format_str(markups);
-
-            #stmts
-
-            // cannot use return here, and block labels come with strings attached (cant nest them
-            // without compiler warnings)
-            match ::maud::macro_private::leon::Template::parse(&format_str) {
-                Ok(template) => {
-                    match template.render(&vars) {
-                        Ok(template) => maud::PreEscaped(template),
-                        Err(e) => ::maud::macro_private::render_runtime_error(&e.to_string())
-                    }
-                },
-                Err(e) => ::maud::macro_private::render_runtime_error(&e.to_string())
-            }
+            ::maud::macro_private::render_runtime_error("", &format!("can't find template source at {}:{}, please recompile", file!(), line!()))
         }
     })
 }
 
 /// Grabs the inside of an html! {} invocation and returns it as a string
-pub fn gather_html_macro_invocations(file_path: &'static str, start_column: u32) -> String {
+pub fn gather_html_macro_invocations(file_path: &'static str, start_line: u32) -> Option<String> {
     let buf_reader = BufReader::new(File::open(file_path).unwrap());
 
     let mut braces_diff = 0;
 
     let html_invocation = buf_reader
         .lines()
-        .skip(start_column as usize)
+        .skip(start_line as usize - 1)
+        .map(|line| line.unwrap())
+        // scan for beginning of the macro. start_line may point to it directly, but we want to
+        // handle code flowing slightly downward.
+        .skip_while(|line| !line.contains("html!"))
+        .skip(1)
         .take_while(|line| {
-            let line = line.as_ref().unwrap();
             for c in line.chars() {
                 if c == '{' {
                     braces_diff += 1;
@@ -113,9 +120,12 @@ pub fn gather_html_macro_invocations(file_path: &'static str, start_column: u32)
             }
             braces_diff != -1
         })
-        .map(|line| line.unwrap())
         .collect::<Vec<_>>()
         .join("\n");
 
-    html_invocation
+    if !html_invocation.is_empty() {
+        Some(html_invocation)
+    } else {
+        None
+    }
 }

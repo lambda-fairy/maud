@@ -187,7 +187,12 @@ impl RuntimeBuilder {
     }
 
     fn push_escaped(&mut self, string: &str) {
-        escape::escape_to_string(string, &mut self.format_str);
+        // escape for leon templating. the string itself cannot contain raw {} otherwise
+        let string = string
+            .replace(r"\", r"\\")
+            .replace(r"{", r"\{")
+            .replace(r"}", r"\}");
+        escape::escape_to_string(&string, &mut self.format_str);
     }
 
     fn push_format_arg(&mut self, expr: TokenStream) {
@@ -208,9 +213,6 @@ impl RuntimeBuilder {
     }
 
     fn finish(self) -> TokenStream {
-        let tokens = self.tokens.into_iter().collect::<TokenStream>();
-        quote! {
-            #tokens
-        }.into()
+        self.tokens.into_iter().collect::<TokenStream>()
     }
 }
