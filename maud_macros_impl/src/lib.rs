@@ -43,7 +43,7 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
     let markups = parse::parse(input.clone());
     let stmts = runtime::generate(markups);
     let expand_compile_time = expand(input);
-    quote!({
+    quote!('maud_hotreload: {
         // Epic Hack Template compile time check
         #expand_compile_time;
 
@@ -61,7 +61,7 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
         let markups = if res.is_ok() {
             ::maud::parse(input.parse().unwrap())
         } else {
-            return ::maud::PreEscaped(format!("<h3 color=\"red\">Template Errors:</h1><pre>{:?}<pre>", res.unwrap_err()));
+            break 'maud_hotreload ::maud::PreEscaped(format!("<h3 color=\"red\">Template Errors:</h1><pre>{:?}<pre>", res.unwrap_err()));
         };
 
         let format_str = ::maud::format_str(markups);

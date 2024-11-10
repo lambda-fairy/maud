@@ -1,5 +1,5 @@
 use proc_macro2::{Delimiter, Ident, Literal, Spacing, Span, TokenStream, TokenTree};
-use proc_macro_error::SpanRange;
+use proc_macro_error::{SpanRange, emit_error};
 use std::collections::HashMap;
 
 use syn::Lit;
