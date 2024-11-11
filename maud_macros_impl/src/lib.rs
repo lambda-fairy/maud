@@ -72,7 +72,6 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
         let __maud_input = ::maud::macro_private::gather_html_macro_invocations(
             __maud_file_info,
             __maud_line_info,
-            "html!{",
         );
 
         let __maud_input: ::maud::macro_private::String = match __maud_input {
@@ -150,18 +149,13 @@ pub fn expand_runtime_main(
 pub fn gather_html_macro_invocations(
     file_path: &str,
     start_line: u32,
-    mut skip_to_keyword: &str,
 ) -> Result<String, String> {
     let mut errors = String::new();
     let mut file = None;
 
-    let initial_opening_brace = skip_to_keyword.chars().last().unwrap();
-    let should_skip_opening_brace = matches!(initial_opening_brace, '[' | '(' | '{');
-    if should_skip_opening_brace {
-        skip_to_keyword = &skip_to_keyword[..skip_to_keyword.len()];
-    }
-
     for path in [
+        // try a few paths to deal with workspaces. insta has a more sophisticated, complete
+        // version of this
         Path::new(file_path).to_owned(),
         Path::new("../").join(file_path),
     ] {
@@ -197,14 +191,12 @@ pub fn gather_html_macro_invocations(
     // scan for beginning of the macro. start_line may point to it directly, but we want to
     // handle code flowing slightly downward.
     for line in &mut lines_iter {
-        if let Some((_, mut after)) = line.split_once(skip_to_keyword) {
-            if should_skip_opening_brace {
-                after = if let Some((_, after2)) = after.split_once(initial_opening_brace) {
-                    after2
-                } else {
-                    after
-                };
-            }
+        if let Some((_, after)) = line.split_once("html!") {
+            let after = if let Some((_, after2)) = after.split_once(&['[', '{', '(']) {
+                after2
+            } else {
+                after
+            };
 
             rest_of_line.push_str(after);
             break;
