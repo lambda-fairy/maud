@@ -1,5 +1,4 @@
-extern crate alloc;
-use alloc::string::String;
+use std::collections::HashMap;
 
 use proc_macro2::{Delimiter, Group, Ident, Span, TokenStream, TokenTree};
 use quote::quote;
@@ -8,11 +7,16 @@ use crate::expand;
 use crate::generate::desugar_attrs;
 use crate::{ast::*, escape, expand_from_parsed, expand_runtime_from_parsed};
 
-pub fn generate(vars_ident: Option<TokenTree>, markups: Vec<Markup>) -> (TokenStream, String) {
+pub fn generate(vars_ident: Option<TokenTree>, markups: Vec<Markup>) -> TokenStream {
     let mut build = RuntimeBuilder::new(vars_ident.clone());
     RuntimeGenerator::new().markups(markups, &mut build);
-    let s = build.format_str();
-    (build.finish(), s)
+    build.finish()
+}
+
+pub fn build_interpreter(markups: Vec<Markup>) -> Interpreter {
+    let mut build = RuntimeBuilder::new(None);
+    RuntimeGenerator::new().markups(markups, &mut build);
+    build.interpreter()
 }
 
 struct RuntimeGenerator {}
@@ -201,7 +205,7 @@ impl RuntimeGenerator {
 struct RuntimeBuilder {
     vars_ident: Option<TokenTree>,
     tokens: Vec<TokenTree>,
-    format_str: String,
+    commands: Vec<Command>,
     arg_track: u32,
 }
 
@@ -210,22 +214,19 @@ impl RuntimeBuilder {
         RuntimeBuilder {
             vars_ident,
             tokens: Vec::new(),
-            format_str: String::new(),
+            commands: Vec::new(),
             arg_track: 0,
         }
     }
 
     fn push_str(&mut self, string: &str) {
-        self.format_str.push_str(string);
+        self.commands.push(Command::String(string.to_owned()));
     }
 
     fn push_escaped(&mut self, string: &str) {
-        // escape for leon templating. the string itself cannot contain raw {} otherwise
-        let string = string
-            .replace(r"\", r"\\")
-            .replace(r"{", r"\{")
-            .replace(r"}", r"\}");
-        escape::escape_to_string(&string, &mut self.format_str);
+        let mut s = String::new();
+        escape::escape_to_string(&string, &mut s);
+        self.push_str(&s);
     }
 
     fn push_format_arg(&mut self, expr: TokenStream) {
@@ -243,14 +244,56 @@ impl RuntimeBuilder {
         }
 
         self.arg_track = self.arg_track + 1;
-        self.format_str.push_str(&format!("{{{}}}", arg_track));
+        self.commands.push(Command::Variable(arg_track.to_string()));
     }
 
-    fn format_str(&self) -> String {
-        self.format_str.clone()
+    fn interpreter(self) -> Interpreter {
+        Interpreter {
+            commands: self.commands,
+        }
     }
 
     fn finish(self) -> TokenStream {
         self.tokens.into_iter().collect::<TokenStream>()
+    }
+}
+
+// /////// INTERPRETER
+
+pub enum Command {
+    String(String),
+    Variable(String),
+    VariableFromVariable(String),
+}
+
+pub struct Interpreter {
+    pub commands: Vec<Command>,
+}
+
+impl Interpreter {
+    pub fn run(&self, variables: &HashMap<&str, String>) -> Result<String, String> {
+        let mut rv = String::new();
+        for command in &self.commands {
+            match command {
+                Command::String(s) => rv.push_str(s),
+                Command::Variable(v) => {
+                    let s = variables
+                        .get(v.as_str())
+                        .ok_or_else(|| format!("unknown var: {:?}", v))?;
+                    rv.push_str(&s);
+                }
+                Command::VariableFromVariable(v) => {
+                    let v = variables
+                        .get(v.as_str())
+                        .ok_or_else(|| format!("unknown var: {:?}", v))?;
+                    let s = variables
+                        .get(v.as_str())
+                        .ok_or_else(|| format!("unknown secondary var: {:?}", v))?;
+                    rv.push_str(&s);
+                }
+            }
+        }
+
+        Ok(rv)
     }
 }

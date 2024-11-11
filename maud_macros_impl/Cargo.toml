@@ -11,14 +11,13 @@ description = "Compile-time HTML templates."
 edition = "2021"
 
 [features]
-hotreload = ["leon"]
+hotreload = []
 
 [dependencies]
 syn = "1.0.8"
 quote = "1.0.7"
 proc-macro2 = "1.0.23"
 proc-macro-error2 = "2.0.1"
-leon = { version = "2.0.1", optional = true }
 
 [lib]
 name = "maud_macros_impl"

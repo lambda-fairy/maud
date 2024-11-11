@@ -70,10 +70,7 @@ fn expand_runtime_from_parsed(
     let input_string = input.to_string();
     let original_input = TokenTree::Literal(Literal::string(&input_string));
 
-    let (stmts, format_str) = runtime::generate(Some(vars_ident.clone()), markups);
-
-    // only printed for debugging
-    let format_str = TokenTree::Literal(Literal::string(&format_str));
+    let stmts = runtime::generate(Some(vars_ident.clone()), markups);
 
     quote!({
         extern crate maud;
@@ -99,8 +96,6 @@ fn expand_runtime_from_parsed(
                 #original_input
             }
         };
-
-        let __maud_unused_format_str = #format_str;
 
         #stmts;
 
@@ -139,17 +134,8 @@ pub fn expand_runtime_main(
         }
     } else {
         let markups = res.unwrap();
-        let (_, format_str) = runtime::generate(None, markups);
-
-        // cannot use return here, and block labels come with strings attached (cant nest them
-        // without compiler warnings)
-        match leon::Template::parse(&format_str) {
-            Ok(template) => match template.render(&vars) {
-                Ok(template) => Ok(template),
-                Err(e) => Err(e.to_string()),
-            },
-            Err(e) => Err(e.to_string()),
-        }
+        let interpreter = runtime::build_interpreter(markups);
+        interpreter.run(&vars)
     }
 }
 
