@@ -89,7 +89,7 @@ impl RuntimeGenerator {
 
                 let mut body = TokenTree::Group(Group::new(Delimiter::Brace, tt));
                 body.set_span(arms_span.collapse());
-                build.push_lazy_format_arg(quote!(#head #body), sources);
+                build.push_lazy_format_arg(quote!(#head #body), sources, &format!("match_expr: {}", head));
             }
         }
     }
@@ -101,7 +101,7 @@ impl RuntimeGenerator {
             "TODO BLOCK".to_owned()
         };
 
-        build.push_lazy_format_arg(self.get_block(block), vec![source]);
+        build.push_lazy_format_arg(self.get_block(block), vec![source], "block");
     }
 
     fn get_block(&self, block: Block) -> TokenStream {
@@ -121,8 +121,11 @@ impl RuntimeGenerator {
     fn special(&self, segments: Vec<Special>, build: &mut RuntimeBuilder) {
         let mut tt = TokenStream::new();
         let mut sources = Vec::new();
+        let mut varname = String::from("special: ");
         for (i, Special { head, body, .. }) in segments.into_iter().enumerate() {
             if let Some(ref template_source) = body.raw_body {
+                varname.push_str(&normalize_source_for_hashing(head.to_string()));
+                varname.push('\n');
                 sources.push(template_source.to_string());
             } else {
                 sources.push("TODO SPECIAL".to_owned());
@@ -150,11 +153,11 @@ impl RuntimeGenerator {
             })
         }};
 
-        build.push_lazy_format_arg(output, sources);
+        build.push_lazy_format_arg(output, sources, &varname);
     }
 
     fn splice(&self, expr: TokenStream, build: &mut RuntimeBuilder) {
-        build.push_format_arg(expr, vec!["TODO SPLICE".to_owned()]);
+        build.push_format_arg(expr, vec!["TODO SPLICE".to_owned()], "splice");
     }
 
     fn element(
@@ -212,6 +215,7 @@ impl RuntimeGenerator {
                             }
                         },
                         vec!["TODO ATTR TYPE OPTIONAL".to_owned()],
+                        "optional_attr",
                     );
                 }
                 AttrType::Empty { toggler: None } => {
@@ -236,6 +240,7 @@ impl RuntimeGenerator {
                             }
                         },
                         vec!["TODO ATTR TYPE EMPTY".to_owned()],
+                        "empty_attr",
                     );
                 }
             }
@@ -272,7 +277,7 @@ impl RuntimeBuilder {
         self.push_str(&s);
     }
 
-    fn push_format_arg(&mut self, expr: TokenStream, template_sources: Vec<String>) {
+    fn push_format_arg(&mut self, expr: TokenStream, template_sources: Vec<String>, named_variable: &str) {
         self.push_lazy_format_arg(
             quote! {{
                 extern crate maud;
@@ -281,23 +286,25 @@ impl RuntimeBuilder {
                 ::maud::macro_private::Box::new(move |_| Ok(buf))
             }},
             template_sources,
+            named_variable
         );
     }
 
-    fn push_lazy_format_arg(&mut self, expr: TokenStream, template_sources: Vec<String>) {
-        let arg_track = self.arg_track.to_string();
+    fn push_lazy_format_arg(&mut self, expr: TokenStream, template_sources: Vec<String>, named_variable: &str) {
+        let variable_name = format!("{}_{}", self.arg_track, named_variable);
 
         if let Some(ref vars) = self.vars_ident {
             self.tokens.extend(quote! {
-                #vars.insert(#arg_track, #expr);
+                #vars.insert(#variable_name, #expr);
             });
         }
 
-        self.arg_track = self.arg_track + 1;
         self.commands.push(Command::Variable {
-            name: arg_track.to_string(),
+            name: variable_name,
             template_sources,
         });
+
+        self.arg_track = self.arg_track + 1;
     }
 
     fn interpreter(self) -> Interpreter {
@@ -337,7 +344,7 @@ impl Interpreter {
                 } => {
                     let s = variables
                         .remove(name.as_str())
-                        .ok_or_else(|| format!("unknown var: {:?}", name))?;
+                        .ok_or_else(|| format!("unknown var: {:?}\nremaining variables: {:?}", name, variables.keys()))?;
                     rv.push_str(&s(template_sources)?);
                 }
             }
@@ -349,3 +356,13 @@ impl Interpreter {
 
 // partial templates are generated code that take their own sourcecode for live reloading.
 pub type PartialTemplate = Box<dyn FnOnce(Vec<String>) -> Result<String, String>>;
+
+// we add hashes of source code to our variable names to prevent the chances of mis-rendering
+// something, such as when a user swaps blocks around in the template
+fn normalize_source_for_hashing(mut input: String) -> String {
+    input.retain(|c| {
+        !c.is_ascii_whitespace()
+    });
+
+    input
+}
