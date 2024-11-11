@@ -509,13 +509,13 @@ impl Parser {
                 None => {
                     if head.is_empty() {
                         return None;
+                    }
+
+                    if self.is_runtime {
+                        panic!("unexpected end of @match pattern");
                     } else {
-                        if self.is_runtime {
-                            panic!("unexpected end of @match pattern");
-                        } else {
-                            let head_span = ast::span_tokens(head);
-                            abort!(head_span, "unexpected end of @match pattern");
-                        }
+                        let head_span = ast::span_tokens(head);
+                        abort!(head_span, "unexpected end of @match pattern");
                     }
                 }
             }
