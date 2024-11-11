@@ -8,16 +8,11 @@ use crate::expand;
 use crate::generate::desugar_attrs;
 use crate::{ast::*, escape, expand_from_parsed, expand_runtime_from_parsed};
 
-pub fn generate(vars_ident: Option<TokenTree>, markups: Vec<Markup>) -> TokenStream {
+pub fn generate(vars_ident: Option<TokenTree>, markups: Vec<Markup>) -> (TokenStream, String) {
     let mut build = RuntimeBuilder::new(vars_ident.clone());
     RuntimeGenerator::new().markups(markups, &mut build);
-    build.finish()
-}
-
-pub fn format_str(vars_ident: Option<TokenTree>, markups: Vec<Markup>) -> String {
-    let mut build = RuntimeBuilder::new(vars_ident.clone());
-    RuntimeGenerator::new().markups(markups, &mut build);
-    build.format_str()
+    let s = build.format_str();
+    (build.finish(), s)
 }
 
 struct RuntimeGenerator {}
@@ -75,7 +70,7 @@ impl RuntimeGenerator {
                 let mut tt = TokenStream::new();
                 for MatchArm { head, body } in arms {
                     tt.extend(head.clone());
-                    tt.extend(self.get_block(head.clone(), body));
+                    tt.extend(self.get_block(&format!("{}{{", &head.to_string()), body));
                 }
 
                 let mut body = TokenTree::Group(Group::new(Delimiter::Brace, tt));
@@ -86,12 +81,12 @@ impl RuntimeGenerator {
     }
 
     fn block(&self, block: Block, build: &mut RuntimeBuilder) {
-        build.push_format_arg(self.get_block(quote!(), block));
+        build.push_format_arg(self.get_block("    {", block));
     }
 
-    fn get_block(&self, scan_head: TokenStream, block: Block) -> TokenStream {
+    fn get_block(&self, scan_head: &str, block: Block) -> TokenStream {
         if let Some(raw_body) = block.raw_body {
-            expand_runtime_from_parsed(raw_body, block.markups, &scan_head.to_string())
+            expand_runtime_from_parsed(raw_body, block.markups, &scan_head)
         } else {
             expand_from_parsed(block.markups, 0)
         }
@@ -102,7 +97,7 @@ impl RuntimeGenerator {
             TokenTree::Ident(Ident::new("__maud_special_output", Span::mixed_site()));
         let mut tt = TokenStream::new();
         for Special { head, body, .. } in segments {
-            let body = self.get_block(head.clone(), body);
+            let body = self.get_block(&format!("{}{{", head.to_string()), body);
             tt.extend(quote! {
                 #head {
                     ::maud::Render::render_to(&#body, &mut #output_ident);

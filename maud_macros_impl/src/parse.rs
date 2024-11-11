@@ -168,11 +168,15 @@ impl Parser {
                 let ident_string = ident.to_string();
                 match ident_string.as_str() {
                     "if" | "while" | "for" | "match" | "let" => {
-                        abort!(
-                            ident,
-                            "found keyword `{}`", ident_string;
-                            help = "should this be a `@{}`?", ident_string
-                        );
+                        if self.is_runtime {
+                            panic!("found keyword `{}`, should this be a @...?", ident_string);
+                        } else {
+                            abort!(
+                                ident,
+                                "found keyword `{}`", ident_string;
+                                help = "should this be a `@{}`?", ident_string
+                            );
+                        }
                     }
                     "true" | "false" => {
                         if let Some(attr_name) = &self.current_attr {
@@ -218,7 +222,7 @@ impl Parser {
             // ???
             token => {
                 if self.is_runtime {
-                    panic!("invalid syntax");
+                    panic!("invalid syntax: {}", token);
                 } else {
                     abort!(token, "invalid syntax");
                 }

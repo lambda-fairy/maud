@@ -423,6 +423,7 @@ pub mod macro_private {
     use core::fmt::Display;
     #[cfg(feature = "hotreload")]
     pub use std::collections::HashMap;
+    pub use std::env::var as env_var;
 
     #[doc(hidden)]
     #[macro_export]

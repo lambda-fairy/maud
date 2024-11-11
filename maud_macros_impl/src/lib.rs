@@ -16,6 +16,7 @@ mod runtime;
 use std::{
     fs::File,
     io::{BufRead, BufReader},
+    path::Path,
 };
 
 use proc_macro2::{Ident, Span, TokenStream, TokenTree};
@@ -24,10 +25,7 @@ use quote::quote;
 use crate::ast::Markup;
 
 #[cfg(feature = "hotreload")]
-use {
-    crate::parse::parse_at_runtime, crate::runtime::format_str, proc_macro2::Literal,
-    std::collections::HashMap,
-};
+use {crate::parse::parse_at_runtime, proc_macro2::Literal, std::collections::HashMap};
 
 pub use crate::escape::escape_to_string;
 
@@ -58,7 +56,7 @@ fn expand_from_parsed(markups: Vec<Markup>, size_hint: usize) -> TokenStream {
 #[cfg(feature = "hotreload")]
 pub fn expand_runtime(input: TokenStream) -> TokenStream {
     let markups = parse::parse(input.clone());
-    expand_runtime_from_parsed(input, markups, "html!")
+    expand_runtime_from_parsed(input, markups, "html!{")
 }
 
 #[cfg(feature = "hotreload")]
@@ -72,7 +70,10 @@ fn expand_runtime_from_parsed(
     let input_string = input.to_string();
     let original_input = TokenTree::Literal(Literal::string(&input_string));
 
-    let stmts = runtime::generate(Some(vars_ident.clone()), markups);
+    let (stmts, format_str) = runtime::generate(Some(vars_ident.clone()), markups);
+
+    // only printed for debugging
+    let format_str = TokenTree::Literal(Literal::string(&format_str));
 
     quote!({
         extern crate maud;
@@ -87,13 +88,19 @@ fn expand_runtime_from_parsed(
             #skip_to_keyword
         );
 
-        let __maud_input = if let Some(ref input) = __maud_input {
-            input
-        } else {
-            // fall back to original, unedited input when finding file info fails
-            // TODO: maybe expose envvar to abort and force recompile?
-            #original_input
+        let __maud_input = match __maud_input {
+            Ok(ref x) => x,
+            Err(e) => {
+                if ::maud::macro_private::env_var("MAUD_SOURCE_NO_FALLBACK").as_deref() == Ok("1") {
+                    panic!("failed to find sourcecode for {}:{}, scanning for: {:?}, error: {:?}", __maud_file_info, __maud_line_info, #skip_to_keyword, e);
+                }
+
+                // fall back to original, unedited input when finding file info fails
+                #original_input
+            }
         };
+
+        let __maud_unused_format_str = #format_str;
 
         #stmts;
 
@@ -132,7 +139,8 @@ pub fn expand_runtime_main(
         }
     } else {
         let markups = res.unwrap();
-        let format_str = format_str(None, markups);
+        let (_, format_str) = runtime::generate(None, markups);
+        println!("RUNTIME FORMAT: {:?}", format_str);
 
         // cannot use return here, and block labels come with strings attached (cant nest them
         // without compiler warnings)
@@ -150,9 +158,40 @@ pub fn expand_runtime_main(
 pub fn gather_html_macro_invocations(
     file_path: &str,
     start_line: u32,
-    skip_to_keyword: &str,
-) -> Option<String> {
-    let buf_reader = BufReader::new(File::open(file_path).ok()?);
+    mut skip_to_keyword: &str,
+) -> Result<String, String> {
+    let mut errors = String::new();
+    let mut file = None;
+
+    let initial_opening_brace = skip_to_keyword.chars().last().unwrap();
+    let should_skip_opening_brace = matches!(initial_opening_brace, '[' | '(' | '{');
+    if should_skip_opening_brace {
+        skip_to_keyword = &skip_to_keyword[..skip_to_keyword.len()];
+    }
+
+    for path in [
+        Path::new(file_path).to_owned(),
+        Path::new("../").join(file_path),
+    ] {
+        let path = std::path::absolute(path).unwrap();
+        match File::open(&path) {
+            Ok(f) => {
+                file = Some(f);
+                break;
+            }
+            Err(e) => {
+                errors.push_str(&e.to_string());
+                errors.push('\n');
+            }
+        }
+    }
+
+    let file = match file {
+        Some(x) => x,
+        None => return Err(errors),
+    };
+
+    let buf_reader = BufReader::new(file);
 
     let mut output = String::new();
 
@@ -161,50 +200,54 @@ pub fn gather_html_macro_invocations(
         .skip(start_line as usize - 1)
         .map(|line| line.unwrap());
 
-    const OPEN_BRACE: &[char] = &['[', '{', '('];
-    const CLOSE_BRACE: &[char] = &[']', '}', ')'];
+    let mut rest_of_line = String::new();
 
     // scan for beginning of the macro. start_line may point to it directly, but we want to
     // handle code flowing slightly downward.
     for line in &mut lines_iter {
-        if let Some((_, after)) = line.split_once(skip_to_keyword) {
-            // in case that the line is something inline like html! { .. }, we want to append the
-            // rest of the line
-            // skip ahead until first opening brace after match
-            let after = if let Some((_, after2)) = after.split_once(OPEN_BRACE) {
-                after2
-            } else {
-                after
-            };
+        if let Some((_, mut after)) = line.split_once(skip_to_keyword) {
+            if should_skip_opening_brace {
+                after = if let Some((_, after2)) = after.split_once(initial_opening_brace) {
+                    after2
+                } else {
+                    after
+                };
+            }
 
-            output.push_str(after);
+            rest_of_line.push_str(after);
             break;
         }
     }
 
     let mut braces_diff = 0;
 
-    'characterwise: for line in &mut lines_iter {
+    'linewise: for line in Some(rest_of_line).into_iter().chain(lines_iter) {
         for c in line.chars() {
-            if OPEN_BRACE.contains(&c) {
-                braces_diff += 1;
-            } else if CLOSE_BRACE.contains(&c) {
-                braces_diff -= 1;
-            }
+            match c {
+                '[' | '{' | '(' => {
+                    braces_diff += 1;
+                    output.push(c);
+                }
+                ']' | '}' | ')' => {
+                    braces_diff -= 1;
 
-            if braces_diff == -1 {
-                break 'characterwise;
-            }
+                    if braces_diff == -1 {
+                        break 'linewise;
+                    }
 
-            output.push(c);
+                    output.push(c);
+                }
+                c => output.push(c),
+            }
         }
 
         output.push('\n');
     }
 
-    if !output.is_empty() {
-        Some(output)
+    if !output.trim().is_empty() {
+        println!("scanning for {:?}: {:?}", skip_to_keyword, output);
+        Ok(output)
     } else {
-        None
+        Err("output is empty".to_string())
     }
 }
