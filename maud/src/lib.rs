@@ -477,7 +477,17 @@ pub mod macro_private {
 
     #[cfg(feature = "hotreload")]
     pub fn render_runtime_error(e: &str) -> crate::Markup {
-        // TODO: print to stdout as well?
+        eprintln!("{}", e);
+
+        match env_var("MAUD_ON_ERROR").as_deref() {
+            Ok("panic") => panic!("{}", e),
+            Ok("exit") => {
+                eprintln!("{}", e);
+                ::std::process::exit(2);
+            }
+            _ => {}
+        }
+
         crate::PreEscaped(alloc::format!("\"> --> <div style='background: black; color: white; position: absolute; top: 0; left: 0; z-index: 1000'><h1 style='red'>Template Errors:</h1><pre>{}</pre></div>", e))
     }
 }
