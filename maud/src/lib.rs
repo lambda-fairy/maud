@@ -419,8 +419,10 @@ mod submillisecond_support {
 #[doc(hidden)]
 pub mod macro_private {
     use crate::{display, Render};
-    use alloc::string::String;
+    pub use alloc::string::String;
     use core::fmt::Display;
+    #[cfg(feature = "hotreload")]
+    pub use std::collections::HashMap;
 
     #[doc(hidden)]
     #[macro_export]
@@ -471,10 +473,7 @@ pub mod macro_private {
 
     #[cfg(feature = "hotreload")]
     pub fn render_runtime_error(input: &str, e: &str) -> crate::Markup {
-        // print error to console, as we have no guarantee that the error will be seen in the
-        // browser (arbitrary styles may be applied)
-        println!("TEMPLATE ERROR: {}", e);
-        println!("for sub-template:\n{}", input);
-        crate::PreEscaped(format!("<div style='background: black; position: absolute; top: 0; left: 0; z-index: 1000'><h1 style='red'>Template Errors:</h1><pre>{}</pre></div>", e))
+        // TODO: print to stdout as well?
+        crate::PreEscaped(alloc::format!("\"> --> <div style='background: black; color: white; position: absolute; top: 0; left: 0; z-index: 1000'><h1 style='red'>Template Errors:</h1><pre>{}</pre><br>input:<pre>{}</pre></div>", e, input))
     }
 }

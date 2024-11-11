@@ -1,17 +1,21 @@
+extern crate alloc;
+use alloc::string::String;
+
 use proc_macro2::{Ident, Span, TokenStream, TokenTree};
 use quote::quote;
 
+use crate::expand;
 use crate::generate::desugar_attrs;
-use crate::{ast::*, escape, expand_from_parsed, expand_runtime, expand_runtime_from_parsed};
+use crate::{ast::*, escape, expand_from_parsed, expand_runtime_from_parsed};
 
-pub fn generate(markups: Vec<Markup>) -> TokenStream {
-    let mut build = RuntimeBuilder::new();
+pub fn generate(vars_ident: Option<TokenTree>, markups: Vec<Markup>) -> TokenStream {
+    let mut build = RuntimeBuilder::new(vars_ident.clone());
     RuntimeGenerator::new().markups(markups, &mut build);
     build.finish()
 }
 
-pub fn format_str(markups: Vec<Markup>) -> String {
-    let mut build = RuntimeBuilder::new();
+pub fn format_str(vars_ident: Option<TokenTree>, markups: Vec<Markup>) -> String {
+    let mut build = RuntimeBuilder::new(vars_ident.clone());
     RuntimeGenerator::new().markups(markups, &mut build);
     build.format_str()
 }
@@ -32,9 +36,29 @@ impl RuntimeGenerator {
     fn markup(&self, markup: Markup, build: &mut RuntimeBuilder) {
         match markup {
             Markup::ParseError { .. } => {}
-            Markup::Block(Block { markups, .. }) => self.markups(markups, build),
+            Markup::Block(Block {
+                markups,
+                outer_span,
+                raw_body,
+            }) => {
+                if markups
+                    .iter()
+                    .any(|markup| matches!(*markup, Markup::Let { .. }))
+                {
+                    self.block(
+                        Block {
+                            markups,
+                            outer_span,
+                            raw_body,
+                        },
+                        build,
+                    );
+                } else {
+                    self.markups(markups, build);
+                }
+            }
             Markup::Literal { content, .. } => build.push_escaped(&content),
-            Markup::Symbol { symbol } => build.push_str(&symbol.to_string()),
+            Markup::Symbol { symbol } => self.name(symbol, build),
             Markup::Splice { expr, .. } => self.splice(expr, build),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
             Markup::Let { tokens, .. } => {
@@ -51,12 +75,27 @@ impl RuntimeGenerator {
         }
     }
 
+    fn block(&self, block: Block, build: &mut RuntimeBuilder) {
+        self.special(
+            vec![Special {
+                at_span: block.outer_span,
+                head: quote!(),
+                body: block,
+            }],
+            build,
+        );
+    }
+
     fn special(&self, segments: Vec<Special>, build: &mut RuntimeBuilder) {
         let output_ident =
             TokenTree::Ident(Ident::new("__maud_special_output", Span::mixed_site()));
         let mut tt = TokenStream::new();
         for Special { head, body, .. } in segments {
-            let body = expand_runtime_from_parsed(body.markups, &head.to_string());
+            let body = if let Some(raw_body) = body.raw_body {
+                expand_runtime_from_parsed(raw_body, body.markups, &head.to_string())
+            } else {
+                expand_from_parsed(body.markups, 0)
+            };
             tt.extend(quote! {
                 #head {
                     ::maud::Render::render_to(&#body, &mut #output_ident);
@@ -64,7 +103,8 @@ impl RuntimeGenerator {
             });
         }
         build.push_format_arg(quote! {{
-            let mut #output_ident = String::new();
+            extern crate maud;
+            let mut #output_ident = ::maud::macro_private::String::new();
             #tt
             ::maud::PreEscaped(#output_ident)
         }});
@@ -112,15 +152,21 @@ impl RuntimeGenerator {
                 } => {
                     let inner_value = quote!(inner_value);
                     let name_tok = name_to_string(name);
-                    let body = expand_runtime(quote! {
+                    let body = expand(quote! {
                         (::maud::PreEscaped(" "))
-                        (::maud::PreEscaped(#name_tok))
+                        (#name_tok)
                         (::maud::PreEscaped("=\""))
                         (#inner_value)
                         (::maud::PreEscaped("\""))
                     });
 
-                    build.push_format_arg(quote!(if let Some(#inner_value) = (#cond) { #body }));
+                    build.push_format_arg(quote! {
+                        if let Some(#inner_value) = (#cond) {
+                            #body
+                        } else {
+                            ::maud::PreEscaped("".to_owned())
+                        }
+                    });
                 }
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
@@ -130,12 +176,18 @@ impl RuntimeGenerator {
                     toggler: Some(Toggler { cond, .. }),
                 } => {
                     let name_tok = name_to_string(name);
-                    let body = expand_runtime(quote! {
+                    let body = expand(quote! {
                         " "
-                        (::maud::PreEscaped(#name_tok))
+                        (#name_tok)
                     });
 
-                    build.push_format_arg(quote!(if (#cond) { #body }));
+                    build.push_format_arg(quote! {
+                        if (#cond) {
+                            #body
+                        } else {
+                            ::maud::PreEscaped("".to_owned())
+                        }
+                    });
                 }
             }
         }
@@ -145,14 +197,16 @@ impl RuntimeGenerator {
 ////////////////////////////////////////////////////////
 
 struct RuntimeBuilder {
+    vars_ident: Option<TokenTree>,
     tokens: Vec<TokenTree>,
     format_str: String,
     arg_track: u32,
 }
 
 impl RuntimeBuilder {
-    fn new() -> RuntimeBuilder {
+    fn new(vars_ident: Option<TokenTree>) -> RuntimeBuilder {
         RuntimeBuilder {
+            vars_ident,
             tokens: Vec::new(),
             format_str: String::new(),
             arg_track: 0,
@@ -174,13 +228,18 @@ impl RuntimeBuilder {
 
     fn push_format_arg(&mut self, expr: TokenStream) {
         let arg_track = self.arg_track.to_string();
-        self.tokens.extend(quote! {
-            vars.insert(#arg_track, {
-                let mut buf = String::new();
-                ::maud::macro_private::render_to!(&(#expr), &mut buf);
-                buf
+
+        if let Some(ref vars) = self.vars_ident {
+            self.tokens.extend(quote! {
+                #vars.insert(#arg_track, {
+                    extern crate maud;
+                    let mut buf = ::maud::macro_private::String::new();
+                    ::maud::macro_private::render_to!(&(#expr), &mut buf);
+                    buf
+                });
             });
-        });
+        }
+
         self.arg_track = self.arg_track + 1;
         self.format_str.push_str(&format!("{{{}}}", arg_track));
     }

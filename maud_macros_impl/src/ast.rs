@@ -129,6 +129,7 @@ impl ElementBody {
 pub struct Block {
     pub markups: Vec<Markup>,
     pub outer_span: SpanRange,
+    pub raw_body: Option<TokenStream>,
 }
 
 impl Block {

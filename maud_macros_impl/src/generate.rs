@@ -35,6 +35,7 @@ impl Generator {
             Markup::Block(Block {
                 markups,
                 outer_span,
+                raw_body,
             }) => {
                 if markups
                     .iter()
@@ -44,6 +45,7 @@ impl Generator {
                         Block {
                             markups,
                             outer_span,
+                            raw_body,
                         },
                         build,
                     );
@@ -215,6 +217,7 @@ fn desugar_classes_or_ids(
             markups: prepend_leading_space(name, &mut leading_space),
             // TODO: is this correct?
             outer_span: cond_span,
+            raw_body: None,
         };
         markups.push(Markup::Special {
             segments: vec![Special {
@@ -230,6 +233,7 @@ fn desugar_classes_or_ids(
             value: Markup::Block(Block {
                 markups,
                 outer_span: SpanRange::call_site(),
+                raw_body: None,
             }),
         },
     })

@@ -865,10 +865,11 @@ impl Parser {
 
     /// Parses the given token stream as a Maud expression.
     fn block(&mut self, body: TokenStream, outer_span: SpanRange) -> ast::Block {
-        let markups = self.with_input(body).markups();
+        let markups = self.with_input(body.clone()).markups();
         ast::Block {
             markups,
             outer_span,
+            raw_body: Some(body),
         }
     }
 }
