@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use proc_macro2::{Delimiter, Group, Ident, Span, TokenStream, TokenTree};
+use proc_macro2::{Delimiter, Group, TokenStream, TokenTree};
 use quote::quote;
 
 use crate::expand;
@@ -72,52 +72,89 @@ impl RuntimeGenerator {
                 ..
             } => {
                 let mut tt = TokenStream::new();
-                for MatchArm { head, body } in arms {
+                let mut sources = Vec::new();
+                for (i, MatchArm { head, body }) in arms.into_iter().enumerate() {
+                    if let Some(ref template_source) = body.raw_body {
+                        sources.push(template_source.to_string());
+                    } else {
+                        sources.push("TODO MATCH".to_owned());
+                    }
                     tt.extend(head.clone());
-                    tt.extend(self.get_block(&format!("{}{{", &head.to_string()), body));
+                    let partial = self.get_block(body);
+                    tt.extend(quote! {{
+                        let __maud_match_partial = #partial;
+                        Box::new(|sources| __maud_match_partial(vec![sources[#i].clone()]))
+                    }});
                 }
 
                 let mut body = TokenTree::Group(Group::new(Delimiter::Brace, tt));
                 body.set_span(arms_span.collapse());
-                build.push_format_arg(quote!(#head #body));
+                build.push_lazy_format_arg(quote!(#head #body), sources);
             }
         }
     }
 
     fn block(&self, block: Block, build: &mut RuntimeBuilder) {
-        build.push_format_arg(self.get_block("    {", block));
+        let source = if let Some(ref template_source) = block.raw_body {
+            template_source.to_string()
+        } else {
+            "TODO BLOCK".to_owned()
+        };
+
+        build.push_lazy_format_arg(self.get_block(block), vec![source]);
     }
 
-    fn get_block(&self, scan_head: &str, block: Block) -> TokenStream {
-        if let Some(raw_body) = block.raw_body {
-            expand_runtime_from_parsed(raw_body, block.markups, &scan_head)
-        } else {
-            expand_from_parsed(block.markups, 0)
-        }
+    fn get_block(&self, block: Block) -> TokenStream {
+         if block.raw_body.is_some() {
+             expand_runtime_from_parsed(block.markups)
+         } else {
+             // necessary to avoid bogus sources
+             let static_result = expand_from_parsed(block.markups, 0);
+             quote! {{
+                 let __maud_static_result = (#static_result);
+                 let partial: ::maud::macro_private::PartialTemplate = Box::new(|_| Ok(__maud_static_result.into_string()));
+                 partial
+             }}
+         }
     }
 
     fn special(&self, segments: Vec<Special>, build: &mut RuntimeBuilder) {
-        let output_ident =
-            TokenTree::Ident(Ident::new("__maud_special_output", Span::mixed_site()));
         let mut tt = TokenStream::new();
-        for Special { head, body, .. } in segments {
-            let body = self.get_block(&format!("{}{{", head.to_string()), body);
+        let mut sources = Vec::new();
+        for (i, Special { head, body, .. }) in segments.into_iter().enumerate() {
+            if let Some(ref template_source) = body.raw_body {
+                sources.push(template_source.to_string());
+            } else {
+                sources.push("TODO SPECIAL".to_owned());
+            }
+
+            let block = self.get_block(body);
             tt.extend(quote! {
                 #head {
-                    ::maud::Render::render_to(&#body, &mut #output_ident);
+                    __maud_special_res.push((#i, #block));
                 }
             });
         }
-        build.push_format_arg(quote! {{
+        let output = quote! {{
             extern crate maud;
-            let mut #output_ident = ::maud::macro_private::String::new();
+            let mut __maud_special_res = Vec::new();
             #tt
-            ::maud::PreEscaped(#output_ident)
-        }});
+            Box::new(move |sources| {
+                let mut maud_special_output = ::maud::macro_private::String::new();
+                for (source_i, subpartial) in __maud_special_res {
+                    let new_sources = ::maud::macro_private::Vec::from([sources[source_i].clone()]);
+                    maud_special_output.push_str(&subpartial(new_sources)?);
+                }
+
+                Ok(maud_special_output)
+            })
+        }};
+
+        build.push_lazy_format_arg(output, sources);
     }
 
     fn splice(&self, expr: TokenStream, build: &mut RuntimeBuilder) {
-        build.push_format_arg(expr);
+        build.push_format_arg(expr, vec!["TODO SPLICE".to_owned()]);
     }
 
     fn element(
@@ -166,13 +203,16 @@ impl RuntimeGenerator {
                         (::maud::PreEscaped("\""))
                     });
 
-                    build.push_format_arg(quote! {
-                        if let Some(#inner_value) = (#cond) {
-                            #body
-                        } else {
-                            ::maud::PreEscaped("".to_owned())
-                        }
-                    });
+                    build.push_format_arg(
+                        quote! {
+                            if let Some(#inner_value) = (#cond) {
+                                #body
+                            } else {
+                                ::maud::PreEscaped("".to_owned())
+                            }
+                        },
+                        vec!["TODO ATTR TYPE OPTIONAL".to_owned()],
+                    );
                 }
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
@@ -187,13 +227,16 @@ impl RuntimeGenerator {
                         (#name_tok)
                     });
 
-                    build.push_format_arg(quote! {
-                        if (#cond) {
-                            #body
-                        } else {
-                            ::maud::PreEscaped("".to_owned())
-                        }
-                    });
+                    build.push_format_arg(
+                        quote! {
+                            if (#cond) {
+                                #body
+                            } else {
+                                ::maud::PreEscaped("".to_owned())
+                            }
+                        },
+                        vec!["TODO ATTR TYPE EMPTY".to_owned()],
+                    );
                 }
             }
         }
@@ -229,22 +272,32 @@ impl RuntimeBuilder {
         self.push_str(&s);
     }
 
-    fn push_format_arg(&mut self, expr: TokenStream) {
+    fn push_format_arg(&mut self, expr: TokenStream, template_sources: Vec<String>) {
+        self.push_lazy_format_arg(
+            quote! {{
+                extern crate maud;
+                let mut buf = ::maud::macro_private::String::new();
+                ::maud::macro_private::render_to!(&(#expr), &mut buf);
+                ::maud::macro_private::Box::new(move |_| Ok(buf))
+            }},
+            template_sources,
+        );
+    }
+
+    fn push_lazy_format_arg(&mut self, expr: TokenStream, template_sources: Vec<String>) {
         let arg_track = self.arg_track.to_string();
 
         if let Some(ref vars) = self.vars_ident {
             self.tokens.extend(quote! {
-                #vars.insert(#arg_track, {
-                    extern crate maud;
-                    let mut buf = ::maud::macro_private::String::new();
-                    ::maud::macro_private::render_to!(&(#expr), &mut buf);
-                    buf
-                });
+                #vars.insert(#arg_track, #expr);
             });
         }
 
         self.arg_track = self.arg_track + 1;
-        self.commands.push(Command::Variable(arg_track.to_string()));
+        self.commands.push(Command::Variable {
+            name: arg_track.to_string(),
+            template_sources,
+        });
     }
 
     fn interpreter(self) -> Interpreter {
@@ -262,8 +315,10 @@ impl RuntimeBuilder {
 
 pub enum Command {
     String(String),
-    Variable(String),
-    VariableFromVariable(String),
+    Variable {
+        name: String,
+        template_sources: Vec<String>,
+    },
 }
 
 pub struct Interpreter {
@@ -271,25 +326,19 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-    pub fn run(&self, variables: &HashMap<&str, String>) -> Result<String, String> {
+    pub fn run(self, mut variables: HashMap<&str, PartialTemplate>) -> Result<String, String> {
         let mut rv = String::new();
-        for command in &self.commands {
+        for command in self.commands {
             match command {
-                Command::String(s) => rv.push_str(s),
-                Command::Variable(v) => {
+                Command::String(s) => rv.push_str(&s),
+                Command::Variable {
+                    name,
+                    template_sources,
+                } => {
                     let s = variables
-                        .get(v.as_str())
-                        .ok_or_else(|| format!("unknown var: {:?}", v))?;
-                    rv.push_str(&s);
-                }
-                Command::VariableFromVariable(v) => {
-                    let v = variables
-                        .get(v.as_str())
-                        .ok_or_else(|| format!("unknown var: {:?}", v))?;
-                    let s = variables
-                        .get(v.as_str())
-                        .ok_or_else(|| format!("unknown secondary var: {:?}", v))?;
-                    rv.push_str(&s);
+                        .remove(name.as_str())
+                        .ok_or_else(|| format!("unknown var: {:?}", name))?;
+                    rv.push_str(&s(template_sources)?);
                 }
             }
         }
@@ -297,3 +346,6 @@ impl Interpreter {
         Ok(rv)
     }
 }
+
+// partial templates are generated code that take their own sourcecode for live reloading.
+pub type PartialTemplate = Box<dyn FnOnce(Vec<String>) -> Result<String, String>>;

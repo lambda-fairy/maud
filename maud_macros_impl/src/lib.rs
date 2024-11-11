@@ -27,6 +27,9 @@ use crate::ast::Markup;
 #[cfg(feature = "hotreload")]
 use {crate::parse::parse_at_runtime, proc_macro2::Literal, std::collections::HashMap};
 
+#[cfg(feature = "hotreload")]
+pub use crate::runtime::PartialTemplate;
+
 pub use crate::escape::escape_to_string;
 
 pub fn expand(input: TokenStream) -> TokenStream {
@@ -55,63 +58,67 @@ fn expand_from_parsed(markups: Vec<Markup>, size_hint: usize) -> TokenStream {
 // normal version, but it can be miles faster to iterate on.
 #[cfg(feature = "hotreload")]
 pub fn expand_runtime(input: TokenStream) -> TokenStream {
-    let markups = parse::parse(input.clone());
-    expand_runtime_from_parsed(input, markups, "html!{")
-}
-
-#[cfg(feature = "hotreload")]
-fn expand_runtime_from_parsed(
-    input: TokenStream,
-    markups: Vec<Markup>,
-    skip_to_keyword: &str,
-) -> TokenStream {
-    let vars_ident = TokenTree::Ident(Ident::new("__maud_vars", Span::mixed_site()));
-    let skip_to_keyword = TokenTree::Literal(Literal::string(skip_to_keyword));
     let input_string = input.to_string();
+    let markups = parse::parse(input.clone());
+    let partial_template = expand_runtime_from_parsed(markups);
     let original_input = TokenTree::Literal(Literal::string(&input_string));
 
-    let stmts = runtime::generate(Some(vars_ident.clone()), markups);
-
-    quote!({
+    quote! {{
         extern crate maud;
 
         let __maud_file_info = ::std::file!();
         let __maud_line_info = ::std::line!();
 
-        let mut #vars_ident: ::maud::macro_private::HashMap<&'static str, ::maud::macro_private::String> = ::std::collections::HashMap::new();
         let __maud_input = ::maud::macro_private::gather_html_macro_invocations(
             __maud_file_info,
             __maud_line_info,
-            #skip_to_keyword
+            "html!{",
         );
 
-        let __maud_input = match __maud_input {
-            Ok(ref x) => x,
+        let __maud_input: ::maud::macro_private::String = match __maud_input {
+            Ok(x) => x,
             Err(e) => {
                 if ::maud::macro_private::env_var("MAUD_SOURCE_NO_FALLBACK").as_deref() == Ok("1") {
-                    panic!("failed to find sourcecode for {}:{}, scanning for: {:?}, error: {:?}", __maud_file_info, __maud_line_info, #skip_to_keyword, e);
+                    panic!("failed to find sourcecode for {}:{}, error: {:?}", __maud_file_info, __maud_line_info, e);
                 }
 
                 // fall back to original, unedited input when finding file info fails
-                #original_input
+                ::maud::macro_private::String::from(#original_input)
             }
         };
 
-        #stmts;
-
-        match ::maud::macro_private::expand_runtime_main(
-            #vars_ident,
-            __maud_input,
-        ) {
+        match #partial_template(::maud::macro_private::Vec::from([__maud_input.clone()])) {
             Ok(x) => ::maud::PreEscaped(x),
-            Err(e) => ::maud::macro_private::render_runtime_error(&__maud_input, &e),
+            Err(e) => ::maud::macro_private::render_runtime_error(&e),
         }
+    }}
+}
+
+#[cfg(feature = "hotreload")]
+fn expand_runtime_from_parsed(markups: Vec<Markup>) -> TokenStream {
+    let vars_ident = TokenTree::Ident(Ident::new("__maud_vars", Span::mixed_site()));
+    let stmts = runtime::generate(Some(vars_ident.clone()), markups);
+
+    quote!({
+        let mut #vars_ident: ::maud::macro_private::HashMap<&'static str, ::maud::macro_private::PartialTemplate> = ::std::default::Default::default();
+
+        #stmts
+
+        let f : ::maud::macro_private::PartialTemplate = ::maud::macro_private::Box::new(move |sources| {
+            let input = &sources[0];
+            ::maud::macro_private::expand_runtime_main(
+                #vars_ident,
+                input,
+            )
+        });
+
+        f
     })
 }
 
 #[cfg(feature = "hotreload")]
 pub fn expand_runtime_main(
-    vars: HashMap<&'static str, String>,
+    vars: HashMap<&'static str, PartialTemplate>,
     input: &str,
 ) -> Result<String, String> {
     let input: TokenStream = input.parse().unwrap_or_else(|_| panic!("{}", input));
@@ -128,14 +135,14 @@ pub fn expand_runtime_main(
                     .map(::std::ops::Deref::deref)
             })
         {
-            return Err(s.to_string());
+            return Err(format!("{}, source: {}", s, input));
         } else {
             return Err("unknown panic".to_owned());
         }
     } else {
         let markups = res.unwrap();
         let interpreter = runtime::build_interpreter(markups);
-        interpreter.run(&vars)
+        interpreter.run(vars)
     }
 }
 

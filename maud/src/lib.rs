@@ -419,7 +419,9 @@ mod submillisecond_support {
 #[doc(hidden)]
 pub mod macro_private {
     use crate::{display, Render};
+    pub use alloc::boxed::Box;
     pub use alloc::string::String;
+    pub use alloc::vec::Vec;
     use core::fmt::Display;
     #[cfg(feature = "hotreload")]
     pub use std::collections::HashMap;
@@ -474,8 +476,8 @@ pub mod macro_private {
     pub use maud_macros_impl::*;
 
     #[cfg(feature = "hotreload")]
-    pub fn render_runtime_error(input: &str, e: &str) -> crate::Markup {
+    pub fn render_runtime_error(e: &str) -> crate::Markup {
         // TODO: print to stdout as well?
-        crate::PreEscaped(alloc::format!("\"> --> <div style='background: black; color: white; position: absolute; top: 0; left: 0; z-index: 1000'><h1 style='red'>Template Errors:</h1><pre>{}</pre><br>input:<pre>{}</pre></div>", e, input))
+        crate::PreEscaped(alloc::format!("\"> --> <div style='background: black; color: white; position: absolute; top: 0; left: 0; z-index: 1000'><h1 style='red'>Template Errors:</h1><pre>{}</pre></div>", e))
     }
 }
