@@ -140,7 +140,6 @@ pub fn expand_runtime_main(
     } else {
         let markups = res.unwrap();
         let (_, format_str) = runtime::generate(None, markups);
-        println!("RUNTIME FORMAT: {:?}", format_str);
 
         // cannot use return here, and block labels come with strings attached (cant nest them
         // without compiler warnings)
@@ -245,7 +244,6 @@ pub fn gather_html_macro_invocations(
     }
 
     if !output.trim().is_empty() {
-        println!("scanning for {:?}: {:?}", skip_to_keyword, output);
         Ok(output)
     } else {
         Err("output is empty".to_string())
