@@ -137,7 +137,7 @@ impl Parser {
             TokenTree::Ident(ident) => {
                 let ident_string = ident.to_string();
                 match ident_string.as_str() {
-                    "if" | "while" | "for" | "match" | "let" => {
+                    "if" | "while" | "for" | "match" | "let" | "else" => {
                         abort!(
                             ident,
                             "found keyword `{}`", ident_string;
