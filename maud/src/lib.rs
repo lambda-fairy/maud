@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(feature = "hotreload"), no_std)]
 
 //! A macro for writing HTML templates.
 //!
@@ -14,9 +14,13 @@ extern crate alloc;
 use alloc::{borrow::Cow, boxed::Box, string::String, sync::Arc};
 use core::fmt::{self, Arguments, Display, Write};
 
+pub use maud_macros::html as html_static;
+
+#[cfg(not(feature = "hotreload"))]
 pub use maud_macros::html;
 
-mod escape;
+#[cfg(feature = "hotreload")]
+pub use {maud_macros::html_hotreload, maud_macros::html_hotreload as html};
 
 /// An adapter that escapes HTML special characters.
 ///
@@ -52,7 +56,7 @@ impl<'a> Escaper<'a> {
 
 impl fmt::Write for Escaper<'_> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        escape::escape_to_string(s, self.0);
+        maud_macros_impl::escape_to_string(s, self.0);
         Ok(())
     }
 }
@@ -110,7 +114,7 @@ pub trait Render {
 
 impl Render for str {
     fn render_to(&self, w: &mut String) {
-        escape::escape_to_string(self, w);
+        maud_macros_impl::escape_to_string(self, w);
     }
 }
 
@@ -415,8 +419,12 @@ mod submillisecond_support {
 #[doc(hidden)]
 pub mod macro_private {
     use crate::{display, Render};
-    use alloc::string::String;
+    pub use alloc::{boxed::Box, string::String, vec::Vec};
     use core::fmt::Display;
+    #[cfg(feature = "hotreload")]
+    pub use std::collections::HashMap;
+    #[cfg(feature = "hotreload")]
+    pub use std::env::var as env_var;
 
     #[doc(hidden)]
     #[macro_export]
@@ -460,5 +468,24 @@ pub mod macro_private {
         pub fn render_to<T: Display + ?Sized>(self, value: &T, buffer: &mut String) {
             display(value).render_to(buffer);
         }
+    }
+
+    #[cfg(feature = "hotreload")]
+    pub use maud_macros_impl::*;
+
+    #[cfg(feature = "hotreload")]
+    pub fn render_runtime_error(e: &str) -> crate::Markup {
+        eprintln!("{}", e);
+
+        match env_var("MAUD_ON_ERROR").as_deref() {
+            Ok("panic") => panic!("{}", e),
+            Ok("exit") => {
+                eprintln!("{}", e);
+                ::std::process::exit(2);
+            }
+            _ => {}
+        }
+
+        crate::PreEscaped(alloc::format!("\"> --> <div style='background: black; color: white; position: absolute; top: 0; left: 0; z-index: 1000'><h1 style='red'>Template Errors:</h1><pre>{}</pre></div>", e))
     }
 }

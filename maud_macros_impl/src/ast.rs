@@ -1,5 +1,5 @@
 use proc_macro2::{TokenStream, TokenTree};
-use proc_macro_error::SpanRange;
+use proc_macro_error2::SpanRange;
 use syn::Lit;
 
 #[derive(Debug)]
@@ -58,7 +58,7 @@ impl Markup {
                 at_span,
                 ref tokens,
             } => at_span.join_range(span_tokens(tokens.clone())),
-            Markup::Special { ref segments } => join_ranges(segments.iter().map(Special::span)),
+            Markup::Special { ref segments, .. } => join_ranges(segments.iter().map(Special::span)),
             Markup::Match {
                 at_span, arms_span, ..
             } => at_span.join_range(arms_span),
@@ -129,6 +129,7 @@ impl ElementBody {
 pub struct Block {
     pub markups: Vec<Markup>,
     pub outer_span: SpanRange,
+    pub raw_body: Option<TokenStream>,
 }
 
 impl Block {

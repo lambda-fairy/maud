@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Switch to `proc_macro_error2`
+  [#441](https://github.com/lambda-fairy/maud/issues/441)
+  [#442](https://github.com/lambda-fairy/maud/pull/442)
+
 ## [0.26.0] - 2024-01-15
 
 - Remove `AsRef<str>` restriction from `PreEscaped`

@@ -5,33 +5,17 @@
 
 extern crate proc_macro;
 
-mod ast;
-mod escape;
-mod generate;
-mod parse;
-
-use proc_macro2::{Ident, Span, TokenStream, TokenTree};
-use proc_macro_error::proc_macro_error;
-use quote::quote;
+use proc_macro_error2::proc_macro_error;
 
 #[proc_macro]
 #[proc_macro_error]
 pub fn html(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    expand(input.into()).into()
+    maud_macros_impl::expand(input.into()).into()
 }
 
-fn expand(input: TokenStream) -> TokenStream {
-    let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
-    // Heuristic: the size of the resulting markup tends to correlate with the
-    // code size of the template itself
-    let size_hint = input.to_string().len();
-    let markups = parse::parse(input);
-    let stmts = generate::generate(markups, output_ident.clone());
-    quote!({
-        extern crate alloc;
-        extern crate maud;
-        let mut #output_ident = alloc::string::String::with_capacity(#size_hint);
-        #stmts
-        maud::PreEscaped(#output_ident)
-    })
+#[cfg(feature = "hotreload")]
+#[proc_macro]
+#[proc_macro_error]
+pub fn html_hotreload(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    maud_macros_impl::expand_runtime(input.into()).into()
 }

@@ -1,5 +1,5 @@
 use proc_macro2::{Delimiter, Group, Ident, Literal, Span, TokenStream, TokenTree};
-use proc_macro_error::SpanRange;
+use proc_macro_error2::SpanRange;
 use quote::quote;
 
 use crate::{ast::*, escape};
@@ -35,6 +35,7 @@ impl Generator {
             Markup::Block(Block {
                 markups,
                 outer_span,
+                raw_body,
             }) => {
                 if markups
                     .iter()
@@ -44,6 +45,7 @@ impl Generator {
                         Block {
                             markups,
                             outer_span,
+                            raw_body,
                         },
                         build,
                     );
@@ -56,7 +58,7 @@ impl Generator {
             Markup::Splice { expr, .. } => self.splice(expr, build),
             Markup::Element { name, attrs, body } => self.element(name, attrs, body, build),
             Markup::Let { tokens, .. } => build.push_tokens(tokens),
-            Markup::Special { segments } => {
+            Markup::Special { segments, .. } => {
                 for Special { head, body, .. } in segments {
                     build.push_tokens(head);
                     self.block(body, build);
@@ -88,6 +90,7 @@ impl Generator {
         Block {
             markups,
             outer_span,
+            ..
         }: Block,
         build: &mut Builder,
     ) {
@@ -170,7 +173,7 @@ impl Generator {
 
 ////////////////////////////////////////////////////////
 
-fn desugar_attrs(attrs: Vec<Attr>) -> Vec<NamedAttr> {
+pub fn desugar_attrs(attrs: Vec<Attr>) -> Vec<NamedAttr> {
     let mut classes_static = vec![];
     let mut classes_toggled = vec![];
     let mut ids = vec![];
@@ -214,6 +217,7 @@ fn desugar_classes_or_ids(
             markups: prepend_leading_space(name, &mut leading_space),
             // TODO: is this correct?
             outer_span: cond_span,
+            raw_body: None,
         };
         markups.push(Markup::Special {
             segments: vec![Special {
@@ -229,6 +233,7 @@ fn desugar_classes_or_ids(
             value: Markup::Block(Block {
                 markups,
                 outer_span: SpanRange::call_site(),
+                raw_body: None,
             }),
         },
     })

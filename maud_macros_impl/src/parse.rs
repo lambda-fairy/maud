@@ -1,5 +1,5 @@
 use proc_macro2::{Delimiter, Ident, Literal, Spacing, Span, TokenStream, TokenTree};
-use proc_macro_error::{abort, abort_call_site, emit_error, SpanRange};
+use proc_macro_error2::{abort, abort_call_site, emit_error, SpanRange};
 use std::collections::HashMap;
 
 use syn::Lit;
@@ -10,11 +10,18 @@ pub fn parse(input: TokenStream) -> Vec<ast::Markup> {
     Parser::new(input).markups()
 }
 
+#[cfg(feature = "hotreload")]
+pub fn parse_at_runtime(input: TokenStream) -> Vec<ast::Markup> {
+    Parser::new_at_runtime(input).markups()
+}
+
 #[derive(Clone)]
 struct Parser {
     /// If we're inside an attribute, then this contains the attribute name.
     current_attr: Option<String>,
     input: <TokenStream as IntoIterator>::IntoIter,
+    /// Whether this parsing is happening at runtime. Should only be used to control error reporting.
+    is_runtime: bool,
 }
 
 impl Iterator for Parser {
@@ -30,6 +37,16 @@ impl Parser {
         Parser {
             current_attr: None,
             input: input.into_iter(),
+            is_runtime: false,
+        }
+    }
+
+    #[cfg(feature = "hotreload")]
+    fn new_at_runtime(input: TokenStream) -> Parser {
+        Parser {
+            current_attr: None,
+            input: input.into_iter(),
+            is_runtime: true,
         }
     }
 
@@ -37,6 +54,7 @@ impl Parser {
         Parser {
             current_attr: self.current_attr.clone(),
             input: input.into_iter(),
+            is_runtime: self.is_runtime,
         }
     }
 
@@ -113,23 +131,35 @@ impl Parser {
                             "for" => self.for_expr(at_span, keyword),
                             "match" => self.match_expr(at_span, keyword),
                             "let" => {
-                                let span = SpanRange {
-                                    first: at_span,
-                                    last: ident.span(),
-                                };
-                                abort!(span, "`@let` only works inside a block");
+                                if self.is_runtime {
+                                    panic!("`@let` only works inside a block");
+                                } else {
+                                    let span = SpanRange {
+                                        first: at_span,
+                                        last: ident.span(),
+                                    };
+                                    abort!(span, "`@let` only works inside a block");
+                                }
                             }
                             other => {
-                                let span = SpanRange {
-                                    first: at_span,
-                                    last: ident.span(),
-                                };
-                                abort!(span, "unknown keyword `@{}`", other);
+                                if self.is_runtime {
+                                    panic!("unknown keyword `@{}`", other);
+                                } else {
+                                    let span = SpanRange {
+                                        first: at_span,
+                                        last: ident.span(),
+                                    };
+                                    abort!(span, "unknown keyword `@{}`", other);
+                                }
                             }
                         }
                     }
                     _ => {
-                        abort!(at_span, "expected keyword after `@`");
+                        if self.is_runtime {
+                            panic!("expected keyword after `@`");
+                        } else {
+                            abort!(at_span, "expected keyword after `@`");
+                        }
                     }
                 }
             }
@@ -138,11 +168,15 @@ impl Parser {
                 let ident_string = ident.to_string();
                 match ident_string.as_str() {
                     "if" | "while" | "for" | "match" | "let" => {
-                        abort!(
-                            ident,
-                            "found keyword `{}`", ident_string;
-                            help = "should this be a `@{}`?", ident_string
-                        );
+                        if self.is_runtime {
+                            panic!("found keyword `{}`, should this be a @...?", ident_string);
+                        } else {
+                            abort!(
+                                ident,
+                                "found keyword `{}`", ident_string;
+                                help = "should this be a `@{}`?", ident_string
+                            );
+                        }
                     }
                     "true" | "false" => {
                         if let Some(attr_name) = &self.current_attr {
@@ -187,7 +221,11 @@ impl Parser {
             }
             // ???
             token => {
-                abort!(token, "invalid syntax");
+                if self.is_runtime {
+                    panic!("invalid syntax: {}", token);
+                } else {
+                    abort!(token, "invalid syntax");
+                }
             }
         };
         markup
@@ -214,17 +252,29 @@ impl Parser {
                 };
             }
             Lit::Int(..) | Lit::Float(..) => {
-                emit_error!(literal, r#"literal must be double-quoted: `"{}"`"#, literal);
+                if self.is_runtime {
+                    panic!(r#"literal must be double-quoted: `"{}"`"#, literal);
+                } else {
+                    emit_error!(literal, r#"literal must be double-quoted: `"{}"`"#, literal);
+                }
             }
             Lit::Char(lit_char) => {
-                emit_error!(
-                    literal,
-                    r#"literal must be double-quoted: `"{}"`"#,
-                    lit_char.value(),
-                );
+                if self.is_runtime {
+                    panic!(r#"literal must be double-quoted: `"{}"`"#, lit_char.value(),);
+                } else {
+                    emit_error!(
+                        literal,
+                        r#"literal must be double-quoted: `"{}"`"#,
+                        lit_char.value(),
+                    );
+                }
             }
             _ => {
-                emit_error!(literal, "expected string");
+                if self.is_runtime {
+                    panic!("expected string");
+                } else {
+                    emit_error!(literal, "expected string");
+                }
             }
         }
         ast::Markup::ParseError {
@@ -246,7 +296,11 @@ impl Parser {
                 None => {
                     let mut span = ast::span_tokens(head);
                     span.first = at_span;
-                    abort!(span, "expected body for this `@if`");
+                    if self.is_runtime {
+                        panic!("expected body for this `@if`");
+                    } else {
+                        abort!(span, "expected body for this `@if`");
+                    }
                 }
             }
         };
@@ -290,11 +344,15 @@ impl Parser {
                             });
                         }
                         _ => {
-                            let span = SpanRange {
-                                first: at_span,
-                                last: else_keyword.span(),
-                            };
-                            abort!(span, "expected body for this `@else`");
+                            if self.is_runtime {
+                                panic!("expected body for this `@else`");
+                            } else {
+                                let span = SpanRange {
+                                    first: at_span,
+                                    last: else_keyword.span(),
+                                };
+                                abort!(span, "expected body for this `@else`");
+                            }
                         }
                     },
                 }
@@ -317,11 +375,15 @@ impl Parser {
                 }
                 Some(token) => head.push(token),
                 None => {
-                    let span = SpanRange {
-                        first: at_span,
-                        last: keyword_span,
-                    };
-                    abort!(span, "expected body for this `@while`");
+                    if self.is_runtime {
+                        panic!("expected body for this `@while`");
+                    } else {
+                        let span = SpanRange {
+                            first: at_span,
+                            last: keyword_span,
+                        };
+                        abort!(span, "expected body for this `@while`");
+                    }
                 }
             }
         };
@@ -348,11 +410,15 @@ impl Parser {
                 }
                 Some(token) => head.push(token),
                 None => {
-                    let span = SpanRange {
-                        first: at_span,
-                        last: keyword_span,
-                    };
-                    abort!(span, "missing `in` in `@for` loop");
+                    if self.is_runtime {
+                        panic!("missing `in` in `@for` loop");
+                    } else {
+                        let span = SpanRange {
+                            first: at_span,
+                            last: keyword_span,
+                        };
+                        abort!(span, "missing `in` in `@for` loop");
+                    }
                 }
             }
         }
@@ -363,11 +429,15 @@ impl Parser {
                 }
                 Some(token) => head.push(token),
                 None => {
-                    let span = SpanRange {
-                        first: at_span,
-                        last: keyword_span,
-                    };
-                    abort!(span, "expected body for this `@for`");
+                    if self.is_runtime {
+                        panic!("expected body for this `@for`");
+                    } else {
+                        let span = SpanRange {
+                            first: at_span,
+                            last: keyword_span,
+                        };
+                        abort!(span, "expected body for this `@for`");
+                    }
                 }
             }
         };
@@ -394,11 +464,15 @@ impl Parser {
                 }
                 Some(token) => head.push(token),
                 None => {
-                    let span = SpanRange {
-                        first: at_span,
-                        last: keyword_span,
-                    };
-                    abort!(span, "expected body for this `@match`");
+                    if self.is_runtime {
+                        panic!("expected body for this `@match`");
+                    } else {
+                        let span = SpanRange {
+                            first: at_span,
+                            last: keyword_span,
+                        };
+                        abort!(span, "expected body for this `@match`");
+                    }
                 }
             }
         };
@@ -439,6 +513,10 @@ impl Parser {
                 None => {
                     if head.is_empty() {
                         return None;
+                    }
+
+                    if self.is_runtime {
+                        panic!("unexpected end of @match pattern");
                     } else {
                         let head_span = ast::span_tokens(head);
                         abort!(head_span, "unexpected end of @match pattern");
@@ -475,8 +553,12 @@ impl Parser {
                 self.block(body.into_iter().collect(), span)
             }
             None => {
-                let span = ast::span_tokens(head);
-                abort!(span, "unexpected end of @match arm");
+                if self.is_runtime {
+                    panic!("unexpected end of @match arm");
+                } else {
+                    let span = ast::span_tokens(head);
+                    abort!(span, "unexpected end of @match arm");
+                }
             }
         };
         Some(ast::MatchArm {
@@ -500,9 +582,13 @@ impl Parser {
                     _ => tokens.push(token),
                 },
                 None => {
-                    let mut span = ast::span_tokens(tokens);
-                    span.first = at_span;
-                    abort!(span, "unexpected end of `@let` expression");
+                    if self.is_runtime {
+                        panic!("unexpected end of `@let` expression");
+                    } else {
+                        let mut span = ast::span_tokens(tokens);
+                        span.first = at_span;
+                        abort!(span, "unexpected end of `@let` expression");
+                    }
                 }
             }
         }
@@ -516,13 +602,17 @@ impl Parser {
                     _ => tokens.push(token),
                 },
                 None => {
-                    let mut span = ast::span_tokens(tokens);
-                    span.first = at_span;
-                    abort!(
-                        span,
-                        "unexpected end of `@let` expression";
-                        help = "are you missing a semicolon?"
-                    );
+                    if self.is_runtime {
+                        panic!("unexpected end of `@let` expression");
+                    } else {
+                        let mut span = ast::span_tokens(tokens);
+                        span.first = at_span;
+                        abort!(
+                            span,
+                            "unexpected end of `@let` expression";
+                            help = "are you missing a semicolon?"
+                        );
+                    }
                 }
             }
         }
@@ -537,8 +627,12 @@ impl Parser {
     /// The element name should already be consumed.
     fn element(&mut self, name: TokenStream) -> ast::Markup {
         if self.current_attr.is_some() {
-            let span = ast::span_tokens(name);
-            abort!(span, "unexpected element");
+            if self.is_runtime {
+                panic!("unexpected element: {}", name);
+            } else {
+                let span = ast::span_tokens(name);
+                abort!(span, "unexpected element");
+            }
         }
         let attrs = self.attrs();
         let body = match self.peek() {
@@ -548,29 +642,42 @@ impl Parser {
                 // Void element
                 self.advance();
                 if punct.as_char() == '/' {
-                    emit_error!(
-                        punct,
-                        "void elements must use `;`, not `/`";
-                        help = "change this to `;`";
-                        help = "see https://github.com/lambda-fairy/maud/pull/315 for details";
-                    );
+                    if self.is_runtime {
+                        panic!("void elements must use `;`, not `/`");
+                    } else {
+                        emit_error!(
+                            punct,
+                            "void elements must use `;`, not `/`";
+                            help = "change this to `;`";
+                            help = "see https://github.com/lambda-fairy/maud/pull/315 for details";
+                        );
+                    }
                 }
                 ast::ElementBody::Void {
                     semi_span: SpanRange::single_span(punct.span()),
                 }
             }
-            Some(_) => match self.markup() {
+            Some(markup) => match self.markup() {
                 ast::Markup::Block(block) => ast::ElementBody::Block { block },
-                markup => {
-                    let markup_span = markup.span();
-                    abort!(
-                        markup_span,
-                        "element body must be wrapped in braces";
-                        help = "see https://github.com/lambda-fairy/maud/pull/137 for details"
-                    );
+                _markup => {
+                    if self.is_runtime {
+                        panic!("element body must be wrapped in braces")
+                    } else {
+                        abort!(
+                            markup,
+                            "element body must be wrapped in braces";
+                            help = "see https://github.com/lambda-fairy/maud/pull/137 for details"
+                        )
+                    }
                 }
             },
-            None => abort_call_site!("expected `;`, found end of macro"),
+            None => {
+                if self.is_runtime {
+                    panic!("expected `;`, found end of macro: {}", name)
+                } else {
+                    abort_call_site!("expected `;`, found end of macro")
+                }
+            }
         };
         ast::Markup::Element { name, attrs, body }
     }
@@ -676,9 +783,13 @@ impl Parser {
 
         for (name, spans) in attr_map {
             if spans.len() > 1 {
-                let mut spans = spans.into_iter();
-                let first_span = spans.next().expect("spans should be non-empty");
-                abort!(first_span, "duplicate attribute `{}`", name);
+                if self.is_runtime {
+                    panic!("duplicate attribute `{}`", name);
+                } else {
+                    let mut spans = spans.into_iter();
+                    let first_span = spans.next().expect("spans should be non-empty");
+                    abort!(first_span, "duplicate attribute `{}`", name);
+                }
             }
         }
 
@@ -758,10 +869,11 @@ impl Parser {
 
     /// Parses the given token stream as a Maud expression.
     fn block(&mut self, body: TokenStream, outer_span: SpanRange) -> ast::Block {
-        let markups = self.with_input(body).markups();
+        let markups = self.with_input(body.clone()).markups();
         ast::Block {
             markups,
             outer_span,
+            raw_body: Some(body),
         }
     }
 }
