@@ -1,4 +1,4 @@
-use maud::html;
+use maud::{html, html_static};
 
 #[test]
 fn issue_13() {
@@ -13,7 +13,7 @@ fn issue_21() {
     macro_rules! greet {
         () => {{
             let name = "Pinkie Pie";
-            html! {
+            html_static! {
                 p { "Hello, " (name) "!" }
             }
         }};
@@ -26,7 +26,7 @@ fn issue_21() {
 fn issue_21_2() {
     macro_rules! greet {
         ($name:expr) => {{
-            html! {
+            html_static! {
                 p { "Hello, " ($name) "!" }
             }
         }};
@@ -42,7 +42,7 @@ fn issue_21_2() {
 fn issue_23() {
     macro_rules! wrapper {
         ($($x:tt)*) => {{
-            html! { $($x)* }
+            html_static! { $($x)* }
         }}
     }
 

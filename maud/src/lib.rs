@@ -199,7 +199,8 @@ impl_render_with_itoa! {
 /// # Example
 ///
 /// ```rust
-/// use maud::html;
+/// # use maud::html_static as html;
+/// // use maud:html;
 /// use std::net::Ipv4Addr;
 ///
 /// let ip_address = Ipv4Addr::new(127, 0, 0, 1);

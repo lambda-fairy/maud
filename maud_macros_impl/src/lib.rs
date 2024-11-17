@@ -120,8 +120,10 @@ pub fn expand_runtime_main(
     vars: HashMap<&'static str, PartialTemplate>,
     input: &str,
 ) -> Result<String, String> {
-    let input: TokenStream = input.parse().unwrap_or_else(|_| panic!("{}", input));
-    let res = ::std::panic::catch_unwind(|| parse_at_runtime(input.clone()));
+    let res = ::std::panic::catch_unwind(|| {
+        let input: TokenStream = input.parse().unwrap();
+        parse_at_runtime(input.clone())
+    });
 
     if let Err(e) = res {
         if let Some(s) = e
