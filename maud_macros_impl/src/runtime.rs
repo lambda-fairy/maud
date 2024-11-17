@@ -272,7 +272,7 @@ impl RuntimeBuilder {
 
     fn push_escaped(&mut self, string: &str) {
         let mut s = String::new();
-        escape::escape_to_string(&string, &mut s);
+        escape::escape_to_string(string, &mut s);
         self.push_str(&s);
     }
 
@@ -313,7 +313,7 @@ impl RuntimeBuilder {
             template_sources,
         });
 
-        self.arg_track = self.arg_track + 1;
+        self.arg_track += 1;
     }
 
     fn interpreter(self) -> Interpreter {

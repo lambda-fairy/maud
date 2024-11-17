@@ -136,9 +136,9 @@ pub fn expand_runtime_main(
                     .map(::std::ops::Deref::deref)
             })
         {
-            return Err(format!("{}, source: {}", s, input));
+            Err(format!("{}, source: {}", s, input))
         } else {
-            return Err("unknown panic".to_owned());
+            Err("unknown panic".to_owned())
         }
     } else {
         let markups = res.unwrap();
