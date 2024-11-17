@@ -8,7 +8,7 @@ fn regression_match_inline_tag() {
         html! {
             div id="main" {
                 @match x {
-                    Some(x) if x == 42 => div.green {
+                    Some(42) => div.green {
                         "yes! fourty! two!"
                     },
                     Some(_) => div.yellow {
