@@ -195,7 +195,7 @@ pub fn gather_html_macro_invocations(
         match c {
             '[' | '{' | '(' => 1,
             ']' | '}' | ')' => -1,
-            _ => 0
+            _ => 0,
         }
     }
 
@@ -245,5 +245,7 @@ pub fn gather_html_macro_invocations(
         return Err("cannot handle livereload in doctests".to_string());
     }
 
-    output.parse().map_err(|e| format!("failed to parse output: {}", e))
+    output
+        .parse()
+        .map_err(|e| format!("failed to parse output: {}", e))
 }

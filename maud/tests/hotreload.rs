@@ -55,7 +55,9 @@ fn test_gather_html_macro_invocations() {
     };
 
     assert_eq!(
-        gather_html_macro_invocations(file, line).unwrap().to_string(),
+        gather_html_macro_invocations(file, line)
+            .unwrap()
+            .to_string(),
         "\"Hello world\""
-        );
+    );
 }

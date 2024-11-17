@@ -77,7 +77,7 @@ impl RuntimeGenerator {
                     if let Some(ref template_source) = body.raw_body {
                         sources.push(template_source.clone());
                     } else {
-                        sources.push(quote!( "TODO MATCH" ));
+                        sources.push(quote!("TODO MATCH"));
                     }
                     tt.extend(head.clone());
                     let partial = self.get_block(body);
@@ -89,7 +89,11 @@ impl RuntimeGenerator {
 
                 let mut body = TokenTree::Group(Group::new(Delimiter::Brace, tt));
                 body.set_span(arms_span.collapse());
-                build.push_lazy_format_arg(quote!(#head #body), sources, &format!("match_expr: {}", head));
+                build.push_lazy_format_arg(
+                    quote!(#head #body),
+                    sources,
+                    &format!("match_expr: {}", head),
+                );
             }
         }
     }
@@ -98,24 +102,24 @@ impl RuntimeGenerator {
         let source = if let Some(ref template_source) = block.raw_body {
             template_source.clone()
         } else {
-            quote!( "TODO BLOCK" )
+            quote!("TODO BLOCK")
         };
 
         build.push_lazy_format_arg(self.get_block(block), vec![source], "block");
     }
 
     fn get_block(&self, block: Block) -> TokenStream {
-         if block.raw_body.is_some() {
-             expand_runtime_from_parsed(block.markups)
-         } else {
-             // necessary to avoid bogus sources
-             let static_result = expand_from_parsed(block.markups, 0);
-             quote! {{
-                 let __maud_static_result = (#static_result);
-                 let partial: ::maud::macro_private::PartialTemplate = Box::new(|_| Ok(__maud_static_result.into_string()));
-                 partial
-             }}
-         }
+        if block.raw_body.is_some() {
+            expand_runtime_from_parsed(block.markups)
+        } else {
+            // necessary to avoid bogus sources
+            let static_result = expand_from_parsed(block.markups, 0);
+            quote! {{
+                let __maud_static_result = (#static_result);
+                let partial: ::maud::macro_private::PartialTemplate = Box::new(|_| Ok(__maud_static_result.into_string()));
+                partial
+            }}
+        }
     }
 
     fn special(&self, segments: Vec<Special>, build: &mut RuntimeBuilder) {
@@ -128,7 +132,7 @@ impl RuntimeGenerator {
                 varname.push('\n');
                 sources.push(template_source.clone());
             } else {
-                sources.push(quote!( "TODO SPECIAL" ));
+                sources.push(quote!("TODO SPECIAL"));
             }
 
             let block = self.get_block(body);
@@ -157,7 +161,7 @@ impl RuntimeGenerator {
     }
 
     fn splice(&self, expr: TokenStream, build: &mut RuntimeBuilder) {
-        build.push_format_arg(expr, vec![quote!( "TODO SPLICE" )], "splice");
+        build.push_format_arg(expr, vec![quote!("TODO SPLICE")], "splice");
     }
 
     fn element(
@@ -214,7 +218,7 @@ impl RuntimeGenerator {
                                 ::maud::PreEscaped("".to_owned())
                             }
                         },
-                        vec![quote!( "TODO ATTR TYPE OPTIONAL" )],
+                        vec![quote!("TODO ATTR TYPE OPTIONAL")],
                         "optional_attr",
                     );
                 }
@@ -239,7 +243,7 @@ impl RuntimeGenerator {
                                 ::maud::PreEscaped("".to_owned())
                             }
                         },
-                        vec![quote!( "TODO ATTR TYPE EMPTY" )],
+                        vec![quote!("TODO ATTR TYPE EMPTY")],
                         "empty_attr",
                     );
                 }
@@ -277,7 +281,12 @@ impl RuntimeBuilder {
         self.push_str(&s);
     }
 
-    fn push_format_arg(&mut self, expr: TokenStream, template_sources: Vec<TokenStream>, named_variable: &str) {
+    fn push_format_arg(
+        &mut self,
+        expr: TokenStream,
+        template_sources: Vec<TokenStream>,
+        named_variable: &str,
+    ) {
         self.push_lazy_format_arg(
             quote! {{
                 extern crate maud;
@@ -286,11 +295,16 @@ impl RuntimeBuilder {
                 ::maud::macro_private::Box::new(move |_| Ok(buf))
             }},
             template_sources,
-            named_variable
+            named_variable,
         );
     }
 
-    fn push_lazy_format_arg(&mut self, expr: TokenStream, template_sources: Vec<TokenStream>, named_variable: &str) {
+    fn push_lazy_format_arg(
+        &mut self,
+        expr: TokenStream,
+        template_sources: Vec<TokenStream>,
+        named_variable: &str,
+    ) {
         let variable_name = format!("{}_{}", self.arg_track, named_variable);
 
         if let Some(ref vars) = self.vars_ident {
@@ -342,9 +356,13 @@ impl Interpreter {
                     name,
                     template_sources,
                 } => {
-                    let s = variables
-                        .remove(name.as_str())
-                        .ok_or_else(|| format!("unknown var: {:?}\nremaining variables: {:?}", name, variables.keys()))?;
+                    let s = variables.remove(name.as_str()).ok_or_else(|| {
+                        format!(
+                            "unknown var: {:?}\nremaining variables: {:?}",
+                            name,
+                            variables.keys()
+                        )
+                    })?;
                     rv.push_str(&s(template_sources)?);
                 }
             }
@@ -360,9 +378,7 @@ pub type PartialTemplate = Box<dyn FnOnce(Vec<TokenStream>) -> Result<String, St
 // we add hashes of source code to our variable names to prevent the chances of mis-rendering
 // something, such as when a user swaps blocks around in the template
 fn normalize_source_for_hashing(mut input: String) -> String {
-    input.retain(|c| {
-        !c.is_ascii_whitespace()
-    });
+    input.retain(|c| !c.is_ascii_whitespace());
 
     input
 }
