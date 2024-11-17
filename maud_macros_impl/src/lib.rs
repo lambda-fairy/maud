@@ -210,7 +210,7 @@ pub fn gather_html_macro_invocations(
         }
 
         if let Some((_, after)) = line.split_once("html!") {
-            let after = if let Some((_, after2)) = after.split_once(&['[', '{', '(']) {
+            let after = if let Some((_, after2)) = after.split_once(['[', '{', '(') {
                 after2
             } else {
                 after
