@@ -1,3 +1,5 @@
+//! Helper crate for `maud` and `maud_macros`. Nothing in this crate is semver-compliant, and is
+//! not meant for direct consumption.
 #![doc(html_root_url = "https://docs.rs/maud_macros_impl/0.25.0")]
 // TokenStream values are reference counted, and the mental overhead of tracking
 // lifetimes outweighs the marginal gains from explicit borrowing
@@ -74,7 +76,7 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
             __maud_line_info,
         );
 
-        let __maud_input: ::maud::macro_private::String = match __maud_input {
+        let __maud_input = match __maud_input {
             Ok(x) => x,
             Err(e) => {
                 if ::maud::macro_private::env_var("MAUD_SOURCE_NO_FALLBACK").as_deref() == Ok("1") {
@@ -82,7 +84,7 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
                 }
 
                 // fall back to original, unedited input when finding file info fails
-                ::maud::macro_private::String::from(#original_input)
+                #original_input.parse().unwrap()
             }
         };
 
@@ -103,8 +105,9 @@ fn expand_runtime_from_parsed(markups: Vec<Markup>) -> TokenStream {
 
         #stmts
 
-        let f : ::maud::macro_private::PartialTemplate = ::maud::macro_private::Box::new(move |sources| {
-            let input = &sources[0];
+        let f : ::maud::macro_private::PartialTemplate = ::maud::macro_private::Box::new(move |mut sources| {
+            assert!(sources.len() == 1);
+            let input = sources.pop().unwrap();
             ::maud::macro_private::expand_runtime_main(
                 #vars_ident,
                 input,
@@ -118,12 +121,9 @@ fn expand_runtime_from_parsed(markups: Vec<Markup>) -> TokenStream {
 #[cfg(feature = "hotreload")]
 pub fn expand_runtime_main(
     vars: HashMap<&'static str, PartialTemplate>,
-    input: &str,
+    input: TokenStream,
 ) -> Result<String, String> {
-    let res = ::std::panic::catch_unwind(|| {
-        let input: TokenStream = input.parse().unwrap();
-        parse_at_runtime(input.clone())
-    });
+    let res = ::std::panic::catch_unwind(|| parse_at_runtime(input.clone()));
 
     if let Err(e) = res {
         if let Some(s) = e
@@ -151,7 +151,7 @@ pub fn expand_runtime_main(
 pub fn gather_html_macro_invocations(
     file_path: &str,
     start_line: u32,
-) -> Result<String, String> {
+) -> Result<TokenStream, String> {
     let mut errors = String::new();
     let mut file = None;
 
@@ -231,7 +231,7 @@ pub fn gather_html_macro_invocations(
     }
 
     if !output.trim().is_empty() {
-        Ok(output)
+        output.parse().map_err(|e| format!("failed to parse output: {}", e))
     } else {
         Err("output is empty".to_string())
     }

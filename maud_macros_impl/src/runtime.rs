@@ -75,9 +75,9 @@ impl RuntimeGenerator {
                 let mut sources = Vec::new();
                 for (i, MatchArm { head, body }) in arms.into_iter().enumerate() {
                     if let Some(ref template_source) = body.raw_body {
-                        sources.push(template_source.to_string());
+                        sources.push(template_source.clone());
                     } else {
-                        sources.push("TODO MATCH".to_owned());
+                        sources.push(quote!( "TODO MATCH" ));
                     }
                     tt.extend(head.clone());
                     let partial = self.get_block(body);
@@ -96,9 +96,9 @@ impl RuntimeGenerator {
 
     fn block(&self, block: Block, build: &mut RuntimeBuilder) {
         let source = if let Some(ref template_source) = block.raw_body {
-            template_source.to_string()
+            template_source.clone()
         } else {
-            "TODO BLOCK".to_owned()
+            quote!( "TODO BLOCK" )
         };
 
         build.push_lazy_format_arg(self.get_block(block), vec![source], "block");
@@ -126,9 +126,9 @@ impl RuntimeGenerator {
             if let Some(ref template_source) = body.raw_body {
                 varname.push_str(&normalize_source_for_hashing(head.to_string()));
                 varname.push('\n');
-                sources.push(template_source.to_string());
+                sources.push(template_source.clone());
             } else {
-                sources.push("TODO SPECIAL".to_owned());
+                sources.push(quote!( "TODO SPECIAL" ));
             }
 
             let block = self.get_block(body);
@@ -157,7 +157,7 @@ impl RuntimeGenerator {
     }
 
     fn splice(&self, expr: TokenStream, build: &mut RuntimeBuilder) {
-        build.push_format_arg(expr, vec!["TODO SPLICE".to_owned()], "splice");
+        build.push_format_arg(expr, vec![quote!( "TODO SPLICE" )], "splice");
     }
 
     fn element(
@@ -214,7 +214,7 @@ impl RuntimeGenerator {
                                 ::maud::PreEscaped("".to_owned())
                             }
                         },
-                        vec!["TODO ATTR TYPE OPTIONAL".to_owned()],
+                        vec![quote!( "TODO ATTR TYPE OPTIONAL" )],
                         "optional_attr",
                     );
                 }
@@ -239,7 +239,7 @@ impl RuntimeGenerator {
                                 ::maud::PreEscaped("".to_owned())
                             }
                         },
-                        vec!["TODO ATTR TYPE EMPTY".to_owned()],
+                        vec![quote!( "TODO ATTR TYPE EMPTY" )],
                         "empty_attr",
                     );
                 }
@@ -277,7 +277,7 @@ impl RuntimeBuilder {
         self.push_str(&s);
     }
 
-    fn push_format_arg(&mut self, expr: TokenStream, template_sources: Vec<String>, named_variable: &str) {
+    fn push_format_arg(&mut self, expr: TokenStream, template_sources: Vec<TokenStream>, named_variable: &str) {
         self.push_lazy_format_arg(
             quote! {{
                 extern crate maud;
@@ -290,7 +290,7 @@ impl RuntimeBuilder {
         );
     }
 
-    fn push_lazy_format_arg(&mut self, expr: TokenStream, template_sources: Vec<String>, named_variable: &str) {
+    fn push_lazy_format_arg(&mut self, expr: TokenStream, template_sources: Vec<TokenStream>, named_variable: &str) {
         let variable_name = format!("{}_{}", self.arg_track, named_variable);
 
         if let Some(ref vars) = self.vars_ident {
@@ -324,7 +324,7 @@ pub enum Command {
     String(String),
     Variable {
         name: String,
-        template_sources: Vec<String>,
+        template_sources: Vec<TokenStream>,
     },
 }
 
@@ -355,7 +355,7 @@ impl Interpreter {
 }
 
 // partial templates are generated code that take their own sourcecode for live reloading.
-pub type PartialTemplate = Box<dyn FnOnce(Vec<String>) -> Result<String, String>>;
+pub type PartialTemplate = Box<dyn FnOnce(Vec<TokenStream>) -> Result<String, String>>;
 
 // we add hashes of source code to our variable names to prevent the chances of mis-rendering
 // something, such as when a user swaps blocks around in the template

@@ -1,5 +1,6 @@
 //! track regressions specific to the hotreload feature in maud
 use maud::{html, Markup};
+use maud_macros_impl::gather_html_macro_invocations;
 
 #[test]
 fn regression_match_inline_tag() {
@@ -42,4 +43,19 @@ fn regression_basic() {
     };
 
     assert_eq!(result.into_string(), "hello world");
+}
+
+#[test]
+fn test_gather_html_macro_invocations() {
+    let file = file!();
+    let line = line!();
+
+    let _foo = maud::html! {
+        "Hello world"
+    };
+
+    assert_eq!(
+        gather_html_macro_invocations(file, line).unwrap().to_string(),
+        "\"Hello world\""
+        );
 }
