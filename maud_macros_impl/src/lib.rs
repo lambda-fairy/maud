@@ -189,10 +189,26 @@ pub fn gather_html_macro_invocations(
         .map(|line| line.unwrap());
 
     let mut rest_of_line = String::new();
+    let mut braces_diff = 0;
+
+    fn track_braces(c: char) -> i32 {
+        match c {
+            '[' | '{' | '(' => 1,
+            ']' | '}' | ')' => -1,
+            _ => 0
+        }
+    }
 
     // scan for beginning of the macro. start_line may point to it directly, but we want to
     // handle code flowing slightly downward.
     for line in &mut lines_iter {
+        for c in line.chars() {
+            braces_diff += track_braces(c);
+            if braces_diff < 0 {
+                return Err("too many closing braces".to_owned());
+            }
+        }
+
         if let Some((_, after)) = line.split_once("html!") {
             let after = if let Some((_, after2)) = after.split_once(&['[', '{', '(']) {
                 after2
@@ -205,34 +221,29 @@ pub fn gather_html_macro_invocations(
         }
     }
 
-    let mut braces_diff = 0;
+    braces_diff = 0;
 
     'linewise: for line in Some(rest_of_line).into_iter().chain(lines_iter) {
         for c in line.chars() {
-            match c {
-                '[' | '{' | '(' => {
-                    braces_diff += 1;
-                    output.push(c);
-                }
-                ']' | '}' | ')' => {
-                    braces_diff -= 1;
-
-                    if braces_diff == -1 {
-                        break 'linewise;
-                    }
-
-                    output.push(c);
-                }
-                c => output.push(c),
+            braces_diff += track_braces(c);
+            if braces_diff == -1 {
+                break 'linewise;
             }
+            output.push(c);
         }
-
         output.push('\n');
     }
 
-    if !output.trim().is_empty() {
-        output.parse().map_err(|e| format!("failed to parse output: {}", e))
-    } else {
-        Err("output is empty".to_string())
+    let output = output.trim();
+
+    if output.is_empty() {
+        return Err("output is empty".to_string());
     }
+
+    if output.starts_with("///") {
+        // line/file information in doctests is 100% wrong and will lead to catastrophic results.
+        return Err("cannot handle livereload in doctests".to_string());
+    }
+
+    output.parse().map_err(|e| format!("failed to parse output: {}", e))
 }
