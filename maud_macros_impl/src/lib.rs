@@ -88,7 +88,7 @@ pub fn expand_runtime(input: TokenStream) -> TokenStream {
             }
         };
 
-        match #partial_template(::maud::macro_private::Vec::from([__maud_input.clone()])) {
+        match #partial_template(::maud::macro_private::Vec::from([Some(__maud_input.clone())])) {
             Ok(x) => ::maud::PreEscaped(x),
             Err(e) => ::maud::macro_private::render_runtime_error(&e),
         }
@@ -107,7 +107,7 @@ fn expand_runtime_from_parsed(markups: Vec<Markup>) -> TokenStream {
 
         let f : ::maud::macro_private::PartialTemplate = ::maud::macro_private::Box::new(move |mut sources| {
             assert!(sources.len() == 1);
-            let input = sources.pop().unwrap();
+            let input = sources.pop().unwrap().unwrap();
             ::maud::macro_private::expand_runtime_main(
                 #vars_ident,
                 input,

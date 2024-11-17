@@ -75,9 +75,9 @@ impl RuntimeGenerator {
                 let mut sources = Vec::new();
                 for (i, MatchArm { head, body }) in arms.into_iter().enumerate() {
                     if let Some(ref template_source) = body.raw_body {
-                        sources.push(template_source.clone());
+                        sources.push(Some(template_source.clone()));
                     } else {
-                        sources.push(quote!("TODO MATCH"));
+                        sources.push(None);
                     }
                     tt.extend(head.clone());
                     let partial = self.get_block(body);
@@ -99,12 +99,7 @@ impl RuntimeGenerator {
     }
 
     fn block(&self, block: Block, build: &mut RuntimeBuilder) {
-        let source = if let Some(ref template_source) = block.raw_body {
-            template_source.clone()
-        } else {
-            quote!("TODO BLOCK")
-        };
-
+        let source = block.raw_body.clone();
         build.push_lazy_format_arg(self.get_block(block), vec![source], "block");
     }
 
@@ -130,9 +125,9 @@ impl RuntimeGenerator {
             if let Some(ref template_source) = body.raw_body {
                 varname.push_str(&normalize_source_for_hashing(head.to_string()));
                 varname.push('\n');
-                sources.push(template_source.clone());
+                sources.push(Some(template_source.clone()));
             } else {
-                sources.push(quote!("TODO SPECIAL"));
+                sources.push(None);
             }
 
             let block = self.get_block(body);
@@ -161,7 +156,7 @@ impl RuntimeGenerator {
     }
 
     fn splice(&self, expr: TokenStream, build: &mut RuntimeBuilder) {
-        build.push_format_arg(expr, vec![quote!("TODO SPLICE")], "splice");
+        build.push_format_arg(expr, vec![None], "splice");
     }
 
     fn element(
@@ -218,7 +213,7 @@ impl RuntimeGenerator {
                                 ::maud::PreEscaped("".to_owned())
                             }
                         },
-                        vec![quote!("TODO ATTR TYPE OPTIONAL")],
+                        vec![None],
                         "optional_attr",
                     );
                 }
@@ -243,7 +238,7 @@ impl RuntimeGenerator {
                                 ::maud::PreEscaped("".to_owned())
                             }
                         },
-                        vec![quote!("TODO ATTR TYPE EMPTY")],
+                        vec![None],
                         "empty_attr",
                     );
                 }
@@ -284,7 +279,7 @@ impl RuntimeBuilder {
     fn push_format_arg(
         &mut self,
         expr: TokenStream,
-        template_sources: Vec<TokenStream>,
+        template_sources: TemplateSourceContext,
         named_variable: &str,
     ) {
         self.push_lazy_format_arg(
@@ -302,7 +297,7 @@ impl RuntimeBuilder {
     fn push_lazy_format_arg(
         &mut self,
         expr: TokenStream,
-        template_sources: Vec<TokenStream>,
+        template_sources: TemplateSourceContext,
         named_variable: &str,
     ) {
         let variable_name = format!("{}_{}", self.arg_track, named_variable);
@@ -338,7 +333,7 @@ pub enum Command {
     String(String),
     Variable {
         name: String,
-        template_sources: Vec<TokenStream>,
+        template_sources: TemplateSourceContext,
     },
 }
 
@@ -372,8 +367,11 @@ impl Interpreter {
     }
 }
 
+pub type TemplateSource = TokenStream;
+pub type TemplateSourceContext = Vec<Option<TemplateSource>>;
+
 // partial templates are generated code that take their own sourcecode for live reloading.
-pub type PartialTemplate = Box<dyn FnOnce(Vec<TokenStream>) -> Result<String, String>>;
+pub type PartialTemplate = Box<dyn FnOnce(TemplateSourceContext) -> Result<String, String>>;
 
 // we add hashes of source code to our variable names to prevent the chances of mis-rendering
 // something, such as when a user swaps blocks around in the template
