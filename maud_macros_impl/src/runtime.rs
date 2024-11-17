@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use proc_macro2::{Delimiter, Group, TokenStream, TokenTree};
 use quote::quote;
 
-use crate::expand;
-use crate::generate::desugar_attrs;
-use crate::{ast::*, escape, expand_from_parsed, expand_runtime_from_parsed};
+use crate::{
+    ast::*, escape, expand, expand_from_parsed, expand_runtime_from_parsed, generate::desugar_attrs,
+};
 
 pub fn generate(vars_ident: Option<TokenTree>, markups: Vec<Markup>) -> TokenStream {
     let mut build = RuntimeBuilder::new(vars_ident.clone());

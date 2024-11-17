@@ -419,9 +419,7 @@ mod submillisecond_support {
 #[doc(hidden)]
 pub mod macro_private {
     use crate::{display, Render};
-    pub use alloc::boxed::Box;
-    pub use alloc::string::String;
-    pub use alloc::vec::Vec;
+    pub use alloc::{boxed::Box, string::String, vec::Vec};
     use core::fmt::Display;
     #[cfg(feature = "hotreload")]
     pub use std::collections::HashMap;
