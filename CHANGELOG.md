@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Support `axum` v0.8 through `axum-core` v0.5
+
 ## [0.26.0] - 2024-01-15
 
 - Remove `AsRef<str>` restriction from `PreEscaped`
