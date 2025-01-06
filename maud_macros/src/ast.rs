@@ -15,11 +15,11 @@ use syn::{
 };
 
 #[derive(Debug, Clone)]
-pub struct Markups {
-    pub markups: Vec<Markup>,
+pub struct Markups<AllowElement> {
+    pub markups: Vec<Markup<AllowElement>>,
 }
 
-impl DiagnosticParse for Markups {
+impl<AllowElement> DiagnosticParse for Markups<AllowElement> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -32,7 +32,7 @@ impl DiagnosticParse for Markups {
     }
 }
 
-impl ToTokens for Markups {
+impl<AllowElement> ToTokens for Markups<AllowElement> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         for markup in &self.markups {
             markup.to_tokens(tokens);
@@ -41,16 +41,16 @@ impl ToTokens for Markups {
 }
 
 #[derive(Debug, Clone)]
-pub enum Markup {
-    Block(Block),
+pub enum Markup<AllowElement> {
+    Block(Block<AllowElement>),
     Lit(HtmlLit),
     Splice { paren_token: Paren, expr: Expr },
-    Element(Element),
-    ControlFlow(ControlFlow),
+    Element(Element<AllowElement>),
+    ControlFlow(ControlFlow<AllowElement>),
     Semi(Token![;]),
 }
 
-impl Markup {
+impl<AllowElement> Markup<AllowElement> {
     pub fn diagnostic_parse_in_block(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -96,7 +96,7 @@ impl Markup {
     }
 }
 
-impl DiagnosticParse for Markup {
+impl<AllowElement> DiagnosticParse for Markup<AllowElement> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -119,7 +119,7 @@ impl DiagnosticParse for Markup {
     }
 }
 
-impl ToTokens for Markup {
+impl<AllowElement> ToTokens for Markup<AllowElement> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Self::Block(block) => block.to_tokens(tokens),
@@ -137,18 +137,20 @@ impl ToTokens for Markup {
 }
 
 #[derive(Debug, Clone)]
-pub struct Element {
+pub struct Element<AllowElement> {
+    pub allow_element: AllowElement,
     pub name: Option<HtmlName>,
     pub attrs: Vec<Attribute>,
     pub body: ElementBody,
 }
 
-impl DiagnosticParse for Element {
+impl DiagnosticParse for Element<ElementEnabled> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
     ) -> syn::Result<Self> {
         Ok(Self {
+            allow_element: ElementEnabled,
             name: if input.peek(Ident::peek_any) {
                 Some(input.diagnostic_parse(diagnostics)?)
             } else {
@@ -212,12 +214,18 @@ impl ToTokens for Element {
 }
 
 #[derive(Debug, Clone)]
-pub enum ElementBody {
+pub struct ElementEnabled;
+
+#[derive(Debug, Clone)]
+pub enum ElementDisabled {}
+
+#[derive(Debug, Clone)]
+pub enum ElementBody<AllowElement> {
     Void(Token![;]),
-    Block(Block),
+    Block(Block<AllowElement>),
 }
 
-impl DiagnosticParse for ElementBody {
+impl<AllowElement> DiagnosticParse for ElementBody<AllowElement> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -245,7 +253,7 @@ impl DiagnosticParse for ElementBody {
     }
 }
 
-impl ToTokens for ElementBody {
+impl<AllowElement> ToTokens for ElementBody<AllowElement> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Self::Void(semi) => semi.to_tokens(tokens),
@@ -255,12 +263,12 @@ impl ToTokens for ElementBody {
 }
 
 #[derive(Debug, Clone)]
-pub struct Block {
+pub struct Block<AllowElement> {
     pub brace_token: Brace,
-    pub markups: Markups,
+    pub markups: Markups<AllowElement>,
 }
 
-impl DiagnosticParse for Block {
+impl<AllowElement> DiagnosticParse for Block<AllowElement> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -273,7 +281,7 @@ impl DiagnosticParse for Block {
     }
 }
 
-impl ToTokens for Block {
+impl<AllowElement> ToTokens for Block<AllowElement> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.brace_token.surround(tokens, |tokens| {
             self.markups.to_tokens(tokens);
@@ -377,7 +385,7 @@ impl ToTokens for Attribute {
 #[derive(Debug, Clone)]
 pub enum AttributeName {
     Normal(HtmlName),
-    Markup(Markup),
+    Markup(Markup<ElementDisabled>),
 }
 
 impl DiagnosticParse for AttributeName {
@@ -427,7 +435,7 @@ impl Display for AttributeName {
 pub enum AttributeType {
     Normal {
         eq_token: Token![=],
-        value: Markup,
+        value: Markup<ElementDisabled>,
     },
     Optional {
         eq_token: Token![=],
@@ -720,12 +728,12 @@ impl ToTokens for Toggler {
 }
 
 #[derive(Debug, Clone)]
-pub struct ControlFlow {
+pub struct ControlFlow<AllowElement> {
     pub at_token: Token![@],
-    pub kind: ControlFlowKind,
+    pub kind: ControlFlowKind<AllowElement>,
 }
 
-impl DiagnosticParse for ControlFlow {
+impl<AllowElement> DiagnosticParse for ControlFlow<AllowElement> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -757,7 +765,7 @@ impl DiagnosticParse for ControlFlow {
     }
 }
 
-impl ToTokens for ControlFlow {
+impl<AllowElement> ToTokens for ControlFlow<AllowElement> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.at_token.to_tokens(tokens);
         match &self.kind {
@@ -771,23 +779,23 @@ impl ToTokens for ControlFlow {
 }
 
 #[derive(Debug, Clone)]
-pub enum ControlFlowKind {
+pub enum ControlFlowKind<AllowElement> {
     Let(Local),
-    If(If),
-    For(For),
-    While(While),
-    Match(Match),
+    If(If<AllowElement>),
+    For(For<AllowElement>),
+    While(While<AllowElement>),
+    Match(Match<AllowElement>),
 }
 
 #[derive(Debug, Clone)]
-pub struct If {
+pub struct If<AllowElement> {
     pub if_token: Token![if],
     pub cond: Expr,
-    pub then_branch: Block,
-    pub else_branch: Option<(Token![@], Token![else], Box<IfOrBlock>)>,
+    pub then_branch: Block<AllowElement>,
+    pub else_branch: Option<(Token![@], Token![else], Box<IfOrBlock<AllowElement>>)>,
 }
 
-impl DiagnosticParse for If {
+impl<AllowElement> DiagnosticParse for If<AllowElement> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -811,7 +819,7 @@ impl DiagnosticParse for If {
     }
 }
 
-impl ToTokens for If {
+impl<AllowElement> ToTokens for If<AllowElement> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.if_token.to_tokens(tokens);
         self.cond.to_tokens(tokens);
@@ -825,12 +833,12 @@ impl ToTokens for If {
 }
 
 #[derive(Debug, Clone)]
-pub enum IfOrBlock {
-    If(If),
-    Block(Block),
+pub enum IfOrBlock<AllowElement> {
+    If(If<AllowElement>),
+    Block(Block<AllowElement>),
 }
 
-impl DiagnosticParse for IfOrBlock {
+impl<AllowElement> DiagnosticParse for IfOrBlock<AllowElement> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -847,7 +855,7 @@ impl DiagnosticParse for IfOrBlock {
     }
 }
 
-impl ToTokens for IfOrBlock {
+impl<AllowElement> ToTokens for IfOrBlock<AllowElement> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Self::If(if_) => if_.to_tokens(tokens),
@@ -857,15 +865,15 @@ impl ToTokens for IfOrBlock {
 }
 
 #[derive(Debug, Clone)]
-pub struct For {
+pub struct For<AllowElement> {
     pub for_token: Token![for],
     pub pat: Pat,
     pub in_token: Token![in],
     pub expr: Expr,
-    pub body: Block,
+    pub body: Block<AllowElement>,
 }
 
-impl DiagnosticParse for For {
+impl<AllowElement> DiagnosticParse for For<AllowElement> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -880,7 +888,7 @@ impl DiagnosticParse for For {
     }
 }
 
-impl ToTokens for For {
+impl<AllowElement> ToTokens for For<AllowElement> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.for_token.to_tokens(tokens);
         self.pat.to_tokens(tokens);
@@ -891,13 +899,13 @@ impl ToTokens for For {
 }
 
 #[derive(Debug, Clone)]
-pub struct While {
+pub struct While<AllowElement> {
     pub while_token: Token![while],
     pub cond: Expr,
-    pub body: Block,
+    pub body: Block<AllowElement>,
 }
 
-impl DiagnosticParse for While {
+impl<AllowElement> DiagnosticParse for While<AllowElement> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -910,7 +918,7 @@ impl DiagnosticParse for While {
     }
 }
 
-impl ToTokens for While {
+impl<AllowElement> ToTokens for While<AllowElement> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.while_token.to_tokens(tokens);
         self.cond.to_tokens(tokens);
@@ -919,14 +927,14 @@ impl ToTokens for While {
 }
 
 #[derive(Debug, Clone)]
-pub struct Match {
+pub struct Match<AllowElement> {
     pub match_token: Token![match],
     pub expr: Expr,
     pub brace_token: Brace,
-    pub arms: Vec<MatchArm>,
+    pub arms: Vec<MatchArm<AllowElement>>,
 }
 
-impl DiagnosticParse for Match {
+impl<AllowElement> DiagnosticParse for Match<AllowElement> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -951,7 +959,7 @@ impl DiagnosticParse for Match {
     }
 }
 
-impl ToTokens for Match {
+impl<AllowElement> ToTokens for Match<AllowElement> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.match_token.to_tokens(tokens);
         self.expr.to_tokens(tokens);
@@ -964,15 +972,15 @@ impl ToTokens for Match {
 }
 
 #[derive(Debug, Clone)]
-pub struct MatchArm {
+pub struct MatchArm<AllowElement> {
     pub pat: Pat,
     pub guard: Option<(Token![if], Expr)>,
     pub fat_arrow_token: Token![=>],
-    pub body: Markup,
+    pub body: Markup<AllowElement>,
     pub comma_token: Option<Token![,]>,
 }
 
-impl DiagnosticParse for MatchArm {
+impl<AllowElement> DiagnosticParse for MatchArm<AllowElement> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -997,7 +1005,7 @@ impl DiagnosticParse for MatchArm {
     }
 }
 
-impl ToTokens for MatchArm {
+impl<AllowElement> ToTokens for MatchArm<AllowElement> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.pat.to_tokens(tokens);
         if let Some((if_token, guard)) = &self.guard {
