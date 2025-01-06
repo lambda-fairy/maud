@@ -1,15 +1,3 @@
-error: literal must be double-quoted: `"42"`
- --> tests/warnings/non-string-literal.rs:5:9
-  |
-5 |         42
-  |         ^^
-
-error: literal must be double-quoted: `"42usize"`
- --> tests/warnings/non-string-literal.rs:6:9
-  |
-6 |         42usize
-  |         ^^^^^^^
-
 error: literal must be double-quoted: `"42.0"`
  --> tests/warnings/non-string-literal.rs:7:9
   |
@@ -35,19 +23,19 @@ error: expected string
    |         ^^^^
 
 error: attribute value must be a string
-  --> tests/warnings/non-string-literal.rs:13:24
+  --> tests/warnings/non-string-literal.rs:13:15
    |
 13 |         input disabled=true;
-   |                        ^^^^
+   |               ^^^^^^^^^^^^^
    |
    = help: to declare an empty attribute, omit the equals sign: `disabled`
    = help: to toggle the attribute, use square brackets: `disabled[some_boolean_flag]`
 
 error: attribute value must be a string
-  --> tests/warnings/non-string-literal.rs:14:24
+  --> tests/warnings/non-string-literal.rs:14:15
    |
 14 |         input disabled=false;
-   |                        ^^^^^
+   |               ^^^^^^^^^^^^^^
    |
    = help: to declare an empty attribute, omit the equals sign: `disabled`
    = help: to toggle the attribute, use square brackets: `disabled[some_boolean_flag]`
