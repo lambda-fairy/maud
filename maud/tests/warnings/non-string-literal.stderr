@@ -1,41 +1,29 @@
-error: literal must be double-quoted: `"42"`
- --> tests/warnings/non-string-literal.rs:5:9
-  |
-5 |         42
-  |         ^^
-
-error: literal must be double-quoted: `"42usize"`
- --> tests/warnings/non-string-literal.rs:6:9
-  |
-6 |         42usize
-  |         ^^^^^^^
-
 error: literal must be double-quoted: `"42.0"`
- --> $DIR/non-string-literal.rs:7:9
+ --> tests/warnings/non-string-literal.rs:7:9
   |
 7 |         42.0
   |         ^^^^
 
 error: literal must be double-quoted: `"a"`
- --> $DIR/non-string-literal.rs:8:9
+ --> tests/warnings/non-string-literal.rs:8:9
   |
 8 |         'a'
   |         ^^^
 
 error: expected string
- --> $DIR/non-string-literal.rs:9:9
+ --> tests/warnings/non-string-literal.rs:9:9
   |
 9 |         b"a"
   |         ^^^^
 
 error: expected string
-  --> $DIR/non-string-literal.rs:10:9
+  --> tests/warnings/non-string-literal.rs:10:9
    |
 10 |         b'a'
    |         ^^^^
 
 error: attribute value must be a string
-  --> $DIR/non-string-literal.rs:13:15
+  --> tests/warnings/non-string-literal.rs:13:15
    |
 13 |         input disabled=true;
    |               ^^^^^^^^^^^^^
@@ -44,7 +32,7 @@ error: attribute value must be a string
    = help: to toggle the attribute, use square brackets: `disabled[some_boolean_flag]`
 
 error: attribute value must be a string
-  --> $DIR/non-string-literal.rs:14:15
+  --> tests/warnings/non-string-literal.rs:14:15
    |
 14 |         input disabled=false;
    |               ^^^^^^^^^^^^^^
