@@ -90,6 +90,21 @@ html! {
 # ;
 ```
 
+### Splices in attribute name
+
+You can also use splices in the attribute name:
+
+```rust
+let tuple = ("hx-get", "/pony");
+# let _ = maud::
+html! {
+    button (tuple.0)=(tuple.1) {
+        "Get a pony!"
+    }
+}
+# ;
+```
+
 ### What can be spliced?
 
 You can splice any value that implements [`Render`][Render].

@@ -106,6 +106,13 @@ impl Generator {
         build.push_tokens(quote!(maud::macro_private::render_to!(&(#expr), &mut #output_ident);));
     }
 
+    fn splice_attr_name(&self, expr: TokenStream, build: &mut Builder) {
+        let output_ident = self.output_ident.clone();
+        build.push_tokens(
+            quote!(maud::macro_private::render_attr_name!(&(#expr), &mut #output_ident);),
+        );
+    }
+
     fn element(&self, name: TokenStream, attrs: Vec<Attr>, body: ElementBody, build: &mut Builder) {
         build.push_str("<");
         self.name(name.clone(), build);
@@ -123,12 +130,19 @@ impl Generator {
         build.push_escaped(&name_to_string(name));
     }
 
+    fn attr_name(&self, name: AttrName, build: &mut Builder) {
+        match name {
+            AttrName::Fixed { value } => self.name(value, build),
+            AttrName::Splice { expr, .. } => self.splice_attr_name(expr, build),
+        }
+    }
+
     fn attrs(&self, attrs: Vec<Attr>, build: &mut Builder) {
         for NamedAttr { name, attr_type } in desugar_attrs(attrs) {
             match attr_type {
                 AttrType::Normal { value } => {
                     build.push_str(" ");
-                    self.name(name, build);
+                    self.attr_name(name, build);
                     build.push_str("=\"");
                     self.markup(value, build);
                     build.push_str("\"");
@@ -140,7 +154,7 @@ impl Generator {
                     let body = {
                         let mut build = self.builder();
                         build.push_str(" ");
-                        self.name(name, &mut build);
+                        self.attr_name(name, &mut build);
                         build.push_str("=\"");
                         self.splice(inner_value.clone(), &mut build);
                         build.push_str("\"");
@@ -150,7 +164,7 @@ impl Generator {
                 }
                 AttrType::Empty { toggler: None } => {
                     build.push_str(" ");
-                    self.name(name, build);
+                    self.attr_name(name, build);
                 }
                 AttrType::Empty {
                     toggler: Some(Toggler { cond, .. }),
@@ -158,7 +172,7 @@ impl Generator {
                     let body = {
                         let mut build = self.builder();
                         build.push_str(" ");
-                        self.name(name, &mut build);
+                        self.attr_name(name, &mut build);
                         build.finish()
                     };
                     build.push_tokens(quote!(if (#cond) { #body }));
@@ -224,7 +238,9 @@ fn desugar_classes_or_ids(
         });
     }
     Some(NamedAttr {
-        name: TokenStream::from(TokenTree::Ident(Ident::new(attr_name, Span::call_site()))),
+        name: AttrName::Fixed {
+            value: TokenStream::from(TokenTree::Ident(Ident::new(attr_name, Span::call_site()))),
+        },
         attr_type: AttrType::Normal {
             value: Markup::Block(Block {
                 markups,

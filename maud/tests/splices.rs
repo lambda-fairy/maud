@@ -73,6 +73,30 @@ fn locals() {
     assert_eq!(result.into_string(), "Pinkie Pie");
 }
 
+#[test]
+fn attribute_name() {
+    let tuple = ("hx-get", "/pony");
+    let result = html! { button (tuple.0)=(tuple.1) { "Get a pony!" } };
+    assert_eq!(
+        result.into_string(),
+        r#"<button hx-get="/pony">Get a pony!</button>"#
+    );
+}
+
+#[test]
+fn no_xss_from_spliced_attributes() {
+    let evil_tuple = (
+        "x onclick=\"alert(42);\" x",
+        "\" onclick=alert(24); href=\"",
+    );
+    let result =
+        html! { button (format!("data-{}", evil_tuple.0))=(evil_tuple.1) { "XSS be gone!" } };
+    assert_eq!(
+        result.into_string(),
+        r#"<button data-xonclickalert(42);x="&quot; onclick=alert(24); href=&quot;">XSS be gone!</button>"#
+    );
+}
+
 /// An example struct, for testing purposes only
 struct Creature {
     name: &'static str,
