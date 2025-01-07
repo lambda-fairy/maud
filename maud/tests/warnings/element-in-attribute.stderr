@@ -1,0 +1,23 @@
+error: cannot have element inside attribute
+ --> tests/warnings/element-in-attribute.rs:5:18
+  |
+5 |         a href={ div {} } {}
+  |                  ^^^^^^
+
+error: cannot have element inside attribute
+ --> tests/warnings/element-in-attribute.rs:9:14
+  |
+9 |         a .{ div {} } {}
+  |              ^^^^^^
+
+error: cannot have element inside attribute
+  --> tests/warnings/element-in-attribute.rs:13:14
+   |
+13 |         a #{ div {} } {}
+   |              ^^^^^^
+
+error: cannot have element inside attribute
+  --> tests/warnings/element-in-attribute.rs:18:22
+   |
+18 |             a href={ div {} } {}
+   |                      ^^^^^^

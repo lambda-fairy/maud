@@ -19,6 +19,15 @@ pub struct Markups {
     pub markups: Vec<Markup>,
 }
 
+impl Markups {
+    fn error_if_nested_element(&self) -> syn::Result<()> {
+        self.markups
+            .iter()
+            .map(Markup::error_if_nested_element)
+            .collect()
+    }
+}
+
 impl DiagnosticParse for Markups {
     fn diagnostic_parse(
         input: ParseStream,
@@ -92,6 +101,18 @@ impl Markup {
             input.parse().map(Self::Semi)
         } else {
             Err(lookahead.error())
+        }
+    }
+
+    fn error_if_nested_element(&self) -> syn::Result<()> {
+        match self {
+            Self::Lit(..) | Self::Splice { .. } | Self::Semi(..) => Ok(()),
+            Self::Element(element) => Err(Error::new_spanned(
+                element,
+                "cannot have element inside attribute",
+            )),
+            Self::Block(block) => block.error_if_nested_element(),
+            Self::ControlFlow(control_flow) => control_flow.error_if_nested_element(),
         }
     }
 }
@@ -260,6 +281,12 @@ pub struct Block {
     pub markups: Markups,
 }
 
+impl Block {
+    fn error_if_nested_element(&self) -> syn::Result<()> {
+        self.markups.error_if_nested_element()
+    }
+}
+
 impl DiagnosticParse for Block {
     fn diagnostic_parse(
         input: ParseStream,
@@ -386,16 +413,18 @@ impl DiagnosticParse for AttributeName {
         diagnostics: &mut Vec<Diagnostic>,
     ) -> syn::Result<Self> {
         let name = if input.peek(Ident::peek_any) || input.peek(Lit) {
-            input.diagnostic_parse(diagnostics).map(Self::Normal)
+            Self::Normal(input.diagnostic_parse(diagnostics)?)
         } else {
-            input.diagnostic_parse(diagnostics).map(Self::Markup)
+            let markup = input.diagnostic_parse::<Markup>(diagnostics)?;
+            markup.error_if_nested_element()?;
+            Self::Markup(markup)
         };
 
         if input.peek(Token![?]) {
             input.parse::<Token![?]>()?;
         }
 
-        name
+        Ok(name)
     }
 }
 
@@ -452,10 +481,9 @@ impl DiagnosticParse for AttributeType {
                     toggler: input.diagnostic_parse(diagnostics)?,
                 })
             } else {
-                Ok(Self::Normal {
-                    eq_token,
-                    value: input.diagnostic_parse(diagnostics)?,
-                })
+                let value = input.diagnostic_parse::<Markup>(diagnostics)?;
+                value.error_if_nested_element()?;
+                Ok(Self::Normal { eq_token, value })
             }
         } else if lookahead.peek(Bracket) {
             Ok(Self::Empty(Some(input.diagnostic_parse(diagnostics)?)))
@@ -725,6 +753,12 @@ pub struct ControlFlow {
     pub kind: ControlFlowKind,
 }
 
+impl ControlFlow {
+    fn error_if_nested_element(&self) -> syn::Result<()> {
+        self.kind.error_if_nested_element()
+    }
+}
+
 impl DiagnosticParse for ControlFlow {
     fn diagnostic_parse(
         input: ParseStream,
@@ -779,12 +813,34 @@ pub enum ControlFlowKind {
     Match(Match),
 }
 
+impl ControlFlowKind {
+    fn error_if_nested_element(&self) -> syn::Result<()> {
+        match self {
+            Self::Let(..) => Ok(()),
+            Self::If(if_) => if_.error_if_nested_element(),
+            Self::For(for_) => for_.error_if_nested_element(),
+            Self::While(while_) => while_.error_if_nested_element(),
+            Self::Match(match_) => match_.error_if_nested_element(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct If {
     pub if_token: Token![if],
     pub cond: Expr,
     pub then_branch: Block,
     pub else_branch: Option<(Token![@], Token![else], Box<IfOrBlock>)>,
+}
+
+impl If {
+    fn error_if_nested_element(&self) -> syn::Result<()> {
+        self.then_branch.error_if_nested_element()?;
+        if let Some((_at_token, _else_token, if_or_block)) = &self.else_branch {
+            if_or_block.error_if_nested_element()?;
+        }
+        Ok(())
+    }
 }
 
 impl DiagnosticParse for If {
@@ -830,6 +886,15 @@ pub enum IfOrBlock {
     Block(Block),
 }
 
+impl IfOrBlock {
+    fn error_if_nested_element(&self) -> syn::Result<()> {
+        match self {
+            Self::If(if_) => if_.error_if_nested_element(),
+            Self::Block(block) => block.error_if_nested_element(),
+        }
+    }
+}
+
 impl DiagnosticParse for IfOrBlock {
     fn diagnostic_parse(
         input: ParseStream,
@@ -865,6 +930,12 @@ pub struct For {
     pub body: Block,
 }
 
+impl For {
+    fn error_if_nested_element(&self) -> syn::Result<()> {
+        self.body.error_if_nested_element()
+    }
+}
+
 impl DiagnosticParse for For {
     fn diagnostic_parse(
         input: ParseStream,
@@ -897,6 +968,12 @@ pub struct While {
     pub body: Block,
 }
 
+impl While {
+    fn error_if_nested_element(&self) -> syn::Result<()> {
+        self.body.error_if_nested_element()
+    }
+}
+
 impl DiagnosticParse for While {
     fn diagnostic_parse(
         input: ParseStream,
@@ -924,6 +1001,15 @@ pub struct Match {
     pub expr: Expr,
     pub brace_token: Brace,
     pub arms: Vec<MatchArm>,
+}
+
+impl Match {
+    fn error_if_nested_element(&self) -> syn::Result<()> {
+        self.arms
+            .iter()
+            .map(MatchArm::error_if_nested_element)
+            .collect()
+    }
 }
 
 impl DiagnosticParse for Match {
@@ -970,6 +1056,12 @@ pub struct MatchArm {
     pub fat_arrow_token: Token![=>],
     pub body: Markup,
     pub comma_token: Option<Token![,]>,
+}
+
+impl MatchArm {
+    fn error_if_nested_element(&self) -> syn::Result<()> {
+        self.body.error_if_nested_element()
+    }
 }
 
 impl DiagnosticParse for MatchArm {
