@@ -4,7 +4,7 @@ use syn::{parse_quote, token::Brace, Expr, Local};
 
 use crate::{ast::*, escape};
 
-pub fn generate(markups: Markups, output_ident: Ident) -> TokenStream {
+pub fn generate(markups: Markups<Element>, output_ident: Ident) -> TokenStream {
     let mut build = Builder::new(output_ident.clone());
     Generator::new(output_ident).markups(markups, &mut build);
     build.finish()
@@ -23,13 +23,13 @@ impl Generator {
         Builder::new(self.output_ident.clone())
     }
 
-    fn markups(&self, markups: Markups, build: &mut Builder) {
+    fn markups<E: MaybeElement>(&self, markups: Markups<E>, build: &mut Builder) {
         for markup in markups.markups {
             self.markup(markup, build);
         }
     }
 
-    fn markup(&self, markup: Markup, build: &mut Builder) {
+    fn markup<E: MaybeElement>(&self, markup: Markup<E>, build: &mut Builder) {
         match markup {
             Markup::Block(block) => {
                 if block.markups.markups.iter().any(|markup| {
@@ -48,13 +48,13 @@ impl Generator {
             }
             Markup::Lit(lit) => build.push_escaped(&lit.to_string()),
             Markup::Splice { expr, .. } => self.splice(expr, build),
-            Markup::Element(element) => self.element(element, build),
+            Markup::Element(element) => self.element(element.into_element(), build),
             Markup::ControlFlow(control_flow) => self.control_flow(control_flow, build),
             Markup::Semi(_) => {}
         }
     }
 
-    fn block(&self, block: Block, build: &mut Builder) {
+    fn block<E: MaybeElement>(&self, block: Block<E>, build: &mut Builder) {
         let markups = {
             let mut build = self.builder();
             self.markups(block.markups, &mut build);
@@ -184,7 +184,7 @@ impl Generator {
         }
     }
 
-    fn control_flow(&self, control_flow: ControlFlow, build: &mut Builder) {
+    fn control_flow<E: MaybeElement>(&self, control_flow: ControlFlow<E>, build: &mut Builder) {
         match control_flow.kind {
             ControlFlowKind::If(if_) => self.control_flow_if(if_, build),
             ControlFlowKind::Let(let_) => self.control_flow_let(let_, build),
@@ -194,14 +194,14 @@ impl Generator {
         }
     }
 
-    fn control_flow_if(
+    fn control_flow_if<E: MaybeElement>(
         &self,
         IfExpr {
             if_token,
             cond,
             then_branch,
             else_branch,
-        }: IfExpr,
+        }: IfExpr<E>,
         build: &mut Builder,
     ) {
         build.push_tokens(quote!(#if_token #cond));
@@ -213,7 +213,11 @@ impl Generator {
         }
     }
 
-    fn control_flow_if_or_block(&self, if_or_block: IfOrBlock, build: &mut Builder) {
+    fn control_flow_if_or_block<E: MaybeElement>(
+        &self,
+        if_or_block: IfOrBlock<E>,
+        build: &mut Builder,
+    ) {
         match if_or_block {
             IfOrBlock::If(if_) => self.control_flow_if(if_, build),
             IfOrBlock::Block(block) => self.block(block, build),
@@ -224,7 +228,7 @@ impl Generator {
         build.push_tokens(let_.to_token_stream());
     }
 
-    fn control_flow_for(
+    fn control_flow_for<E: MaybeElement>(
         &self,
         ForExpr {
             for_token,
@@ -232,34 +236,34 @@ impl Generator {
             in_token,
             expr,
             body,
-        }: ForExpr,
+        }: ForExpr<E>,
         build: &mut Builder,
     ) {
         build.push_tokens(quote!(#for_token #pat #in_token (#expr)));
         self.block(body, build);
     }
 
-    fn control_flow_while(
+    fn control_flow_while<E: MaybeElement>(
         &self,
         WhileExpr {
             while_token,
             cond,
             body,
-        }: WhileExpr,
+        }: WhileExpr<E>,
         build: &mut Builder,
     ) {
         build.push_tokens(quote!(#while_token #cond));
         self.block(body, build);
     }
 
-    fn control_flow_match(
+    fn control_flow_match<E: MaybeElement>(
         &self,
         MatchExpr {
             match_token,
             expr,
             brace_token,
             arms,
-        }: MatchExpr,
+        }: MatchExpr<E>,
         build: &mut Builder,
     ) {
         let arms = {

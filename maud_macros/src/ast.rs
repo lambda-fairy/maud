@@ -7,7 +7,7 @@ use syn::{
     braced, bracketed,
     ext::IdentExt,
     parenthesized,
-    parse::{Parse, ParseStream},
+    parse::{Lookahead1, Parse, ParseStream},
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
     token::{
@@ -18,11 +18,11 @@ use syn::{
 };
 
 #[derive(Debug, Clone)]
-pub struct Markups {
-    pub markups: Vec<Markup>,
+pub struct Markups<E> {
+    pub markups: Vec<Markup<E>>,
 }
 
-impl DiagnosticParse for Markups {
+impl<E: MaybeElement> DiagnosticParse for Markups<E> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -35,7 +35,7 @@ impl DiagnosticParse for Markups {
     }
 }
 
-impl ToTokens for Markups {
+impl<E: ToTokens> ToTokens for Markups<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         for markup in &self.markups {
             markup.to_tokens(tokens);
@@ -44,16 +44,16 @@ impl ToTokens for Markups {
 }
 
 #[derive(Debug, Clone)]
-pub enum Markup {
-    Block(Block),
+pub enum Markup<E> {
+    Block(Block<E>),
     Lit(HtmlLit),
     Splice { paren_token: Paren, expr: Expr },
-    Element(Element),
-    ControlFlow(ControlFlow),
+    Element(E),
+    ControlFlow(ControlFlow<E>),
     Semi(Semi),
 }
 
-impl Markup {
+impl<E: MaybeElement> Markup<E> {
     pub fn diagnostic_parse_in_block(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -84,8 +84,8 @@ impl Markup {
                 paren_token: parenthesized!(content in input),
                 expr: content.parse()?,
             })
-        } else if lookahead.peek(Ident::peek_any) || lookahead.peek(Dot) || lookahead.peek(Pound) {
-            input.diagnostic_parse(diagnostics).map(Self::Element)
+        } else if let Some(parse_element) = E::should_parse(&lookahead) {
+            parse_element(input, diagnostics).map(Self::Element)
         } else if lookahead.peek(At) {
             input.diagnostic_parse(diagnostics).map(Self::ControlFlow)
         } else if lookahead.peek(Semi) {
@@ -96,7 +96,7 @@ impl Markup {
     }
 }
 
-impl DiagnosticParse for Markup {
+impl<E: MaybeElement> DiagnosticParse for Markup<E> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -119,7 +119,7 @@ impl DiagnosticParse for Markup {
     }
 }
 
-impl ToTokens for Markup {
+impl<E: ToTokens> ToTokens for Markup<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Self::Block(block) => block.to_tokens(tokens),
@@ -136,11 +136,64 @@ impl ToTokens for Markup {
     }
 }
 
+/// Represents a context that may or may not allow elements.
+///
+/// An attribute accepts almost the same syntax as an element body, except child elements aren't
+/// allowed. To enable code reuse, introduce a trait that abstracts over whether an element is
+/// allowed or not.
+pub trait MaybeElement: Sized + ToTokens {
+    /// If an element can be parsed here, returns `Some` with a parser for the rest of the element.
+    fn should_parse(
+        lookahead: &Lookahead1<'_>,
+    ) -> Option<fn(ParseStream, &mut Vec<Diagnostic>) -> syn::Result<Self>>;
+
+    /// Converts the parsed result into an element.
+    fn into_element(self) -> Element;
+}
+
+/// Represents an attribute context, where elements are disallowed.
+#[derive(Debug, Clone)]
+pub enum NoElement {}
+
+impl MaybeElement for NoElement {
+    fn should_parse(
+        _lookahead: &Lookahead1<'_>,
+    ) -> Option<fn(ParseStream, &mut Vec<Diagnostic>) -> syn::Result<Self>> {
+        None
+    }
+
+    fn into_element(self) -> Element {
+        match self {}
+    }
+}
+
+impl ToTokens for NoElement {
+    fn to_tokens(&self, _tokens: &mut TokenStream) {
+        match *self {}
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Element {
     pub name: Option<HtmlName>,
     pub attrs: Vec<Attribute>,
     pub body: ElementBody,
+}
+
+impl MaybeElement for Element {
+    fn should_parse(
+        lookahead: &Lookahead1<'_>,
+    ) -> Option<fn(ParseStream, &mut Vec<Diagnostic>) -> syn::Result<Self>> {
+        if lookahead.peek(Ident::peek_any) || lookahead.peek(Dot) || lookahead.peek(Pound) {
+            Some(Element::diagnostic_parse)
+        } else {
+            None
+        }
+    }
+
+    fn into_element(self) -> Element {
+        self
+    }
 }
 
 impl DiagnosticParse for Element {
@@ -214,7 +267,7 @@ impl ToTokens for Element {
 #[derive(Debug, Clone)]
 pub enum ElementBody {
     Void(Semi),
-    Block(Block),
+    Block(Block<Element>),
 }
 
 impl DiagnosticParse for ElementBody {
@@ -255,12 +308,12 @@ impl ToTokens for ElementBody {
 }
 
 #[derive(Debug, Clone)]
-pub struct Block {
+pub struct Block<E> {
     pub brace_token: Brace,
-    pub markups: Markups,
+    pub markups: Markups<E>,
 }
 
-impl DiagnosticParse for Block {
+impl<E: MaybeElement> DiagnosticParse for Block<E> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -273,7 +326,7 @@ impl DiagnosticParse for Block {
     }
 }
 
-impl ToTokens for Block {
+impl<E: ToTokens> ToTokens for Block<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.brace_token.surround(tokens, |tokens| {
             self.markups.to_tokens(tokens);
@@ -377,7 +430,7 @@ impl ToTokens for Attribute {
 #[derive(Debug, Clone)]
 pub enum AttributeName {
     Normal(HtmlName),
-    Markup(Markup),
+    Markup(Markup<NoElement>),
 }
 
 impl DiagnosticParse for AttributeName {
@@ -425,8 +478,14 @@ impl Display for AttributeName {
 
 #[derive(Debug, Clone)]
 pub enum AttributeType {
-    Normal { eq_token: Eq, value: Markup },
-    Optional { eq_token: Eq, toggler: Toggler },
+    Normal {
+        eq_token: Eq,
+        value: Markup<NoElement>,
+    },
+    Optional {
+        eq_token: Eq,
+        toggler: Toggler,
+    },
     Empty(Option<Toggler>),
 }
 
@@ -714,12 +773,12 @@ impl ToTokens for Toggler {
 }
 
 #[derive(Debug, Clone)]
-pub struct ControlFlow {
+pub struct ControlFlow<E> {
     pub at_token: At,
-    pub kind: ControlFlowKind,
+    pub kind: ControlFlowKind<E>,
 }
 
-impl DiagnosticParse for ControlFlow {
+impl<E: MaybeElement> DiagnosticParse for ControlFlow<E> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -751,7 +810,7 @@ impl DiagnosticParse for ControlFlow {
     }
 }
 
-impl ToTokens for ControlFlow {
+impl<E: ToTokens> ToTokens for ControlFlow<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.at_token.to_tokens(tokens);
         match &self.kind {
@@ -765,23 +824,23 @@ impl ToTokens for ControlFlow {
 }
 
 #[derive(Debug, Clone)]
-pub enum ControlFlowKind {
+pub enum ControlFlowKind<E> {
     Let(Local),
-    If(IfExpr),
-    For(ForExpr),
-    While(WhileExpr),
-    Match(MatchExpr),
+    If(IfExpr<E>),
+    For(ForExpr<E>),
+    While(WhileExpr<E>),
+    Match(MatchExpr<E>),
 }
 
 #[derive(Debug, Clone)]
-pub struct IfExpr {
+pub struct IfExpr<E> {
     pub if_token: If,
     pub cond: Expr,
-    pub then_branch: Block,
-    pub else_branch: Option<(At, Else, Box<IfOrBlock>)>,
+    pub then_branch: Block<E>,
+    pub else_branch: Option<(At, Else, Box<IfOrBlock<E>>)>,
 }
 
-impl DiagnosticParse for IfExpr {
+impl<E: MaybeElement> DiagnosticParse for IfExpr<E> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -805,7 +864,7 @@ impl DiagnosticParse for IfExpr {
     }
 }
 
-impl ToTokens for IfExpr {
+impl<E: ToTokens> ToTokens for IfExpr<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.if_token.to_tokens(tokens);
         self.cond.to_tokens(tokens);
@@ -819,12 +878,12 @@ impl ToTokens for IfExpr {
 }
 
 #[derive(Debug, Clone)]
-pub enum IfOrBlock {
-    If(IfExpr),
-    Block(Block),
+pub enum IfOrBlock<E> {
+    If(IfExpr<E>),
+    Block(Block<E>),
 }
 
-impl DiagnosticParse for IfOrBlock {
+impl<E: MaybeElement> DiagnosticParse for IfOrBlock<E> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -841,7 +900,7 @@ impl DiagnosticParse for IfOrBlock {
     }
 }
 
-impl ToTokens for IfOrBlock {
+impl<E: ToTokens> ToTokens for IfOrBlock<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Self::If(if_) => if_.to_tokens(tokens),
@@ -851,15 +910,15 @@ impl ToTokens for IfOrBlock {
 }
 
 #[derive(Debug, Clone)]
-pub struct ForExpr {
+pub struct ForExpr<E> {
     pub for_token: For,
     pub pat: Pat,
     pub in_token: In,
     pub expr: Expr,
-    pub body: Block,
+    pub body: Block<E>,
 }
 
-impl DiagnosticParse for ForExpr {
+impl<E: MaybeElement> DiagnosticParse for ForExpr<E> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -874,7 +933,7 @@ impl DiagnosticParse for ForExpr {
     }
 }
 
-impl ToTokens for ForExpr {
+impl<E: ToTokens> ToTokens for ForExpr<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.for_token.to_tokens(tokens);
         self.pat.to_tokens(tokens);
@@ -885,13 +944,13 @@ impl ToTokens for ForExpr {
 }
 
 #[derive(Debug, Clone)]
-pub struct WhileExpr {
+pub struct WhileExpr<E> {
     pub while_token: While,
     pub cond: Expr,
-    pub body: Block,
+    pub body: Block<E>,
 }
 
-impl DiagnosticParse for WhileExpr {
+impl<E: MaybeElement> DiagnosticParse for WhileExpr<E> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -904,7 +963,7 @@ impl DiagnosticParse for WhileExpr {
     }
 }
 
-impl ToTokens for WhileExpr {
+impl<E: ToTokens> ToTokens for WhileExpr<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.while_token.to_tokens(tokens);
         self.cond.to_tokens(tokens);
@@ -913,14 +972,14 @@ impl ToTokens for WhileExpr {
 }
 
 #[derive(Debug, Clone)]
-pub struct MatchExpr {
+pub struct MatchExpr<E> {
     pub match_token: Match,
     pub expr: Expr,
     pub brace_token: Brace,
-    pub arms: Vec<MatchArm>,
+    pub arms: Vec<MatchArm<E>>,
 }
 
-impl DiagnosticParse for MatchExpr {
+impl<E: MaybeElement> DiagnosticParse for MatchExpr<E> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -945,7 +1004,7 @@ impl DiagnosticParse for MatchExpr {
     }
 }
 
-impl ToTokens for MatchExpr {
+impl<E: ToTokens> ToTokens for MatchExpr<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.match_token.to_tokens(tokens);
         self.expr.to_tokens(tokens);
@@ -958,15 +1017,15 @@ impl ToTokens for MatchExpr {
 }
 
 #[derive(Debug, Clone)]
-pub struct MatchArm {
+pub struct MatchArm<E> {
     pub pat: Pat,
     pub guard: Option<(If, Expr)>,
     pub fat_arrow_token: FatArrow,
-    pub body: Markup,
+    pub body: Markup<E>,
     pub comma_token: Option<Comma>,
 }
 
-impl DiagnosticParse for MatchArm {
+impl<E: MaybeElement> DiagnosticParse for MatchArm<E> {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -991,7 +1050,7 @@ impl DiagnosticParse for MatchArm {
     }
 }
 
-impl ToTokens for MatchArm {
+impl<E: ToTokens> ToTokens for MatchArm<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.pat.to_tokens(tokens);
         if let Some((if_token, guard)) = &self.guard {
