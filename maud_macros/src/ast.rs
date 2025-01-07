@@ -146,9 +146,6 @@ pub trait MaybeElement: Sized + ToTokens {
     fn should_parse(
         lookahead: &Lookahead1<'_>,
     ) -> Option<fn(ParseStream, &mut Vec<Diagnostic>) -> syn::Result<Self>>;
-
-    /// Converts the parsed result into an element.
-    fn into_element(self) -> Element;
 }
 
 /// Represents an attribute context, where elements are disallowed.
@@ -160,10 +157,6 @@ impl MaybeElement for NoElement {
         _lookahead: &Lookahead1<'_>,
     ) -> Option<fn(ParseStream, &mut Vec<Diagnostic>) -> syn::Result<Self>> {
         None
-    }
-
-    fn into_element(self) -> Element {
-        match self {}
     }
 }
 
@@ -180,6 +173,12 @@ pub struct Element {
     pub body: ElementBody,
 }
 
+impl From<NoElement> for Element {
+    fn from(value: NoElement) -> Self {
+        match value {}
+    }
+}
+
 impl MaybeElement for Element {
     fn should_parse(
         lookahead: &Lookahead1<'_>,
@@ -189,10 +188,6 @@ impl MaybeElement for Element {
         } else {
             None
         }
-    }
-
-    fn into_element(self) -> Element {
-        self
     }
 }
 

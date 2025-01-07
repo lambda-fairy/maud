@@ -23,13 +23,13 @@ impl Generator {
         Builder::new(self.output_ident.clone())
     }
 
-    fn markups<E: MaybeElement>(&self, markups: Markups<E>, build: &mut Builder) {
+    fn markups<E: Into<Element>>(&self, markups: Markups<E>, build: &mut Builder) {
         for markup in markups.markups {
             self.markup(markup, build);
         }
     }
 
-    fn markup<E: MaybeElement>(&self, markup: Markup<E>, build: &mut Builder) {
+    fn markup<E: Into<Element>>(&self, markup: Markup<E>, build: &mut Builder) {
         match markup {
             Markup::Block(block) => {
                 if block.markups.markups.iter().any(|markup| {
@@ -48,13 +48,13 @@ impl Generator {
             }
             Markup::Lit(lit) => build.push_escaped(&lit.to_string()),
             Markup::Splice { expr, .. } => self.splice(expr, build),
-            Markup::Element(element) => self.element(element.into_element(), build),
+            Markup::Element(element) => self.element(element.into(), build),
             Markup::ControlFlow(control_flow) => self.control_flow(control_flow, build),
             Markup::Semi(_) => {}
         }
     }
 
-    fn block<E: MaybeElement>(&self, block: Block<E>, build: &mut Builder) {
+    fn block<E: Into<Element>>(&self, block: Block<E>, build: &mut Builder) {
         let markups = {
             let mut build = self.builder();
             self.markups(block.markups, &mut build);
@@ -184,7 +184,7 @@ impl Generator {
         }
     }
 
-    fn control_flow<E: MaybeElement>(&self, control_flow: ControlFlow<E>, build: &mut Builder) {
+    fn control_flow<E: Into<Element>>(&self, control_flow: ControlFlow<E>, build: &mut Builder) {
         match control_flow.kind {
             ControlFlowKind::If(if_) => self.control_flow_if(if_, build),
             ControlFlowKind::Let(let_) => self.control_flow_let(let_, build),
@@ -194,7 +194,7 @@ impl Generator {
         }
     }
 
-    fn control_flow_if<E: MaybeElement>(
+    fn control_flow_if<E: Into<Element>>(
         &self,
         IfExpr {
             if_token,
@@ -213,7 +213,7 @@ impl Generator {
         }
     }
 
-    fn control_flow_if_or_block<E: MaybeElement>(
+    fn control_flow_if_or_block<E: Into<Element>>(
         &self,
         if_or_block: IfOrBlock<E>,
         build: &mut Builder,
@@ -228,7 +228,7 @@ impl Generator {
         build.push_tokens(let_.to_token_stream());
     }
 
-    fn control_flow_for<E: MaybeElement>(
+    fn control_flow_for<E: Into<Element>>(
         &self,
         ForExpr {
             for_token,
@@ -243,7 +243,7 @@ impl Generator {
         self.block(body, build);
     }
 
-    fn control_flow_while<E: MaybeElement>(
+    fn control_flow_while<E: Into<Element>>(
         &self,
         WhileExpr {
             while_token,
@@ -256,7 +256,7 @@ impl Generator {
         self.block(body, build);
     }
 
-    fn control_flow_match<E: MaybeElement>(
+    fn control_flow_match<E: Into<Element>>(
         &self,
         MatchExpr {
             match_token,
