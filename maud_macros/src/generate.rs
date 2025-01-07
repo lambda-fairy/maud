@@ -196,12 +196,12 @@ impl Generator {
 
     fn control_flow_if(
         &self,
-        If {
+        IfExpr {
             if_token,
             cond,
             then_branch,
             else_branch,
-        }: If,
+        }: IfExpr,
         build: &mut Builder,
     ) {
         build.push_tokens(quote!(#if_token #cond));
@@ -226,13 +226,13 @@ impl Generator {
 
     fn control_flow_for(
         &self,
-        For {
+        ForExpr {
             for_token,
             pat,
             in_token,
             expr,
             body,
-        }: For,
+        }: ForExpr,
         build: &mut Builder,
     ) {
         build.push_tokens(quote!(#for_token #pat #in_token (#expr)));
@@ -241,11 +241,11 @@ impl Generator {
 
     fn control_flow_while(
         &self,
-        While {
+        WhileExpr {
             while_token,
             cond,
             body,
-        }: While,
+        }: WhileExpr,
         build: &mut Builder,
     ) {
         build.push_tokens(quote!(#while_token #cond));
@@ -254,12 +254,12 @@ impl Generator {
 
     fn control_flow_match(
         &self,
-        Match {
+        MatchExpr {
             match_token,
             expr,
             brace_token,
             arms,
-        }: Match,
+        }: MatchExpr,
         build: &mut Builder,
     ) {
         let arms = {

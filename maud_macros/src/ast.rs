@@ -773,21 +773,21 @@ impl ToTokens for ControlFlow {
 #[derive(Debug, Clone)]
 pub enum ControlFlowKind {
     Let(Local),
-    If(If),
-    For(For),
-    While(While),
-    Match(Match),
+    If(IfExpr),
+    For(ForExpr),
+    While(WhileExpr),
+    Match(MatchExpr),
 }
 
 #[derive(Debug, Clone)]
-pub struct If {
+pub struct IfExpr {
     pub if_token: Token![if],
     pub cond: Expr,
     pub then_branch: Block,
     pub else_branch: Option<(Token![@], Token![else], Box<IfOrBlock>)>,
 }
 
-impl DiagnosticParse for If {
+impl DiagnosticParse for IfExpr {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -811,7 +811,7 @@ impl DiagnosticParse for If {
     }
 }
 
-impl ToTokens for If {
+impl ToTokens for IfExpr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.if_token.to_tokens(tokens);
         self.cond.to_tokens(tokens);
@@ -826,7 +826,7 @@ impl ToTokens for If {
 
 #[derive(Debug, Clone)]
 pub enum IfOrBlock {
-    If(If),
+    If(IfExpr),
     Block(Block),
 }
 
@@ -857,7 +857,7 @@ impl ToTokens for IfOrBlock {
 }
 
 #[derive(Debug, Clone)]
-pub struct For {
+pub struct ForExpr {
     pub for_token: Token![for],
     pub pat: Pat,
     pub in_token: Token![in],
@@ -865,7 +865,7 @@ pub struct For {
     pub body: Block,
 }
 
-impl DiagnosticParse for For {
+impl DiagnosticParse for ForExpr {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -880,7 +880,7 @@ impl DiagnosticParse for For {
     }
 }
 
-impl ToTokens for For {
+impl ToTokens for ForExpr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.for_token.to_tokens(tokens);
         self.pat.to_tokens(tokens);
@@ -891,13 +891,13 @@ impl ToTokens for For {
 }
 
 #[derive(Debug, Clone)]
-pub struct While {
+pub struct WhileExpr {
     pub while_token: Token![while],
     pub cond: Expr,
     pub body: Block,
 }
 
-impl DiagnosticParse for While {
+impl DiagnosticParse for WhileExpr {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -910,7 +910,7 @@ impl DiagnosticParse for While {
     }
 }
 
-impl ToTokens for While {
+impl ToTokens for WhileExpr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.while_token.to_tokens(tokens);
         self.cond.to_tokens(tokens);
@@ -919,14 +919,14 @@ impl ToTokens for While {
 }
 
 #[derive(Debug, Clone)]
-pub struct Match {
+pub struct MatchExpr {
     pub match_token: Token![match],
     pub expr: Expr,
     pub brace_token: Brace,
     pub arms: Vec<MatchArm>,
 }
 
-impl DiagnosticParse for Match {
+impl DiagnosticParse for MatchExpr {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
@@ -951,7 +951,7 @@ impl DiagnosticParse for Match {
     }
 }
 
-impl ToTokens for Match {
+impl ToTokens for MatchExpr {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.match_token.to_tokens(tokens);
         self.expr.to_tokens(tokens);
