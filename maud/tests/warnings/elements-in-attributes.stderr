@@ -1,0 +1,47 @@
+error: expected one of: curly braces, literal, parentheses, `@`, `;`
+ --> tests/warnings/elements-in-attributes.rs:5:18
+  |
+5 |         a href={ b {} } {}
+  |                  ^
+
+error: expected one of: curly braces, literal, parentheses, `@`, `;`
+ --> tests/warnings/elements-in-attributes.rs:9:16
+  |
+9 |         a href=.pinkie-pie {} {}
+  |                ^
+
+error: expected one of: curly braces, literal, parentheses, `@`, `;`
+  --> tests/warnings/elements-in-attributes.rs:13:14
+   |
+13 |         a .{ b {} } {}
+   |              ^
+
+error: expected one of: curly braces, literal, parentheses, `@`, `;`
+  --> tests/warnings/elements-in-attributes.rs:17:14
+   |
+17 |         a #{ b {} } {}
+   |              ^
+
+error: expected one of: curly braces, literal, parentheses, `@`, `;`
+  --> tests/warnings/elements-in-attributes.rs:24:22
+   |
+24 |             a href={ b #if-else {} } {}
+   |                      ^
+
+error: expected one of: curly braces, literal, parentheses, `@`, `;`
+  --> tests/warnings/elements-in-attributes.rs:30:22
+   |
+30 |             a href={ b #for {} } {}
+   |                      ^
+
+error: expected one of: curly braces, literal, parentheses, `@`, `;`
+  --> tests/warnings/elements-in-attributes.rs:36:22
+   |
+36 |             a href={ b #while {} } {}
+   |                      ^
+
+error: expected one of: curly braces, literal, parentheses, `@`, `;`
+  --> tests/warnings/elements-in-attributes.rs:42:28
+   |
+42 |             () => a href={ b #match {} } {}
+   |                            ^
