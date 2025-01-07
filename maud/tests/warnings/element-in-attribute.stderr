@@ -1,23 +1,53 @@
 error: cannot have element inside attribute
  --> tests/warnings/element-in-attribute.rs:5:18
   |
-5 |         a href={ div {} } {}
-  |                  ^^^^^^
+5 |         a href={ b {} } {}
+  |                  ^^^^
 
 error: cannot have element inside attribute
- --> tests/warnings/element-in-attribute.rs:9:14
+ --> tests/warnings/element-in-attribute.rs:7:14
   |
-9 |         a .{ div {} } {}
-  |              ^^^^^^
+7 |         a .{ b {} } {}
+  |              ^^^^
 
 error: cannot have element inside attribute
-  --> tests/warnings/element-in-attribute.rs:13:14
-   |
-13 |         a #{ div {} } {}
-   |              ^^^^^^
+ --> tests/warnings/element-in-attribute.rs:8:14
+  |
+8 |         a #{ b {} } {}
+  |              ^^^^
 
 error: cannot have element inside attribute
-  --> tests/warnings/element-in-attribute.rs:18:22
+  --> tests/warnings/element-in-attribute.rs:11:22
    |
-18 |             a href={ div {} } {}
-   |                      ^^^^^^
+11 |             a href={ b #if {} } {}
+   |                      ^^^^^^^^
+
+error: cannot have element inside attribute
+  --> tests/warnings/element-in-attribute.rs:13:22
+   |
+13 |             a href={ b #else-if {} } {}
+   |                      ^^^^^^^^^^^^^
+
+error: cannot have element inside attribute
+  --> tests/warnings/element-in-attribute.rs:15:22
+   |
+15 |             a href={ b #else {} } {}
+   |                      ^^^^^^^^^^
+
+error: cannot have element inside attribute
+  --> tests/warnings/element-in-attribute.rs:19:22
+   |
+19 |             a href={ b #for {} } {}
+   |                      ^^^^^^^^^
+
+error: cannot have element inside attribute
+  --> tests/warnings/element-in-attribute.rs:23:22
+   |
+23 |             a href={ b #while {} } {}
+   |                      ^^^^^^^^^^^
+
+error: cannot have element inside attribute
+  --> tests/warnings/element-in-attribute.rs:27:28
+   |
+27 |             () => a href={ b #match {} } {}
+   |                            ^^^^^^^^^^^

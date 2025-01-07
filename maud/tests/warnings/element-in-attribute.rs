@@ -2,20 +2,29 @@ use maud::html;
 
 fn main() {
     html! {
-        a href={ div {} } {}
-    };
+        a href={ b {} } {}
 
-    html! {
-        a .{ div {} } {}
-    };
+        a .{ b {} } {}
+        a #{ b {} } {}
 
-    html! {
-        a #{ div {} } {}
-    };
-
-    html! {
         @if true {
-            a href={ div {} } {}
+            a href={ b #if {} } {}
+        } @else if true {
+            a href={ b #else-if {} } {}
+        } @else {
+            a href={ b #else {} } {}
+        }
+
+        @for _ in 0..10 {
+            a href={ b #for {} } {}
+        }
+
+        @while false {
+            a href={ b #while {} } {}
+        }
+
+        @match () {
+            () => a href={ b #match {} } {}
         }
     };
 }

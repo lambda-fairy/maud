@@ -20,11 +20,10 @@ pub struct Markups {
 }
 
 impl Markups {
-    fn error_if_nested_element(&self) -> syn::Result<()> {
-        self.markups
-            .iter()
-            .map(Markup::error_if_nested_element)
-            .collect()
+    fn error_if_nested_element(&self, diagnostics: &mut Vec<Diagnostic>) {
+        for markup in &self.markups {
+            markup.error_if_nested_element(diagnostics);
+        }
     }
 }
 
@@ -104,15 +103,14 @@ impl Markup {
         }
     }
 
-    fn error_if_nested_element(&self) -> syn::Result<()> {
+    fn error_if_nested_element(&self, diagnostics: &mut Vec<Diagnostic>) {
         match self {
-            Self::Lit(..) | Self::Splice { .. } | Self::Semi(..) => Ok(()),
-            Self::Element(element) => Err(Error::new_spanned(
-                element,
-                "cannot have element inside attribute",
-            )),
-            Self::Block(block) => block.error_if_nested_element(),
-            Self::ControlFlow(control_flow) => control_flow.error_if_nested_element(),
+            Self::Lit(..) | Self::Splice { .. } | Self::Semi(..) => {}
+            Self::Element(element) => {
+                diagnostics.push(element.span().error("cannot have element inside attribute"));
+            }
+            Self::Block(block) => block.error_if_nested_element(diagnostics),
+            Self::ControlFlow(control_flow) => control_flow.error_if_nested_element(diagnostics),
         }
     }
 }
@@ -282,8 +280,8 @@ pub struct Block {
 }
 
 impl Block {
-    fn error_if_nested_element(&self) -> syn::Result<()> {
-        self.markups.error_if_nested_element()
+    fn error_if_nested_element(&self, diagnostics: &mut Vec<Diagnostic>) {
+        self.markups.error_if_nested_element(diagnostics);
     }
 }
 
@@ -416,7 +414,7 @@ impl DiagnosticParse for AttributeName {
             Self::Normal(input.diagnostic_parse(diagnostics)?)
         } else {
             let markup = input.diagnostic_parse::<Markup>(diagnostics)?;
-            markup.error_if_nested_element()?;
+            markup.error_if_nested_element(diagnostics);
             Self::Markup(markup)
         };
 
@@ -482,7 +480,7 @@ impl DiagnosticParse for AttributeType {
                 })
             } else {
                 let value = input.diagnostic_parse::<Markup>(diagnostics)?;
-                value.error_if_nested_element()?;
+                value.error_if_nested_element(diagnostics);
                 Ok(Self::Normal { eq_token, value })
             }
         } else if lookahead.peek(Bracket) {
@@ -754,8 +752,8 @@ pub struct ControlFlow {
 }
 
 impl ControlFlow {
-    fn error_if_nested_element(&self) -> syn::Result<()> {
-        self.kind.error_if_nested_element()
+    fn error_if_nested_element(&self, diagnostics: &mut Vec<Diagnostic>) {
+        self.kind.error_if_nested_element(diagnostics);
     }
 }
 
@@ -814,13 +812,13 @@ pub enum ControlFlowKind {
 }
 
 impl ControlFlowKind {
-    fn error_if_nested_element(&self) -> syn::Result<()> {
+    fn error_if_nested_element(&self, diagnostics: &mut Vec<Diagnostic>) {
         match self {
-            Self::Let(..) => Ok(()),
-            Self::If(if_) => if_.error_if_nested_element(),
-            Self::For(for_) => for_.error_if_nested_element(),
-            Self::While(while_) => while_.error_if_nested_element(),
-            Self::Match(match_) => match_.error_if_nested_element(),
+            Self::Let(..) => {}
+            Self::If(if_) => if_.error_if_nested_element(diagnostics),
+            Self::For(for_) => for_.error_if_nested_element(diagnostics),
+            Self::While(while_) => while_.error_if_nested_element(diagnostics),
+            Self::Match(match_) => match_.error_if_nested_element(diagnostics),
         }
     }
 }
@@ -834,12 +832,11 @@ pub struct If {
 }
 
 impl If {
-    fn error_if_nested_element(&self) -> syn::Result<()> {
-        self.then_branch.error_if_nested_element()?;
+    fn error_if_nested_element(&self, diagnostics: &mut Vec<Diagnostic>) {
+        self.then_branch.error_if_nested_element(diagnostics);
         if let Some((_at_token, _else_token, if_or_block)) = &self.else_branch {
-            if_or_block.error_if_nested_element()?;
+            if_or_block.error_if_nested_element(diagnostics);
         }
-        Ok(())
     }
 }
 
@@ -887,10 +884,10 @@ pub enum IfOrBlock {
 }
 
 impl IfOrBlock {
-    fn error_if_nested_element(&self) -> syn::Result<()> {
+    fn error_if_nested_element(&self, diagnostics: &mut Vec<Diagnostic>) {
         match self {
-            Self::If(if_) => if_.error_if_nested_element(),
-            Self::Block(block) => block.error_if_nested_element(),
+            Self::If(if_) => if_.error_if_nested_element(diagnostics),
+            Self::Block(block) => block.error_if_nested_element(diagnostics),
         }
     }
 }
@@ -931,8 +928,8 @@ pub struct For {
 }
 
 impl For {
-    fn error_if_nested_element(&self) -> syn::Result<()> {
-        self.body.error_if_nested_element()
+    fn error_if_nested_element(&self, diagnostics: &mut Vec<Diagnostic>) {
+        self.body.error_if_nested_element(diagnostics);
     }
 }
 
@@ -969,8 +966,8 @@ pub struct While {
 }
 
 impl While {
-    fn error_if_nested_element(&self) -> syn::Result<()> {
-        self.body.error_if_nested_element()
+    fn error_if_nested_element(&self, diagnostics: &mut Vec<Diagnostic>) {
+        self.body.error_if_nested_element(diagnostics);
     }
 }
 
@@ -1004,11 +1001,10 @@ pub struct Match {
 }
 
 impl Match {
-    fn error_if_nested_element(&self) -> syn::Result<()> {
-        self.arms
-            .iter()
-            .map(MatchArm::error_if_nested_element)
-            .collect()
+    fn error_if_nested_element(&self, diagnostics: &mut Vec<Diagnostic>) {
+        for arm in &self.arms {
+            arm.error_if_nested_element(diagnostics);
+        }
     }
 }
 
@@ -1059,8 +1055,8 @@ pub struct MatchArm {
 }
 
 impl MatchArm {
-    fn error_if_nested_element(&self) -> syn::Result<()> {
-        self.body.error_if_nested_element()
+    fn error_if_nested_element(&self, diagnostics: &mut Vec<Diagnostic>) {
+        self.body.error_if_nested_element(diagnostics);
     }
 }
 
