@@ -10,8 +10,11 @@ use syn::{
     parse::{Parse, ParseStream},
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
-    token::{Brace, Bracket, Paren},
-    Error, Expr, Ident, Lit, LitBool, LitInt, LitStr, Local, Pat, Stmt, Token,
+    token::{
+        At, Brace, Bracket, Colon, Comma, Dot, Else, Eq, FatArrow, For, If, In, Let, Match, Minus,
+        Paren, Pound, Question, Semi, Slash, While,
+    },
+    Error, Expr, Ident, Lit, LitBool, LitInt, LitStr, Local, Pat, Stmt,
 };
 
 #[derive(Debug, Clone)]
@@ -47,7 +50,7 @@ pub enum Markup {
     Splice { paren_token: Paren, expr: Expr },
     Element(Element),
     ControlFlow(ControlFlow),
-    Semi(Token![;]),
+    Semi(Semi),
 }
 
 impl Markup {
@@ -55,11 +58,11 @@ impl Markup {
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
     ) -> syn::Result<Self> {
-        if input.peek(Token![let])
-            || input.peek(Token![if])
-            || input.peek(Token![for])
-            || input.peek(Token![while])
-            || input.peek(Token![match])
+        if input.peek(Let)
+            || input.peek(If)
+            || input.peek(For)
+            || input.peek(While)
+            || input.peek(Match)
         {
             let kw = input.call(Ident::parse_any)?;
             diagnostics.push(
@@ -81,14 +84,11 @@ impl Markup {
                 paren_token: parenthesized!(content in input),
                 expr: content.parse()?,
             })
-        } else if lookahead.peek(Ident::peek_any)
-            || lookahead.peek(Token![.])
-            || lookahead.peek(Token![#])
-        {
+        } else if lookahead.peek(Ident::peek_any) || lookahead.peek(Dot) || lookahead.peek(Pound) {
             input.diagnostic_parse(diagnostics).map(Self::Element)
-        } else if lookahead.peek(Token![@]) {
+        } else if lookahead.peek(At) {
             input.diagnostic_parse(diagnostics).map(Self::ControlFlow)
-        } else if lookahead.peek(Token![;]) {
+        } else if lookahead.peek(Semi) {
             input.parse().map(Self::Semi)
         } else {
             Err(lookahead.error())
@@ -160,8 +160,8 @@ impl DiagnosticParse for Element {
 
                 while input.peek(Ident::peek_any)
                     || input.peek(Lit)
-                    || input.peek(Token![.])
-                    || input.peek(Token![#])
+                    || input.peek(Dot)
+                    || input.peek(Pound)
                 {
                     let attr = input.diagnostic_parse(diagnostics)?;
 
@@ -178,16 +178,16 @@ impl DiagnosticParse for Element {
                     attrs.push(attr);
                 }
 
-                if !(input.peek(Brace) || input.peek(Token![;]) || input.peek(Token![/])) {
+                if !(input.peek(Brace) || input.peek(Semi) || input.peek(Slash)) {
                     let lookahead = input.lookahead1();
 
                     lookahead.peek(Ident::peek_any);
                     lookahead.peek(Lit);
-                    lookahead.peek(Token![.]);
-                    lookahead.peek(Token![#]);
+                    lookahead.peek(Dot);
+                    lookahead.peek(Pound);
 
                     lookahead.peek(Brace);
-                    lookahead.peek(Token![;]);
+                    lookahead.peek(Semi);
 
                     return Err(lookahead.error());
                 }
@@ -213,7 +213,7 @@ impl ToTokens for Element {
 
 #[derive(Debug, Clone)]
 pub enum ElementBody {
-    Void(Token![;]),
+    Void(Semi),
     Block(Block),
 }
 
@@ -224,21 +224,21 @@ impl DiagnosticParse for ElementBody {
     ) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
 
-        if lookahead.peek(Token![;]) {
+        if lookahead.peek(Semi) {
             input.parse().map(Self::Void)
         } else if lookahead.peek(Brace) {
             input.diagnostic_parse(diagnostics).map(Self::Block)
-        } else if lookahead.peek(Token![/]) {
+        } else if lookahead.peek(Slash) {
             diagnostics.push(
                 input
-                    .parse::<Token![/]>()?
+                    .parse::<Slash>()?
                     .span()
                     .error("void elements must use `;`, not `/`")
                     .help("change this to `;`")
                     .help("see https://github.com/lambda-fairy/maud/pull/315 for details"),
             );
 
-            Ok(Self::Void(<Token![;]>::default()))
+            Ok(Self::Void(<Semi>::default()))
         } else {
             Err(lookahead.error())
         }
@@ -284,12 +284,12 @@ impl ToTokens for Block {
 #[derive(Debug, Clone)]
 pub enum Attribute {
     Class {
-        dot_token: Token![.],
+        dot_token: Dot,
         name: AttributeName,
         toggler: Option<Toggler>,
     },
     Id {
-        pound_token: Token![#],
+        pound_token: Pound,
         name: AttributeName,
     },
     Named {
@@ -305,7 +305,7 @@ impl DiagnosticParse for Attribute {
     ) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
 
-        if lookahead.peek(Token![.]) {
+        if lookahead.peek(Dot) {
             Ok(Self::Class {
                 dot_token: input.parse()?,
                 name: input.diagnostic_parse(diagnostics)?,
@@ -319,7 +319,7 @@ impl DiagnosticParse for Attribute {
                     }
                 },
             })
-        } else if lookahead.peek(Token![#]) {
+        } else if lookahead.peek(Pound) {
             Ok(Self::Id {
                 pound_token: input.parse()?,
                 name: input.diagnostic_parse(diagnostics)?,
@@ -334,7 +334,7 @@ impl DiagnosticParse for Attribute {
                 attr_type: input.diagnostic_parse(diagnostics)?,
             };
 
-            if fork.peek(Token![=]) && fork.peek2(LitBool) {
+            if fork.peek(Eq) && fork.peek2(LitBool) {
                 diagnostics.push(
                     attr.span()
                         .error("attribute value must be a string")
@@ -391,8 +391,8 @@ impl DiagnosticParse for AttributeName {
             input.diagnostic_parse(diagnostics).map(Self::Markup)
         };
 
-        if input.peek(Token![?]) {
-            input.parse::<Token![?]>()?;
+        if input.peek(Question) {
+            input.parse::<Question>()?;
         }
 
         name
@@ -425,14 +425,8 @@ impl Display for AttributeName {
 
 #[derive(Debug, Clone)]
 pub enum AttributeType {
-    Normal {
-        eq_token: Token![=],
-        value: Markup,
-    },
-    Optional {
-        eq_token: Token![=],
-        toggler: Toggler,
-    },
+    Normal { eq_token: Eq, value: Markup },
+    Optional { eq_token: Eq, toggler: Toggler },
     Empty(Option<Toggler>),
 }
 
@@ -443,7 +437,7 @@ impl DiagnosticParse for AttributeType {
     ) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
 
-        if lookahead.peek(Token![=]) {
+        if lookahead.peek(Eq) {
             let eq_token = input.parse()?;
 
             if input.peek(Bracket) {
@@ -502,7 +496,7 @@ impl DiagnosticParse for HtmlName {
                 loop {
                     punctuated.push_value(input.diagnostic_parse(diagnostics)?);
 
-                    if !(input.peek(Token![-]) || input.peek(Token![:])) {
+                    if !(input.peek(Minus) || input.peek(Colon)) {
                         break;
                     }
 
@@ -564,7 +558,7 @@ impl DiagnosticParse for HtmlNameFragment {
             input.call(Ident::parse_any).map(Self::Ident)
         } else if lookahead.peek(Lit) {
             input.diagnostic_parse(diagnostics).map(Self::Lit)
-        } else if lookahead.peek(Token![-]) || lookahead.peek(Token![:]) {
+        } else if lookahead.peek(Minus) || lookahead.peek(Colon) {
             Ok(Self::Empty)
         } else {
             Err(lookahead.error())
@@ -659,17 +653,17 @@ impl Display for HtmlLit {
 
 #[derive(Debug, Clone)]
 pub enum HtmlNamePunct {
-    Colon(Token![:]),
-    Hyphen(Token![-]),
+    Colon(Colon),
+    Hyphen(Minus),
 }
 
 impl DiagnosticParse for HtmlNamePunct {
     fn diagnostic_parse(input: ParseStream, _: &mut Vec<Diagnostic>) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
 
-        if lookahead.peek(Token![:]) {
+        if lookahead.peek(Colon) {
             input.parse().map(Self::Colon)
-        } else if lookahead.peek(Token![-]) {
+        } else if lookahead.peek(Minus) {
             input.parse().map(Self::Hyphen)
         } else {
             Err(lookahead.error())
@@ -721,7 +715,7 @@ impl ToTokens for Toggler {
 
 #[derive(Debug, Clone)]
 pub struct ControlFlow {
-    pub at_token: Token![@],
+    pub at_token: At,
     pub kind: ControlFlowKind,
 }
 
@@ -735,15 +729,15 @@ impl DiagnosticParse for ControlFlow {
             kind: {
                 let lookahead = input.lookahead1();
 
-                if lookahead.peek(Token![if]) {
+                if lookahead.peek(If) {
                     ControlFlowKind::If(input.diagnostic_parse(diagnostics)?)
-                } else if lookahead.peek(Token![for]) {
+                } else if lookahead.peek(For) {
                     ControlFlowKind::For(input.diagnostic_parse(diagnostics)?)
-                } else if lookahead.peek(Token![while]) {
+                } else if lookahead.peek(While) {
                     ControlFlowKind::While(input.diagnostic_parse(diagnostics)?)
-                } else if lookahead.peek(Token![match]) {
+                } else if lookahead.peek(Match) {
                     ControlFlowKind::Match(input.diagnostic_parse(diagnostics)?)
-                } else if lookahead.peek(Token![let]) {
+                } else if lookahead.peek(Let) {
                     let Stmt::Local(local) = input.parse()? else {
                         unreachable!()
                     };
@@ -781,10 +775,10 @@ pub enum ControlFlowKind {
 
 #[derive(Debug, Clone)]
 pub struct IfExpr {
-    pub if_token: Token![if],
+    pub if_token: If,
     pub cond: Expr,
     pub then_branch: Block,
-    pub else_branch: Option<(Token![@], Token![else], Box<IfOrBlock>)>,
+    pub else_branch: Option<(At, Else, Box<IfOrBlock>)>,
 }
 
 impl DiagnosticParse for IfExpr {
@@ -797,7 +791,7 @@ impl DiagnosticParse for IfExpr {
             cond: input.call(Expr::parse_without_eager_brace)?,
             then_branch: input.diagnostic_parse(diagnostics)?,
             else_branch: {
-                if input.peek(Token![@]) && input.peek2(Token![else]) {
+                if input.peek(At) && input.peek2(Else) {
                     Some((
                         input.parse()?,
                         input.parse()?,
@@ -837,7 +831,7 @@ impl DiagnosticParse for IfOrBlock {
     ) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
 
-        if lookahead.peek(Token![if]) {
+        if lookahead.peek(If) {
             input.diagnostic_parse(diagnostics).map(Self::If)
         } else if lookahead.peek(Brace) {
             input.diagnostic_parse(diagnostics).map(Self::Block)
@@ -858,9 +852,9 @@ impl ToTokens for IfOrBlock {
 
 #[derive(Debug, Clone)]
 pub struct ForExpr {
-    pub for_token: Token![for],
+    pub for_token: For,
     pub pat: Pat,
-    pub in_token: Token![in],
+    pub in_token: In,
     pub expr: Expr,
     pub body: Block,
 }
@@ -892,7 +886,7 @@ impl ToTokens for ForExpr {
 
 #[derive(Debug, Clone)]
 pub struct WhileExpr {
-    pub while_token: Token![while],
+    pub while_token: While,
     pub cond: Expr,
     pub body: Block,
 }
@@ -920,7 +914,7 @@ impl ToTokens for WhileExpr {
 
 #[derive(Debug, Clone)]
 pub struct MatchExpr {
-    pub match_token: Token![match],
+    pub match_token: Match,
     pub expr: Expr,
     pub brace_token: Brace,
     pub arms: Vec<MatchArm>,
@@ -966,10 +960,10 @@ impl ToTokens for MatchExpr {
 #[derive(Debug, Clone)]
 pub struct MatchArm {
     pub pat: Pat,
-    pub guard: Option<(Token![if], Expr)>,
-    pub fat_arrow_token: Token![=>],
+    pub guard: Option<(If, Expr)>,
+    pub fat_arrow_token: FatArrow,
     pub body: Markup,
-    pub comma_token: Option<Token![,]>,
+    pub comma_token: Option<Comma>,
 }
 
 impl DiagnosticParse for MatchArm {
@@ -980,7 +974,7 @@ impl DiagnosticParse for MatchArm {
         Ok(Self {
             pat: Pat::parse_multi_with_leading_vert(input)?,
             guard: {
-                if input.peek(Token![if]) {
+                if input.peek(If) {
                     Some((input.parse()?, input.parse()?))
                 } else {
                     None
@@ -988,7 +982,7 @@ impl DiagnosticParse for MatchArm {
             },
             fat_arrow_token: input.parse()?,
             body: Markup::diagnostic_parse_in_block(input, diagnostics)?,
-            comma_token: if input.peek(Token![,]) {
+            comma_token: if input.peek(Comma) {
                 Some(input.parse()?)
             } else {
                 None
