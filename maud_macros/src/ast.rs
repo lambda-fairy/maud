@@ -60,6 +60,7 @@ impl<E: MaybeElement> Markup<E> {
     ) -> syn::Result<Self> {
         if input.peek(Let)
             || input.peek(If)
+            || input.peek(Else)
             || input.peek(For)
             || input.peek(While)
             || input.peek(Match)
@@ -68,7 +69,7 @@ impl<E: MaybeElement> Markup<E> {
             diagnostics.push(
                 kw.span()
                     .error(format!("found keyword `{kw}`"))
-                    .help(format!("should this be a `@{kw}`?")),
+                    .help(format!("should this be `@{kw}`?")),
             );
         }
 

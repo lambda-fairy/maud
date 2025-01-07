@@ -1,7 +1,39 @@
 error: found keyword `if`
- --> $DIR/keyword-without-at.rs:5:9
+ --> tests/warnings/keyword-without-at.rs:5:9
   |
 5 |         if {}
   |         ^^
   |
-  = help: should this be a `@if`?
+  = help: should this be `@if`?
+
+error: found keyword `else`
+ --> tests/warnings/keyword-without-at.rs:6:9
+  |
+6 |         else {}
+  |         ^^^^
+  |
+  = help: should this be `@else`?
+
+error: found keyword `for`
+ --> tests/warnings/keyword-without-at.rs:7:9
+  |
+7 |         for {}
+  |         ^^^
+  |
+  = help: should this be `@for`?
+
+error: found keyword `while`
+ --> tests/warnings/keyword-without-at.rs:8:9
+  |
+8 |         while {}
+  |         ^^^^^
+  |
+  = help: should this be `@while`?
+
+error: found keyword `match`
+ --> tests/warnings/keyword-without-at.rs:9:9
+  |
+9 |         match {}
+  |         ^^^^^
+  |
+  = help: should this be `@match`?
