@@ -143,10 +143,11 @@ impl<E: ToTokens> ToTokens for Markup<E> {
 /// allowed or not.
 pub trait MaybeElement: Sized + ToTokens {
     /// If an element can be parsed here, returns `Some` with a parser for the rest of the element.
-    fn should_parse(
-        lookahead: &Lookahead1<'_>,
-    ) -> Option<fn(ParseStream, &mut Vec<Diagnostic>) -> syn::Result<Self>>;
+    fn should_parse(lookahead: &Lookahead1<'_>) -> Option<DiagnosticParseFn<Self>>;
 }
+
+/// An implementation of `DiagnosticParse::diagnostic_parse`.
+pub type DiagnosticParseFn<T> = fn(ParseStream, &mut Vec<Diagnostic>) -> syn::Result<T>;
 
 /// Represents an attribute context, where elements are disallowed.
 #[derive(Debug, Clone)]
