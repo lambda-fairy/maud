@@ -87,18 +87,18 @@ impl Generator {
         build.push_escaped(&name.to_string());
     }
 
-    fn attr_name(&self, name: AttributeName, build: &mut Builder) {
+    fn name_or_markup(&self, name: HtmlNameOrMarkup, build: &mut Builder) {
         match name {
-            AttributeName::Normal(name) => self.name(name, build),
-            AttributeName::Markup(markup) => self.markup(markup, build),
+            HtmlNameOrMarkup::HtmlName(name) => self.name(name, build),
+            HtmlNameOrMarkup::Markup(markup) => self.markup(markup, build),
         }
     }
 
-    fn attr(&self, name: AttributeName, value: AttributeType, build: &mut Builder) {
+    fn attr(&self, name: HtmlName, value: AttributeType, build: &mut Builder) {
         match value {
             AttributeType::Normal { value, .. } => {
                 build.push_str(" ");
-                self.attr_name(name, build);
+                self.name(name, build);
                 build.push_str("=\"");
                 self.markup(value, build);
                 build.push_str("\"");
@@ -112,7 +112,7 @@ impl Generator {
                 let body = {
                     let mut build = self.builder();
                     build.push_str(" ");
-                    self.attr_name(name, &mut build);
+                    self.name(name, &mut build);
                     build.push_str("=\"");
                     self.splice(inner_value.clone(), &mut build);
                     build.push_str("\"");
@@ -122,13 +122,13 @@ impl Generator {
             }
             AttributeType::Empty(None) => {
                 build.push_str(" ");
-                self.attr_name(name, build);
+                self.name(name, build);
             }
             AttributeType::Empty(Some(Toggler { cond, .. })) => {
                 let body = {
                     let mut build = self.builder();
                     build.push_str(" ");
-                    self.attr_name(name, &mut build);
+                    self.name(name, &mut build);
                     build.finish()
                 };
                 build.push_tokens(quote!(if (#cond) { #body }));
@@ -143,7 +143,7 @@ impl Generator {
             let mut toggle_class_exprs = vec![];
 
             build.push_str(" ");
-            self.attr_name(parse_quote!(class), build);
+            self.name(parse_quote!(class), build);
             build.push_str("=\"");
             for (i, (name, toggler)) in classes.into_iter().enumerate() {
                 if let Some(toggler) = toggler {
@@ -152,7 +152,7 @@ impl Generator {
                     if i > 0 {
                         build.push_str(" ");
                     }
-                    self.attr_name(name, build);
+                    self.name_or_markup(name, build);
                 }
             }
 
@@ -162,7 +162,7 @@ impl Generator {
                     if not_first {
                         build.push_str(" ");
                     }
-                    self.attr_name(name, &mut build);
+                    self.name_or_markup(name, &mut build);
                     build.finish()
                 };
                 build.push_tokens(quote!(if (#toggler) { #body }));
@@ -173,9 +173,9 @@ impl Generator {
 
         if let Some(id) = id {
             build.push_str(" ");
-            self.attr_name(parse_quote!(id), build);
+            self.name(parse_quote!(id), build);
             build.push_str("=\"");
-            self.attr_name(id, build);
+            self.name_or_markup(id, build);
             build.push_str("\"");
         }
 
@@ -311,9 +311,9 @@ impl Generator {
 fn split_attrs(
     attrs: Vec<Attribute>,
 ) -> (
-    Vec<(AttributeName, Option<Expr>)>,
-    Option<AttributeName>,
-    Vec<(AttributeName, AttributeType)>,
+    Vec<(HtmlNameOrMarkup, Option<Expr>)>,
+    Option<HtmlNameOrMarkup>,
+    Vec<(HtmlName, AttributeType)>,
 ) {
     let mut classes = vec![];
     let mut id = None;

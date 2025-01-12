@@ -335,15 +335,15 @@ impl<E: ToTokens> ToTokens for Block<E> {
 pub enum Attribute {
     Class {
         dot_token: Dot,
-        name: AttributeName,
+        name: HtmlNameOrMarkup,
         toggler: Option<Toggler>,
     },
     Id {
         pound_token: Pound,
-        name: AttributeName,
+        name: HtmlNameOrMarkup,
     },
     Named {
-        name: AttributeName,
+        name: HtmlName,
         attr_type: AttributeType,
     },
 }
@@ -375,8 +375,12 @@ impl DiagnosticParse for Attribute {
                 name: input.diagnostic_parse(diagnostics)?,
             })
         } else {
-            let name = input.diagnostic_parse::<AttributeName>(diagnostics)?;
-            let name_display = name.to_string();
+            let name = input.diagnostic_parse::<HtmlName>(diagnostics)?;
+
+            if input.peek(Question) {
+                input.parse::<Question>()?;
+            }
+
             let fork = input.fork();
 
             let attr = Self::Named {
@@ -388,8 +392,8 @@ impl DiagnosticParse for Attribute {
                 diagnostics.push(
                     attr.span()
                         .error("attribute value must be a string")
-                        .help(format!("to declare an empty attribute, omit the equals sign: `{name_display}`"))
-                        .help(format!("to toggle the attribute, use square brackets: `{name_display}[some_boolean_flag]`"))
+                        .help(format!("to declare an empty attribute, omit the equals sign: `{name}`"))
+                        .help(format!("to toggle the attribute, use square brackets: `{name}[some_boolean_flag]`"))
                 );
             }
 
@@ -425,49 +429,43 @@ impl ToTokens for Attribute {
 }
 
 #[derive(Debug, Clone)]
-pub enum AttributeName {
-    Normal(HtmlName),
+pub enum HtmlNameOrMarkup {
+    HtmlName(HtmlName),
     Markup(Markup<NoElement>),
 }
 
-impl DiagnosticParse for AttributeName {
+impl DiagnosticParse for HtmlNameOrMarkup {
     fn diagnostic_parse(
         input: ParseStream,
         diagnostics: &mut Vec<Diagnostic>,
     ) -> syn::Result<Self> {
-        let name = if input.peek(Ident::peek_any) || input.peek(Lit) {
-            input.diagnostic_parse(diagnostics).map(Self::Normal)
+        if input.peek(Ident::peek_any) || input.peek(Lit) {
+            input.diagnostic_parse(diagnostics).map(Self::HtmlName)
         } else {
             input.diagnostic_parse(diagnostics).map(Self::Markup)
-        };
-
-        if input.peek(Question) {
-            input.parse::<Question>()?;
         }
-
-        name
     }
 }
 
-impl Parse for AttributeName {
+impl Parse for HtmlNameOrMarkup {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         Self::diagnostic_parse(input, &mut Vec::new())
     }
 }
 
-impl ToTokens for AttributeName {
+impl ToTokens for HtmlNameOrMarkup {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            Self::Normal(name) => name.to_tokens(tokens),
+            Self::HtmlName(name) => name.to_tokens(tokens),
             Self::Markup(markup) => markup.to_tokens(tokens),
         }
     }
 }
 
-impl Display for AttributeName {
+impl Display for HtmlNameOrMarkup {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            Self::Normal(name) => name.fmt(f),
+            Self::HtmlName(name) => name.fmt(f),
             Self::Markup(markup) => markup.to_token_stream().fmt(f),
         }
     }
