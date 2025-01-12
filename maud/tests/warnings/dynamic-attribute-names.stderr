@@ -1,0 +1,5 @@
+error: expected one of: identifier, literal, `.`, `#`, curly braces, `;`
+ --> tests/warnings/dynamic-attribute-names.rs:6:11
+  |
+6 |         a (name)="about:blank" {}
+  |           ^

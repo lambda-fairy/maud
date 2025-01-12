@@ -87,14 +87,14 @@ impl Generator {
         build.push_escaped(&name.to_string());
     }
 
-    fn attr_name(&self, name: AttributeName, build: &mut Builder) {
+    fn attr_name(&self, name: HtmlNameOrMarkup, build: &mut Builder) {
         match name {
-            AttributeName::Normal(name) => self.name(name, build),
-            AttributeName::Markup(markup) => self.markup(markup, build),
+            HtmlNameOrMarkup::HtmlName(name) => self.name(name, build),
+            HtmlNameOrMarkup::Markup(markup) => self.markup(markup, build),
         }
     }
 
-    fn attr(&self, name: AttributeName, value: AttributeType, build: &mut Builder) {
+    fn attr(&self, name: HtmlNameOrMarkup, value: AttributeType, build: &mut Builder) {
         match value {
             AttributeType::Normal { value, .. } => {
                 build.push_str(" ");
@@ -180,7 +180,7 @@ impl Generator {
         }
 
         for (name, attr_type) in named_attrs {
-            self.attr(name, attr_type, build);
+            self.attr(HtmlNameOrMarkup::HtmlName(name), attr_type, build);
         }
     }
 
@@ -311,9 +311,9 @@ impl Generator {
 fn split_attrs(
     attrs: Vec<Attribute>,
 ) -> (
-    Vec<(AttributeName, Option<Expr>)>,
-    Option<AttributeName>,
-    Vec<(AttributeName, AttributeType)>,
+    Vec<(HtmlNameOrMarkup, Option<Expr>)>,
+    Option<HtmlNameOrMarkup>,
+    Vec<(HtmlName, AttributeType)>,
 ) {
     let mut classes = vec![];
     let mut id = None;
