@@ -143,7 +143,7 @@ impl Generator {
             let mut toggle_class_exprs = vec![];
 
             build.push_str(" ");
-            self.name_or_markup(parse_quote!(class), build);
+            self.name(parse_quote!(class), build);
             build.push_str("=\"");
             for (i, (name, toggler)) in classes.into_iter().enumerate() {
                 if let Some(toggler) = toggler {
@@ -173,7 +173,7 @@ impl Generator {
 
         if let Some(id) = id {
             build.push_str(" ");
-            self.name_or_markup(parse_quote!(id), build);
+            self.name(parse_quote!(id), build);
             build.push_str("=\"");
             self.name_or_markup(id, build);
             build.push_str("\"");
