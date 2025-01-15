@@ -597,21 +597,24 @@ impl Display for HtmlName {
 #[derive(Debug, Clone)]
 pub enum HtmlNameFragment {
     Ident(Ident),
-    Lit(HtmlLit),
+    LitInt(LitInt),
+    LitStr(LitStr),
     Empty,
 }
 
 impl DiagnosticParse for HtmlNameFragment {
     fn diagnostic_parse(
         input: ParseStream,
-        diagnostics: &mut Vec<Diagnostic>,
+        _diagnostics: &mut Vec<Diagnostic>,
     ) -> syn::Result<Self> {
         let lookahead = input.lookahead1();
 
         if lookahead.peek(Ident::peek_any) {
             input.call(Ident::parse_any).map(Self::Ident)
-        } else if lookahead.peek(Lit) {
-            input.diagnostic_parse(diagnostics).map(Self::Lit)
+        } else if lookahead.peek(LitInt) {
+            input.parse().map(Self::LitInt)
+        } else if lookahead.peek(LitStr) {
+            input.parse().map(Self::LitStr)
         } else if lookahead.peek(Minus) || lookahead.peek(Colon) {
             Ok(Self::Empty)
         } else {
@@ -624,7 +627,8 @@ impl ToTokens for HtmlNameFragment {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
             Self::Ident(ident) => ident.to_tokens(tokens),
-            Self::Lit(lit) => lit.to_tokens(tokens),
+            Self::LitInt(lit) => lit.to_tokens(tokens),
+            Self::LitStr(lit) => lit.to_tokens(tokens),
             Self::Empty => {}
         }
     }
@@ -634,16 +638,16 @@ impl Display for HtmlNameFragment {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
             Self::Ident(ident) => ident.fmt(f),
-            Self::Lit(lit) => lit.fmt(f),
+            Self::LitInt(lit) => lit.fmt(f),
+            Self::LitStr(lit) => lit.value().fmt(f),
             Self::Empty => Ok(()),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum HtmlLit {
-    Str(LitStr),
-    Int(LitInt),
+pub struct HtmlLit {
+    pub lit: LitStr,
 }
 
 impl DiagnosticParse for HtmlLit {
@@ -656,29 +660,45 @@ impl DiagnosticParse for HtmlLit {
         if lookahead.peek(Lit) {
             let lit = input.parse()?;
             match lit {
-                Lit::Str(lit) => Ok(Self::Str(lit)),
-                Lit::Int(lit) => Ok(Self::Int(lit)),
+                Lit::Str(lit) => Ok(Self { lit }),
+                Lit::Int(lit) => {
+                    diagnostics.push(
+                        lit.span()
+                            .error(format!(r#"literal must be double-quoted: `"{lit}"`"#)),
+                    );
+                    Ok(Self {
+                        lit: LitStr::new("", lit.span()),
+                    })
+                }
                 Lit::Float(lit) => {
                     diagnostics.push(
                         lit.span()
                             .error(format!(r#"literal must be double-quoted: `"{lit}"`"#)),
                     );
-                    Ok(Self::Str(LitStr::new("", lit.span())))
+                    Ok(Self {
+                        lit: LitStr::new("", lit.span()),
+                    })
                 }
                 Lit::Char(lit) => {
                     diagnostics.push(lit.span().error(format!(
                         r#"literal must be double-quoted: `"{}"`"#,
                         lit.value()
                     )));
-                    Ok(Self::Str(LitStr::new("", lit.span())))
+                    Ok(Self {
+                        lit: LitStr::new("", lit.span()),
+                    })
                 }
                 Lit::Bool(_) => {
                     // diagnostic handled earlier with more information
-                    Ok(Self::Str(LitStr::new("", lit.span())))
+                    Ok(Self {
+                        lit: LitStr::new("", lit.span()),
+                    })
                 }
                 _ => {
                     diagnostics.push(lit.span().error("expected string"));
-                    Ok(Self::Str(LitStr::new("", lit.span())))
+                    Ok(Self {
+                        lit: LitStr::new("", lit.span()),
+                    })
                 }
             }
         } else {
@@ -689,19 +709,13 @@ impl DiagnosticParse for HtmlLit {
 
 impl ToTokens for HtmlLit {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        match self {
-            Self::Str(lit) => lit.to_tokens(tokens),
-            Self::Int(lit) => lit.to_tokens(tokens),
-        }
+        self.lit.to_tokens(tokens);
     }
 }
 
 impl Display for HtmlLit {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            Self::Str(lit) => lit.value().fmt(f),
-            Self::Int(lit) => lit.fmt(f),
-        }
+        self.lit.value().fmt(f)
     }
 }
 
