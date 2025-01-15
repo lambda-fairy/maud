@@ -363,9 +363,7 @@ mod tide_support {
 mod poem_3_support {
     use crate::PreEscaped;
     use alloc::string::String;
-    use poem::web::Html;
-    use poem::IntoResponse;
-    use poem::Response;
+    use poem::{web::Html, IntoResponse, Response};
 
     impl IntoResponse for PreEscaped<String> {
         fn into_response(self) -> Response {
