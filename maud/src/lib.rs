@@ -359,6 +359,21 @@ mod tide_support {
     }
 }
 
+#[cfg(feature = "poem-3")]
+mod poem_3_support {
+    use crate::PreEscaped;
+    use alloc::string::String;
+    use poem::web::Html;
+    use poem::IntoResponse;
+    use poem::Response;
+
+    impl IntoResponse for PreEscaped<String> {
+        fn into_response(self) -> Response {
+            Html(self.into_string()).into_response()
+        }
+    }
+}
+
 #[cfg(feature = "axum")]
 mod axum_support {
     use crate::PreEscaped;

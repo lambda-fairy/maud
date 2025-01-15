@@ -1,6 +1,6 @@
 # Web framework integration
 
-Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], [Tide] and [Axum].
+Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], [Tide], [Axum] and [Poem].
 
 [Actix]: https://actix.rs/
 [Rocket]: https://rocket.rs/
@@ -9,6 +9,7 @@ Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], [T
 [Axum]: https://docs.rs/axum/
 [Warp]: https://seanmonstar.com/blog/warp/
 [Submillisecond]: https://github.com/lunatic-solutions/submillisecond
+[Poem]: https://github.com/poem-web/poem
 
 # Actix
 
@@ -230,5 +231,40 @@ fn helloworld() -> Markup {
     html! {
         h1 { "Hello, World!" }
     }
+}
+```
+
+# Poem
+
+Poem support is available with the "poem-3" feature:
+
+```toml
+# ...
+[dependencies]
+maud = { version = "*", features = ["poem-3"] }
+# ...
+```
+
+This adds an implementation of `poem::IntoResponse` for `Markup`/`PreEscaped<String>`.
+This then allows you to use it directly as a response!
+
+```rust,no_run
+use maud::{html, Markup};
+use poem::{get, handler, listener::TcpListener, Route, Server};
+
+#[handler]
+fn hello_world() -> Markup {
+    html! {
+        h1 { "Hello, World!" }
+    }
+}
+
+#[tokio::main]
+async fn main() -> Result<(), std::io::Error> {
+    let app = Route::new().at("/hello", get(hello_world));
+    Server::new(TcpListener::bind("0.0.0.0:3000"))
+        .name("hello-world")
+        .run(app)
+        .await
 }
 ```
