@@ -368,11 +368,10 @@ mod axum_support {
 
     impl IntoResponse for PreEscaped<String> {
         fn into_response(self) -> Response {
-            let mut headers = HeaderMap::new();
-            headers.insert(
+            let headers = [(
                 header::CONTENT_TYPE,
                 HeaderValue::from_static("text/html; charset=utf-8"),
-            );
+            )];
             (headers, self.0).into_response()
         }
     }
