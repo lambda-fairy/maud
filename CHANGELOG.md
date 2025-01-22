@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 - Support `axum` v0.8 through `axum-core` v0.5
-- Add support for `poem` version 3 behind the `poem-3` feature.
+- Add support for `poem` version 3.
 
 ## [0.26.0] - 2024-01-15
 

@@ -236,12 +236,12 @@ fn helloworld() -> Markup {
 
 # Poem
 
-Poem support is available with the "poem-3" feature:
+Poem support is available with the "poem" feature:
 
 ```toml
 # ...
 [dependencies]
-maud = { version = "*", features = ["poem-3"] }
+maud = { version = "*", features = ["poem"] }
 # ...
 ```
 

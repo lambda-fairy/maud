@@ -18,7 +18,6 @@ default = []
 # Web framework integrations
 actix-web = ["actix-web-dep", "futures-util"]
 axum = ["axum-core", "http"]
-poem-3 = ["poem"]
 
 [dependencies]
 maud_macros = { version = "0.26.0", path = "../maud_macros" }

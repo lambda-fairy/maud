@@ -359,8 +359,8 @@ mod tide_support {
     }
 }
 
-#[cfg(feature = "poem-3")]
-mod poem_3_support {
+#[cfg(feature = "poem")]
+mod poem_support {
     use crate::PreEscaped;
     use alloc::string::String;
     use poem::{web::Html, IntoResponse, Response};
