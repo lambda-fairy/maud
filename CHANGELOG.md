@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+- Add `script!` and `style!` inline tag helpers
+  [#448](https://github.com/lambda-fairy/maud/pull/448)
 
 - Support `axum` v0.8 through `axum-core` v0.5
 - Add support for `poem` version 3.
