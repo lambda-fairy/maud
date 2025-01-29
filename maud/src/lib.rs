@@ -11,7 +11,11 @@
 
 extern crate alloc;
 
-use alloc::{borrow::Cow, boxed::Box, string::String, sync::Arc};
+use alloc::{borrow::Cow, boxed::Box, string::String};
+
+#[cfg(not(feature = "alloc"))]
+use alloc::sync::Arc;
+
 use core::fmt::{self, Arguments, Display, Write};
 
 pub use maud_macros::html;
@@ -150,6 +154,7 @@ impl<T: Render + ?Sized> Render for Box<T> {
     }
 }
 
+#[cfg(not(feature = "alloc"))]
 impl<T: Render + ?Sized> Render for Arc<T> {
     fn render_to(&self, w: &mut String) {
         T::render_to(self, w);
