@@ -212,7 +212,7 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 
 [[package]]
 name = "maud"
-version = "0.26.0"
+version = "0.27.0"
 dependencies = [
  "itoa",
  "maud_macros",
@@ -220,7 +220,7 @@ dependencies = [
 
 [[package]]
 name = "maud_macros"
-version = "0.26.0"
+version = "0.27.0"
 dependencies = [
  "proc-macro2",
  "proc-macro2-diagnostics",
