@@ -2,8 +2,22 @@
 
 ## [Unreleased]
 
+## [0.27.0] - 2025-02-02
+
+- Add support for Submillisecond web framework
+  [#419](https://github.com/lambda-fairy/maud/pull/419)
+- Actix Web: Implement `MessageBody` for `Markup`
+  [#430](https://github.com/lambda-fairy/maud/pull/430)
 - Support `axum` v0.8 through `axum-core` v0.5
-- Add support for `poem` version 3.
+  [#457](https://github.com/lambda-fairy/maud/pull/457)
+- Rewrite parser
+  [#412](https://github.com/lambda-fairy/maud/pull/412)
+- Error when `else` is used with `@`
+  [#462](https://github.com/lambda-fairy/maud/pull/462)
+- Add support for `poem` version 3
+  [#466](https://github.com/lambda-fairy/maud/pull/466)
+- Avoid allocation when converting to `axum` `Response`
+  [#467](https://github.com/lambda-fairy/maud/pull/467)
 
 ## [0.26.0] - 2024-01-15
 
@@ -314,7 +328,8 @@
 - Update to latest syntax extension API
 
 
-[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.26.0...HEAD
+[Unreleased]: https://github.com/lambda-fairy/maud/compare/v0.27.0...HEAD
+[0.27.0]: https://github.com/lambda-fairy/maud/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/lambda-fairy/maud/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/lambda-fairy/maud/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/lambda-fairy/maud/compare/v0.23.0...v0.24.0
