@@ -1,0 +1,37 @@
+<!DOCTYPE html><meta charset="utf-8"><title>Frequently asked questions
+ – Maud, a macro for writing HTML</title><link rel="stylesheet" href="styles.css"><meta name="theme-color" content="#808"><meta name="viewport" content="width=device-width"><header><h1><a href=".">maud</a></h1></header><nav><ul><li><a href="getting-started.html">Getting started</a></li><li><a href="text-escaping.html">Text and escaping</a></li><li><a href="elements-attributes.html">Elements and attributes</a></li><li><a href="splices-toggles.html">Splices and toggles</a></li><li><a href="control-structures.html">Control structures</a></li><li><a href="partials.html">Partials</a></li><li><a href="render-trait.html">The <code>Render</code> trait</a></li><li><a href="web-frameworks.html">Web framework integration</a></li><li><b>Frequently asked questions</b></li></ul><ul><li><a href="https://docs.rs/maud/">API documentation</a></li><li><a href="https://github.com/lambda-fairy/maud">GitHub</a></li></ul></nav><main><h2>Frequently asked questions</h2><h3><a href="#what-is-the-origin-of-the-name-maud" aria-hidden="true" class="anchor" id="what-is-the-origin-of-the-name-maud"></a>What is the origin of the name &quot;Maud&quot;?</h3>
+<p>Maud is named after a <a href="http://mlp.wikia.com/wiki/Maud_Pie">character</a> from <em>My Little Pony: Friendship is Magic</em>.
+It does not refer to the <a href="https://en.wikipedia.org/wiki/Maud_and_other_poems">poem</a> by Alfred Tennyson, though other people have brought that up in the past.</p>
+<p>Here are some reasons why I chose this name:</p>
+<ul>
+<li>
+<p>&quot;Maud&quot; shares three letters with &quot;markup&quot;;</p>
+</li>
+<li>
+<p>The library is efficient and austere, like the character;</p>
+</li>
+<li>
+<p>Google used to maintain a site called <a href="https://techcrunch.com/2010/06/22/html5rocks-google/">&quot;HTML5 Rocks&quot;</a>, and Maud (the character) is a geologist.</p>
+</li>
+</ul>
+<h3><a href="#why-does-html-always-allocate-a-string-wouldnt-it-be-more-efficient-if-it-wrote-to-a-handle-directly" aria-hidden="true" class="anchor" id="why-does-html-always-allocate-a-string-wouldnt-it-be-more-efficient-if-it-wrote-to-a-handle-directly"></a>Why does <code>html!</code> always allocate a <code>String</code>? Wouldn't it be more efficient if it wrote to a handle directly?</h3>
+<p>Good question! In fact, Maud did work this way in the past.</p>
+<p>But it's hard to support buffer reuse in an ergonomic way.
+The approaches I tried either involved too much boilerplate, or caused mysterious lifetime issues, or both.
+Moreover, Maud's allocation pattern—with small, short-lived buffers—follow the fast path in modern allocators.
+These reasons are why I changed <code>html!</code> to return a <code>String</code> in version 0.11.</p>
+<p>That said, Rust has changed a lot since then, and some of those old assumptions might no longer hold today.
+So this decision could be revisited prior to the 1.0 release.</p>
+<h3><a href="#why-is-maud-written-as-a-procedural-macro-cant-it-use-macro_rules-instead" aria-hidden="true" class="anchor" id="why-is-maud-written-as-a-procedural-macro-cant-it-use-macro_rules-instead"></a>Why is Maud written as a procedural macro? Can't it use <code>macro_rules!</code> instead?</h3>
+<p>This is certainly possible, and indeed the <a href="https://github.com/Stebalien/horrorshow-rs">Horrorshow</a> library works this way.</p>
+<p>I use procedural macros because they are more flexible.
+There are some syntax constructs in Maud that are hard to parse with <code>macro_rules!</code>; better diagnostics are a bonus as well.</p>
+<h3><a href="#maud-has-had-a-lot-of-releases-so-far-when-will-it-reach-10" aria-hidden="true" class="anchor" id="maud-has-had-a-lot-of-releases-so-far-when-will-it-reach-10"></a>Maud has had a lot of releases so far. When will it reach 1.0?</h3>
+<p>I originally planned to cut a 1.0 after implementing stable support.
+But now that's happened, I've realized that there are a couple design questions that I'd like to resolve before marking that milestone.
+Expect a blog post on this topic Very Soon®.</p>
+<h3><a href="#why-doesnt-maud-implement-context-aware-escaping" aria-hidden="true" class="anchor" id="why-doesnt-maud-implement-context-aware-escaping"></a>Why doesn't Maud implement <a href="https://security.googleblog.com/2009/03/reducing-xss-by-way-of-automatic.html">context-aware escaping</a>?</h3>
+<p>I agree that context-aware escaping is very important, especially for the kind of small-scale development that Maud is used for.
+But it's a complex feature, with security implications, so I want to take the time to get it right.</p>
+<p>Please follow <a href="https://github.com/lambda-fairy/maud/issues/181">#181</a> for the latest developments!</p>
+</main><footer><p><a href="https://github.com/lambda-fairy/maud/tree/fb193d31462eea63eabfa705c93ccc56f5bb1eac">v0.27.0</a></p></footer>

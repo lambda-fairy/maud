@@ -1,0 +1,27 @@
+<!DOCTYPE html><meta charset="utf-8"><title>Maud, a macro for writing HTML</title><link rel="stylesheet" href="styles.css"><meta name="theme-color" content="#808"><meta name="viewport" content="width=device-width"><header><h1><a href=".">maud</a></h1></header><nav><ul><li><a href="getting-started.html">Getting started</a></li><li><a href="text-escaping.html">Text and escaping</a></li><li><a href="elements-attributes.html">Elements and attributes</a></li><li><a href="splices-toggles.html">Splices and toggles</a></li><li><a href="control-structures.html">Control structures</a></li><li><a href="partials.html">Partials</a></li><li><a href="render-trait.html">The <code>Render</code> trait</a></li><li><a href="web-frameworks.html">Web framework integration</a></li><li><a href="faq.html">Frequently asked questions</a></li></ul><ul><li><a href="https://docs.rs/maud/">API documentation</a></li><li><a href="https://github.com/lambda-fairy/maud">GitHub</a></li></ul></nav><main><!-- Comment that prevents the title from getting picked up -->
+<h2><a href="#a-macro-for-writing-html" aria-hidden="true" class="anchor" id="a-macro-for-writing-html"></a>A macro for writing HTML</h2>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    h1 { </span><span style="color:#183691;">&quot;Hello, world!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    p.intro {
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;This is an example of the &quot;
+</span><span style="color:#323232;">        a href</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;https://github.com/lambda-fairy/maud&quot; </span><span style="color:#323232;">{ </span><span style="color:#183691;">&quot;Maud&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot; template language.&quot;
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<p>Maud is an HTML <a href="https://www.simple-is-better.org/template/">template engine</a> for Rust.
+It's implemented as a macro, <code>html!</code>, which compiles your markup to specialized Rust code.
+This unique approach makes Maud templates fast, type-safe, and easy to deploy.</p>
+<h3><a href="#tight-integration-with-rust" aria-hidden="true" class="anchor" id="tight-integration-with-rust"></a>Tight integration with Rust</h3>
+<p>Since Maud is a Rust macro, it can borrow most of its features from the host language.
+Pattern matching and <code>for</code> loops work as they do in Rust.
+There is no need to derive JSON conversions, as your templates can work with Rust values directly.</p>
+<h3><a href="#type-safety" aria-hidden="true" class="anchor" id="type-safety"></a>Type safety</h3>
+<p>Your templates are checked by the compiler, just like the code around them.
+Any typos will be caught at compile time, not after your app has already started.</p>
+<h3><a href="#minimal-runtime" aria-hidden="true" class="anchor" id="minimal-runtime"></a>Minimal runtime</h3>
+<p>Since most of the work happens at compile time, the runtime footprint is small.
+The Maud runtime library, including integration with the <a href="https://rocket.rs/">Rocket</a> and <a href="https://actix.rs/">Actix</a> web frameworks, is around 100 SLoC.</p>
+<h3><a href="#simple-deployment" aria-hidden="true" class="anchor" id="simple-deployment"></a>Simple deployment</h3>
+<p>There is no need to track separate template files, since all relevant code is linked into the final executable.</p>
+</main><footer><p><a href="https://github.com/lambda-fairy/maud/tree/fb193d31462eea63eabfa705c93ccc56f5bb1eac">v0.27.0</a></p></footer>

@@ -1,0 +1,100 @@
+<!DOCTYPE html><meta charset="utf-8"><title>Elements and attributes
+ – Maud, a macro for writing HTML</title><link rel="stylesheet" href="styles.css"><meta name="theme-color" content="#808"><meta name="viewport" content="width=device-width"><header><h1><a href=".">maud</a></h1></header><nav><ul><li><a href="getting-started.html">Getting started</a></li><li><a href="text-escaping.html">Text and escaping</a></li><li><b>Elements and attributes</b></li><li><a href="splices-toggles.html">Splices and toggles</a></li><li><a href="control-structures.html">Control structures</a></li><li><a href="partials.html">Partials</a></li><li><a href="render-trait.html">The <code>Render</code> trait</a></li><li><a href="web-frameworks.html">Web framework integration</a></li><li><a href="faq.html">Frequently asked questions</a></li></ul><ul><li><a href="https://docs.rs/maud/">API documentation</a></li><li><a href="https://github.com/lambda-fairy/maud">GitHub</a></li></ul></nav><main><h2>Elements and attributes</h2><h3><a href="#elements-with-contents-p-" aria-hidden="true" class="anchor" id="elements-with-contents-p-"></a>Elements with contents: <code>p {}</code></h3>
+<p>Write an element using curly braces:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    h1 { </span><span style="color:#183691;">&quot;Poem&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    p {
+</span><span style="color:#323232;">        strong { </span><span style="color:#183691;">&quot;Rock,&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot; you are a rock.&quot;
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h3><a href="#void-elements-br" aria-hidden="true" class="anchor" id="void-elements-br"></a>Void elements: <code>br;</code></h3>
+<p>Terminate a void element using a semicolon:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    link rel</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;stylesheet&quot;</span><span style="color:#323232;"> href</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;poetry.css&quot;</span><span style="color:#323232;">;
+</span><span style="color:#323232;">    p {
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;Rock, you are a rock.&quot;
+</span><span style="color:#323232;">        br;
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;Gray, you are gray,&quot;
+</span><span style="color:#323232;">        br;
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;Like a rock, which you are.&quot;
+</span><span style="color:#323232;">        br;
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;Rock.&quot;
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<p>The result will be rendered with HTML syntax – <code>&lt;br&gt;</code> not <code>&lt;br /&gt;</code>.</p>
+<h3><a href="#custom-elements-and-data-attributes" aria-hidden="true" class="anchor" id="custom-elements-and-data-attributes"></a>Custom elements and <code>data</code> attributes</h3>
+<p>Maud also supports elements and attributes with hyphens in them.
+This includes <a href="https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements">custom elements</a>, <a href="https://css-tricks.com/a-complete-guide-to-data-attributes/">data attributes</a>, and <a href="https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Annotations">ARIA annotations</a>.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    article data</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#323232;">index</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;12345&quot; </span><span style="color:#323232;">{
+</span><span style="color:#323232;">        h1 { </span><span style="color:#183691;">&quot;My blog&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        tag</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#323232;">cloud { </span><span style="color:#183691;">&quot;pinkie pie pony cute&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h3><a href="#non-empty-attributes-titleyay" aria-hidden="true" class="anchor" id="non-empty-attributes-titleyay"></a>Non-empty attributes: <code>title=&quot;yay&quot;</code></h3>
+<p>Add attributes using the syntax: <code>attr=&quot;value&quot;</code>.
+You can attach any number of attributes to an element.
+The values must be quoted: they are parsed as string literals.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    ul {
+</span><span style="color:#323232;">        li {
+</span><span style="color:#323232;">            a href</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;about:blank&quot; </span><span style="color:#323232;">{ </span><span style="color:#183691;">&quot;Apple Bloom&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        }
+</span><span style="color:#323232;">        li class</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;lower-middle&quot; </span><span style="color:#323232;">{
+</span><span style="color:#323232;">            </span><span style="color:#183691;">&quot;Sweetie Belle&quot;
+</span><span style="color:#323232;">        }
+</span><span style="color:#323232;">        li dir</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;rtl&quot; </span><span style="color:#323232;">{
+</span><span style="color:#323232;">            </span><span style="color:#183691;">&quot;Scootaloo &quot;
+</span><span style="color:#323232;">            small { </span><span style="color:#183691;">&quot;(also a chicken)&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        }
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h3><a href="#empty-attributes-checked" aria-hidden="true" class="anchor" id="empty-attributes-checked"></a>Empty attributes: <code>checked</code></h3>
+<p>Declare an empty attribute by omitting the value.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    form {
+</span><span style="color:#323232;">        input </span><span style="font-weight:bold;color:#a71d5d;">type=</span><span style="color:#183691;">&quot;checkbox&quot;</span><span style="color:#323232;"> name</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;cupcakes&quot;</span><span style="color:#323232;"> checked;
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot; &quot;
+</span><span style="color:#323232;">        label </span><span style="font-weight:bold;color:#a71d5d;">for=</span><span style="color:#183691;">&quot;cupcakes&quot; </span><span style="color:#323232;">{ </span><span style="color:#183691;">&quot;Do you like cupcakes?&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<p>Before version 0.22.2, Maud required a <code>?</code> suffix on empty attributes: <code>checked?</code>.
+This is no longer necessary (<a href="https://github.com/lambda-fairy/maud/pull/238">#238</a>), but still supported for backward compatibility.</p>
+<h3><a href="#classes-and-ids-foo-bar" aria-hidden="true" class="anchor" id="classes-and-ids-foo-bar"></a>Classes and IDs: <code>.foo</code> <code>#bar</code></h3>
+<p>Add classes and IDs to an element using <code>.foo</code> and <code>#bar</code> syntax.
+You can chain multiple classes and IDs together, and mix and match them with other attributes:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    input </span><span style="font-weight:bold;color:#a71d5d;">#</span><span style="color:#323232;">cannon .big.scary.bright</span><span style="font-weight:bold;color:#a71d5d;">-</span><span style="color:#323232;">red </span><span style="font-weight:bold;color:#a71d5d;">type=</span><span style="color:#183691;">&quot;button&quot;</span><span style="color:#323232;"> value</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;Launch Party Cannon&quot;</span><span style="color:#323232;">;
+</span><span style="color:#323232;">}
+</span></code></pre>
+<p>In Rust 2021, the <code>#</code> symbol must be preceded by a space, to avoid conflicts with <a href="https://doc.rust-lang.org/edition-guide/rust-2021/reserving-syntax.html">reserved syntax</a>:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// Works on all Rust editions
+</span><span style="color:#323232;">    input </span><span style="font-weight:bold;color:#a71d5d;">#</span><span style="color:#323232;">pinkie;
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// Works on Rust 2018 and older only
+</span><span style="color:#323232;">    input</span><span style="font-weight:bold;color:#a71d5d;">#</span><span style="color:#323232;">pinkie;
+</span><span style="color:#323232;">}
+</span></code></pre>
+<p>The classes and IDs can be quoted.
+This is useful for names with numbers or symbols which otherwise wouldn't parse:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    div.</span><span style="color:#183691;">&quot;col-sm-2&quot; </span><span style="color:#323232;">{ </span><span style="color:#183691;">&quot;Bootstrap column!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h3><a href="#implicit-div-elements" aria-hidden="true" class="anchor" id="implicit-div-elements"></a>Implicit <code>div</code> elements</h3>
+<p>If the element name is omitted, but there is a class or ID, then it is assumed to be a <code>div</code>.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">#</span><span style="color:#323232;">main {
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;Main content!&quot;
+</span><span style="color:#323232;">        .tip { </span><span style="color:#183691;">&quot;Storing food in a refrigerator can make it 20% cooler.&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+</main><footer><p><a href="https://github.com/lambda-fairy/maud/tree/fb193d31462eea63eabfa705c93ccc56f5bb1eac">v0.27.0</a></p></footer>

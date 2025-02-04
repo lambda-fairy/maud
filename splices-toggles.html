@@ -1,0 +1,98 @@
+<!DOCTYPE html><meta charset="utf-8"><title>Splices and toggles
+ – Maud, a macro for writing HTML</title><link rel="stylesheet" href="styles.css"><meta name="theme-color" content="#808"><meta name="viewport" content="width=device-width"><header><h1><a href=".">maud</a></h1></header><nav><ul><li><a href="getting-started.html">Getting started</a></li><li><a href="text-escaping.html">Text and escaping</a></li><li><a href="elements-attributes.html">Elements and attributes</a></li><li><b>Splices and toggles</b></li><li><a href="control-structures.html">Control structures</a></li><li><a href="partials.html">Partials</a></li><li><a href="render-trait.html">The <code>Render</code> trait</a></li><li><a href="web-frameworks.html">Web framework integration</a></li><li><a href="faq.html">Frequently asked questions</a></li></ul><ul><li><a href="https://docs.rs/maud/">API documentation</a></li><li><a href="https://github.com/lambda-fairy/maud">GitHub</a></li></ul></nav><main><h2>Splices and toggles</h2><h3><a href="#splices-foo" aria-hidden="true" class="anchor" id="splices-foo"></a>Splices: <code>(foo)</code></h3>
+<p>Use <code>(foo)</code> syntax to insert the value of <code>foo</code> at runtime.
+Any HTML special characters are escaped by default.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> best_pony </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&quot;Pinkie Pie&quot;</span><span style="color:#323232;">;
+</span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> numbers </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">[</span><span style="color:#0086b3;">1</span><span style="color:#323232;">, </span><span style="color:#0086b3;">2</span><span style="color:#323232;">, </span><span style="color:#0086b3;">3</span><span style="color:#323232;">, </span><span style="color:#0086b3;">4</span><span style="color:#323232;">];
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    p { </span><span style="color:#183691;">&quot;Hi, &quot; </span><span style="color:#323232;">(best_pony) </span><span style="color:#183691;">&quot;!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    p {
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;I have &quot; </span><span style="color:#323232;">(numbers.</span><span style="color:#62a35c;">len</span><span style="color:#323232;">()) </span><span style="color:#183691;">&quot; numbers, &quot;
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;and the first one is &quot; </span><span style="color:#323232;">(numbers[</span><span style="color:#0086b3;">0</span><span style="color:#323232;">])
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<p>Arbitrary Rust code can be included in a splice by using a <a href="https://doc.rust-lang.org/reference.html#block-expressions">block</a>.
+This can be helpful for complex expressions that would be difficult to read otherwise.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    p {
+</span><span style="color:#323232;">        ({
+</span><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> f: Foo </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#62a35c;">something_convertible_to_foo</span><span style="color:#323232;">()</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span><span style="color:#323232;">            f.</span><span style="color:#62a35c;">time</span><span style="color:#323232;">().</span><span style="color:#62a35c;">format</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;%H%Mh&quot;</span><span style="color:#323232;">)
+</span><span style="color:#323232;">        })
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h4><a href="#splices-in-attributes" aria-hidden="true" class="anchor" id="splices-in-attributes"></a>Splices in attributes</h4>
+<p>Splices work in attributes as well.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> secret_message </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&quot;Surprise!&quot;</span><span style="color:#323232;">;
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    p title</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">(secret_message) {
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;Nothing to see here, move along.&quot;
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<p>To concatenate multiple values within an attribute, wrap the whole thing in braces.
+This syntax is useful for building URLs.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">const </span><span style="color:#0086b3;">GITHUB</span><span style="color:#323232;">: </span><span style="font-weight:bold;color:#a71d5d;">&amp;&#39;static str = </span><span style="color:#183691;">&quot;https://github.com&quot;</span><span style="color:#323232;">;
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    a href</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">{ (</span><span style="color:#0086b3;">GITHUB</span><span style="color:#323232;">) </span><span style="color:#183691;">&quot;/lambda-fairy/maud&quot; </span><span style="color:#323232;">} {
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;Fork me on GitHub&quot;
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h4><a href="#splices-in-classes-and-ids" aria-hidden="true" class="anchor" id="splices-in-classes-and-ids"></a>Splices in classes and IDs</h4>
+<p>Splices can also be used in classes and IDs.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> name </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&quot;rarity&quot;</span><span style="color:#323232;">;
+</span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> severity </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&quot;critical&quot;</span><span style="color:#323232;">;
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    aside </span><span style="font-weight:bold;color:#a71d5d;">#</span><span style="color:#323232;">(name) {
+</span><span style="color:#323232;">        p.{ </span><span style="color:#183691;">&quot;color-&quot; </span><span style="color:#323232;">(severity) } { </span><span style="color:#183691;">&quot;This is the worst! Possible! Thing!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h4><a href="#what-can-be-spliced" aria-hidden="true" class="anchor" id="what-can-be-spliced"></a>What can be spliced?</h4>
+<p>You can splice any value that implements <a href="https://docs.rs/maud/*/maud/trait.Render.html"><code>Render</code></a>.
+Most primitive types (such as <code>str</code> and <code>i32</code>) implement this trait, so they should work out of the box.</p>
+<p>To get this behavior for a custom type, you can implement the <a href="https://docs.rs/maud/*/maud/trait.Render.html"><code>Render</code></a> trait by hand.
+The <a href="https://docs.rs/maud/*/maud/struct.PreEscaped.html"><code>PreEscaped</code></a> wrapper type, which outputs its argument without escaping, works this way.
+See the <a href="render-trait.html">traits</a> section for details.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::PreEscaped;
+</span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> post </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&quot;&lt;p&gt;Pre-escaped&lt;/p&gt;&quot;</span><span style="color:#323232;">;
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    h1 { </span><span style="color:#183691;">&quot;My super duper blog post&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    (PreEscaped(post))
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h3><a href="#toggles-foo" aria-hidden="true" class="anchor" id="toggles-foo"></a>Toggles: <code>[foo]</code></h3>
+<p>Use <code>[foo]</code> syntax to show or hide classes and <a href="https://developer.mozilla.org/en-US/docs/Glossary/Boolean/HTML">boolean attributes</a> on a HTML element based on a boolean expression <code>foo</code>.</p>
+<p>Toggle boolean attributes:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> allow_editing </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">true</span><span style="color:#323232;">;
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    p contenteditable[allow_editing] {
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;Edit me, I &quot;
+</span><span style="color:#323232;">        em { </span><span style="color:#183691;">&quot;dare&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot; you.&quot;
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<p>And classes:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> cuteness </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">95</span><span style="color:#323232;">;
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    p.cute[cuteness </span><span style="font-weight:bold;color:#a71d5d;">&gt; </span><span style="color:#0086b3;">50</span><span style="color:#323232;">] { </span><span style="color:#183691;">&quot;Squee!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h4><a href="#optional-attributes-with-values-titlesomevalue" aria-hidden="true" class="anchor" id="optional-attributes-with-values-titlesomevalue"></a>Optional attributes with values: <code>title=[Some(&quot;value&quot;)]</code></h4>
+<p>Add optional attributes to an element using <code>attr=[value]</code> syntax, with <em>square</em> brackets.
+These are only rendered if the value is <code>Some&lt;T&gt;</code>, and entirely omitted if the value is <code>None</code>.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    p title</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">[</span><span style="color:#0086b3;">Some</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;Good password&quot;</span><span style="color:#323232;">)] { </span><span style="color:#183691;">&quot;Correct horse&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">@let</span><span style="color:#323232;"> value </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span style="color:#323232;">(</span><span style="color:#0086b3;">42</span><span style="color:#323232;">);
+</span><span style="color:#323232;">    input value</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">[value];
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">@let</span><span style="color:#323232;"> title: Option&lt;</span><span style="font-weight:bold;color:#a71d5d;">&amp;str</span><span style="color:#323232;">&gt; </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">None</span><span style="color:#323232;">;
+</span><span style="color:#323232;">    p title</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;">[title] { </span><span style="color:#183691;">&quot;Battery staple&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">}
+</span></code></pre>
+</main><footer><p><a href="https://github.com/lambda-fairy/maud/tree/fb193d31462eea63eabfa705c93ccc56f5bb1eac">v0.27.0</a></p></footer>

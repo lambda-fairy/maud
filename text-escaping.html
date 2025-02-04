@@ -1,0 +1,41 @@
+<!DOCTYPE html><meta charset="utf-8"><title>Text and escaping
+ – Maud, a macro for writing HTML</title><link rel="stylesheet" href="styles.css"><meta name="theme-color" content="#808"><meta name="viewport" content="width=device-width"><header><h1><a href=".">maud</a></h1></header><nav><ul><li><a href="getting-started.html">Getting started</a></li><li><b>Text and escaping</b></li><li><a href="elements-attributes.html">Elements and attributes</a></li><li><a href="splices-toggles.html">Splices and toggles</a></li><li><a href="control-structures.html">Control structures</a></li><li><a href="partials.html">Partials</a></li><li><a href="render-trait.html">The <code>Render</code> trait</a></li><li><a href="web-frameworks.html">Web framework integration</a></li><li><a href="faq.html">Frequently asked questions</a></li></ul><ul><li><a href="https://docs.rs/maud/">API documentation</a></li><li><a href="https://github.com/lambda-fairy/maud">GitHub</a></li></ul></nav><main><h2>Text and escaping</h2><h3><a href="#text" aria-hidden="true" class="anchor" id="text"></a>Text</h3>
+<p>Literal strings use the same syntax as Rust.
+Wrap them in double quotes, and use a backslash for escapes.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    </span><span style="color:#183691;">&quot;Oatmeal, are you crazy?&quot;
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h3><a href="#raw-strings" aria-hidden="true" class="anchor" id="raw-strings"></a>Raw strings</h3>
+<p>If the string is long, or contains many special characters, then it may be worth using <a href="https://doc.rust-lang.org/reference/tokens.html#raw-string-literals">raw strings</a> instead:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    pre {
+</span><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">r</span><span style="color:#183691;">#&quot;
+</span><span style="color:#183691;">            Rocks, these are my rocks.
+</span><span style="color:#183691;">            Sediments make me sedimental.
+</span><span style="color:#183691;">            Smooth and round,
+</span><span style="color:#183691;">            Asleep in the ground.
+</span><span style="color:#183691;">            Shades of brown
+</span><span style="color:#183691;">            And gray.
+</span><span style="color:#183691;">        &quot;#
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h3><a href="#escaping-and-preescaped" aria-hidden="true" class="anchor" id="escaping-and-preescaped"></a>Escaping and <code>PreEscaped</code></h3>
+<p>By default, HTML special characters are escaped automatically.
+Wrap the string in <code>(PreEscaped())</code> to disable this escaping.
+(See the section on <a href="splices-toggles.html">splices</a> to learn more about how this works.)</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::PreEscaped;
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    </span><span style="color:#183691;">&quot;&lt;script&gt;alert(</span><span style="color:#0086b3;">\&quot;</span><span style="color:#183691;">XSS</span><span style="color:#0086b3;">\&quot;</span><span style="color:#183691;">)&lt;/script&gt;&quot;                </span><span style="font-style:italic;color:#969896;">// &amp;lt;script&amp;gt;...
+</span><span style="color:#323232;">    (PreEscaped(</span><span style="color:#183691;">&quot;&lt;script&gt;alert(</span><span style="color:#0086b3;">\&quot;</span><span style="color:#183691;">XSS</span><span style="color:#0086b3;">\&quot;</span><span style="color:#183691;">)&lt;/script&gt;&quot;</span><span style="color:#323232;">))  </span><span style="font-style:italic;color:#969896;">// &lt;script&gt;...
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h3><a href="#the-doctype-constant" aria-hidden="true" class="anchor" id="the-doctype-constant"></a>The <code>DOCTYPE</code> constant</h3>
+<p>If you want to add a <code>&lt;!DOCTYPE html&gt;</code> declaration to your page, you may use the <code>maud::DOCTYPE</code> constant instead of writing it out by hand:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::</span><span style="color:#0086b3;">DOCTYPE</span><span style="color:#323232;">;
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    (</span><span style="color:#0086b3;">DOCTYPE</span><span style="color:#323232;">)  </span><span style="font-style:italic;color:#969896;">// &lt;!DOCTYPE html&gt;
+</span><span style="color:#323232;">}
+</span></code></pre>
+</main><footer><p><a href="https://github.com/lambda-fairy/maud/tree/fb193d31462eea63eabfa705c93ccc56f5bb1eac">v0.27.0</a></p></footer>

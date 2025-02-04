@@ -1,0 +1,208 @@
+<!DOCTYPE html><meta charset="utf-8"><title>Web framework integration
+ – Maud, a macro for writing HTML</title><link rel="stylesheet" href="styles.css"><meta name="theme-color" content="#808"><meta name="viewport" content="width=device-width"><header><h1><a href=".">maud</a></h1></header><nav><ul><li><a href="getting-started.html">Getting started</a></li><li><a href="text-escaping.html">Text and escaping</a></li><li><a href="elements-attributes.html">Elements and attributes</a></li><li><a href="splices-toggles.html">Splices and toggles</a></li><li><a href="control-structures.html">Control structures</a></li><li><a href="partials.html">Partials</a></li><li><a href="render-trait.html">The <code>Render</code> trait</a></li><li><b>Web framework integration</b></li><li><a href="faq.html">Frequently asked questions</a></li></ul><ul><li><a href="https://docs.rs/maud/">API documentation</a></li><li><a href="https://github.com/lambda-fairy/maud">GitHub</a></li></ul></nav><main><h2>Web framework integration</h2><p>Maud includes support for these web frameworks: <a href="https://actix.rs/">Actix</a>, <a href="https://rocket.rs/">Rocket</a>, <a href="https://github.com/tomaka/rouille">Rouille</a>, <a href="https://docs.rs/tide/">Tide</a>, <a href="https://docs.rs/axum/">Axum</a> and <a href="https://github.com/poem-web/poem">Poem</a>.</p>
+<h2><a href="#actix" aria-hidden="true" class="anchor" id="actix"></a>Actix</h2>
+<p>Actix support is available with the &quot;actix-web&quot; feature:</p>
+<pre style="background-color:#ffeeff;"><code class="language-toml"><span style="color:#323232;"># ...
+</span><span style="color:#323232;">[dependencies]
+</span><span style="color:#323232;">maud = { version = &quot;*&quot;, features = [&quot;actix-web&quot;] }
+</span><span style="color:#323232;"># ...
+</span></code></pre>
+<p>Actix request handlers can use a <code>Markup</code> that implements the <code>actix_web::Responder</code> trait.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">actix_web::{get, App, HttpServer, </span><span style="color:#0086b3;">Result </span><span style="font-weight:bold;color:#a71d5d;">as</span><span style="color:#323232;"> AwResult};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::{html, Markup};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">std::io;
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">#[get(</span><span style="color:#183691;">&quot;/&quot;</span><span style="color:#323232;">)]
+</span><span style="color:#323232;">async </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">index</span><span style="color:#323232;">() -&gt; AwResult&lt;Markup&gt; {
+</span><span style="color:#323232;">    </span><span style="color:#0086b3;">Ok</span><span style="color:#323232;">(html! {
+</span><span style="color:#323232;">        html {
+</span><span style="color:#323232;">            body {
+</span><span style="color:#323232;">                h1 { </span><span style="color:#183691;">&quot;Hello World!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">            }
+</span><span style="color:#323232;">        }
+</span><span style="color:#323232;">    })
+</span><span style="color:#323232;">}
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">#[actix_web::main]
+</span><span style="color:#323232;">async </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() -&gt; io::Result&lt;()&gt; {
+</span><span style="color:#323232;">    HttpServer::new(|| App::new().</span><span style="color:#62a35c;">service</span><span style="color:#323232;">(index))
+</span><span style="color:#323232;">        .</span><span style="color:#62a35c;">bind</span><span style="color:#323232;">((</span><span style="color:#183691;">&quot;127.0.0.1&quot;</span><span style="color:#323232;">, </span><span style="color:#0086b3;">8080</span><span style="color:#323232;">))</span><span style="font-weight:bold;color:#a71d5d;">?
+</span><span style="color:#323232;">        .</span><span style="color:#62a35c;">run</span><span style="color:#323232;">()
+</span><span style="color:#323232;">        .await
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h2><a href="#rocket" aria-hidden="true" class="anchor" id="rocket"></a>Rocket</h2>
+<p>Rocket works in a similar way, except using the <code>rocket</code> feature:</p>
+<pre style="background-color:#ffeeff;"><code class="language-toml"><span style="color:#323232;"># ...
+</span><span style="color:#323232;">[dependencies]
+</span><span style="color:#323232;">maud = { version = &quot;*&quot;, features = [&quot;rocket&quot;] }
+</span><span style="color:#323232;"># ...
+</span></code></pre>
+<p>This adds a <code>Responder</code> implementation for the <code>Markup</code> type, so you can return the result directly:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::{html, Markup};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">rocket::{get, routes};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">std::borrow::Cow;
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">#[get(</span><span style="color:#183691;">&quot;/&lt;name&gt;&quot;</span><span style="color:#323232;">)]
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">hello</span><span style="color:#323232;">(name: </span><span style="font-weight:bold;color:#a71d5d;">&amp;str</span><span style="color:#323232;">) -&gt; Markup {
+</span><span style="color:#323232;">    html! {
+</span><span style="color:#323232;">        h1 { </span><span style="color:#183691;">&quot;Hello, &quot; </span><span style="color:#323232;">(name) </span><span style="color:#183691;">&quot;!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        p { </span><span style="color:#183691;">&quot;Nice to meet you!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">#[rocket::launch]
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">launch</span><span style="color:#323232;">() -&gt; </span><span style="font-weight:bold;color:#a71d5d;">_ </span><span style="color:#323232;">{
+</span><span style="color:#323232;">    rocket::build().</span><span style="color:#62a35c;">mount</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;/&quot;</span><span style="color:#323232;">, routes![hello])
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h2><a href="#rouille" aria-hidden="true" class="anchor" id="rouille"></a>Rouille</h2>
+<p>Unlike with the other frameworks, Rouille doesn't need any extra features at all!
+Calling <code>Response::html</code> on the rendered <code>Markup</code> will Just Work®.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::html;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">rouille::{Response, router};
+</span><span style="color:#323232;">
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() {
+</span><span style="color:#323232;">    rouille::start_server(</span><span style="color:#183691;">&quot;localhost:8000&quot;</span><span style="color:#323232;">, </span><span style="font-weight:bold;color:#a71d5d;">move |</span><span style="color:#323232;">request</span><span style="font-weight:bold;color:#a71d5d;">| </span><span style="color:#323232;">{
+</span><span style="color:#323232;">        router!(request,
+</span><span style="color:#323232;">            (</span><span style="color:#0086b3;">GET</span><span style="color:#323232;">) (</span><span style="font-weight:bold;color:#a71d5d;">/</span><span style="color:#323232;">{name: </span><span style="color:#0086b3;">String</span><span style="color:#323232;">}) </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#323232;">{
+</span><span style="color:#323232;">                Response::html(html! {
+</span><span style="color:#323232;">                    h1 { </span><span style="color:#183691;">&quot;Hello, &quot; </span><span style="color:#323232;">(name) </span><span style="color:#183691;">&quot;!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">                    p { </span><span style="color:#183691;">&quot;Nice to meet you!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">                })
+</span><span style="color:#323232;">            },
+</span><span style="color:#323232;">            </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt; </span><span style="color:#323232;">Response::empty_404()
+</span><span style="color:#323232;">        )
+</span><span style="color:#323232;">    });
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h2><a href="#tide" aria-hidden="true" class="anchor" id="tide"></a>Tide</h2>
+<p>Tide support is available with the &quot;tide&quot; feature:</p>
+<pre style="background-color:#ffeeff;"><code class="language-toml"><span style="color:#323232;"># ...
+</span><span style="color:#323232;">[dependencies]
+</span><span style="color:#323232;">maud = { version = &quot;*&quot;, features = [&quot;tide&quot;] }
+</span><span style="color:#323232;"># ...
+</span></code></pre>
+<p>This adds an implementation of <code>From&lt;PreEscaped&lt;String&gt;&gt;</code> for the <code>Response</code> struct.
+Once provided, callers may return results of <code>html!</code> directly as responses:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::html;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">tide::Request;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">tide::prelude::</span><span style="font-weight:bold;color:#a71d5d;">*</span><span style="color:#323232;">;
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">#[async_std::main]
+</span><span style="color:#323232;">async </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() -&gt; tide::Result&lt;()&gt; {
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let mut</span><span style="color:#323232;"> app </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">tide::new();
+</span><span style="color:#323232;">    app.</span><span style="color:#62a35c;">at</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;/hello/:name&quot;</span><span style="color:#323232;">).</span><span style="color:#62a35c;">get</span><span style="color:#323232;">(|req: Request&lt;()&gt;| async </span><span style="font-weight:bold;color:#a71d5d;">move </span><span style="color:#323232;">{
+</span><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> name: </span><span style="color:#0086b3;">String </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> req.</span><span style="color:#62a35c;">param</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;name&quot;</span><span style="color:#323232;">)</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">.</span><span style="color:#62a35c;">parse</span><span style="color:#323232;">()</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span><span style="color:#323232;">        </span><span style="color:#0086b3;">Ok</span><span style="color:#323232;">(html! {
+</span><span style="color:#323232;">            h1 { </span><span style="color:#183691;">&quot;Hello, &quot; </span><span style="color:#323232;">(name) </span><span style="color:#183691;">&quot;!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">            p { </span><span style="color:#183691;">&quot;Nice to meet you!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        })
+</span><span style="color:#323232;">    });
+</span><span style="color:#323232;">    app.</span><span style="color:#62a35c;">listen</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;127.0.0.1:8080&quot;</span><span style="color:#323232;">).await</span><span style="font-weight:bold;color:#a71d5d;">?</span><span style="color:#323232;">;
+</span><span style="color:#323232;">    </span><span style="color:#0086b3;">Ok</span><span style="color:#323232;">(())
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h2><a href="#axum" aria-hidden="true" class="anchor" id="axum"></a>Axum</h2>
+<p>Axum support is available with the &quot;axum&quot; feature:</p>
+<pre style="background-color:#ffeeff;"><code class="language-toml"><span style="color:#323232;"># ...
+</span><span style="color:#323232;">[dependencies]
+</span><span style="color:#323232;">maud = { version = &quot;*&quot;, features = [&quot;axum&quot;] }
+</span><span style="color:#323232;"># ...
+</span></code></pre>
+<p>This adds an implementation of <code>IntoResponse</code> for <code>Markup</code>/<code>PreEscaped&lt;String&gt;</code>.
+This then allows you to use it directly as a response!</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::{html, Markup};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">axum::{Router, routing::get};
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">async </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">hello_world</span><span style="color:#323232;">() -&gt; Markup {
+</span><span style="color:#323232;">    html! {
+</span><span style="color:#323232;">        h1 { </span><span style="color:#183691;">&quot;Hello, World!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">#[tokio::main]
+</span><span style="color:#323232;">async </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() {
+</span><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// build our application with a single route
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> app </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">Router::new().</span><span style="color:#62a35c;">route</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;/&quot;</span><span style="color:#323232;">, </span><span style="color:#62a35c;">get</span><span style="color:#323232;">(hello_world));
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">    </span><span style="font-style:italic;color:#969896;">// run it with hyper on localhost:3000
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> listener </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">tokio::net::TcpListener::bind(</span><span style="color:#183691;">&quot;0.0.0.0:3000&quot;</span><span style="color:#323232;">).await.</span><span style="color:#62a35c;">unwrap</span><span style="color:#323232;">();
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">    axum::serve(listener, app.</span><span style="color:#62a35c;">into_make_service</span><span style="color:#323232;">()).await.</span><span style="color:#62a35c;">unwrap</span><span style="color:#323232;">();
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h2><a href="#warp" aria-hidden="true" class="anchor" id="warp"></a>Warp</h2>
+<p>Warp support is available with the &quot;warp&quot; feature:</p>
+<pre style="background-color:#ffeeff;"><code class="language-toml"><span style="color:#323232;"># ...
+</span><span style="color:#323232;">[dependencies]
+</span><span style="color:#323232;">maud = { version = &quot;*&quot;, features = [&quot;warp&quot;] }
+</span><span style="color:#323232;"># ...
+</span></code></pre>
+<p>This enables <code>Markup</code> to be of type <code>warp::Reply</code>, making it possible to return it
+immediately from a handler.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::html;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">warp::Filter;
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">#[tokio::main]
+</span><span style="color:#323232;">async </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() {
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> hello </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">warp::any().</span><span style="color:#62a35c;">map</span><span style="color:#323232;">(|| html! { h1 { </span><span style="color:#183691;">&quot;Hello, world!&quot; </span><span style="color:#323232;">} });
+</span><span style="color:#323232;">    warp::serve(hello).</span><span style="color:#62a35c;">run</span><span style="color:#323232;">(([</span><span style="color:#0086b3;">127</span><span style="color:#323232;">, </span><span style="color:#0086b3;">0</span><span style="color:#323232;">, </span><span style="color:#0086b3;">0</span><span style="color:#323232;">, </span><span style="color:#0086b3;">1</span><span style="color:#323232;">], </span><span style="color:#0086b3;">8000</span><span style="color:#323232;">)).await;
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h2><a href="#submillisecond" aria-hidden="true" class="anchor" id="submillisecond"></a>Submillisecond</h2>
+<p>Submillisecond support is available with the &quot;submillisecond&quot; feature:</p>
+<pre style="background-color:#ffeeff;"><code class="language-toml"><span style="color:#323232;"># ...
+</span><span style="color:#323232;">[dependencies]
+</span><span style="color:#323232;">maud = { version = &quot;*&quot;, features = [&quot;submillisecond&quot;] }
+</span><span style="color:#323232;"># ...
+</span></code></pre>
+<p>This adds an implementation of <code>IntoResponse</code> for <code>Markup</code>/<code>PreEscaped&lt;String&gt;</code>.
+This then allows you to use it directly as a response!</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::{html, Markup};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">std::io::Result;
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">submillisecond::{router, Application};
+</span><span style="color:#323232;">
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() -&gt; Result&lt;()&gt; {
+</span><span style="color:#323232;">    Application::new(router! {
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">        </span><span style="color:#0086b3;">GET </span><span style="color:#183691;">&quot;/hello&quot; </span><span style="font-weight:bold;color:#a71d5d;">=&gt;</span><span style="color:#323232;"> helloworld
+</span><span style="color:#323232;">    })
+</span><span style="color:#323232;">    .</span><span style="color:#62a35c;">serve</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;0.0.0.0:3000&quot;</span><span style="color:#323232;">)
+</span><span style="color:#323232;">}
+</span><span style="color:#323232;">
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">helloworld</span><span style="color:#323232;">() -&gt; Markup {
+</span><span style="color:#323232;">    html! {
+</span><span style="color:#323232;">        h1 { </span><span style="color:#183691;">&quot;Hello, World!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h2><a href="#poem" aria-hidden="true" class="anchor" id="poem"></a>Poem</h2>
+<p>Poem support is available with the &quot;poem&quot; feature:</p>
+<pre style="background-color:#ffeeff;"><code class="language-toml"><span style="color:#323232;"># ...
+</span><span style="color:#323232;">[dependencies]
+</span><span style="color:#323232;">maud = { version = &quot;*&quot;, features = [&quot;poem&quot;] }
+</span><span style="color:#323232;"># ...
+</span></code></pre>
+<p>This adds an implementation of <code>poem::IntoResponse</code> for <code>Markup</code>/<code>PreEscaped&lt;String&gt;</code>.
+This then allows you to use it directly as a response!</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::{html, Markup};
+</span><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">poem::{get, handler, listener::TcpListener, Route, Server};
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">#[handler]
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">hello_world</span><span style="color:#323232;">() -&gt; Markup {
+</span><span style="color:#323232;">    html! {
+</span><span style="color:#323232;">        h1 { </span><span style="color:#183691;">&quot;Hello, World!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">#[tokio::main]
+</span><span style="color:#323232;">async </span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() -&gt; Result&lt;(), std::io::Error&gt; {
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> app </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">Route::new().</span><span style="color:#62a35c;">at</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;/hello&quot;</span><span style="color:#323232;">, </span><span style="color:#62a35c;">get</span><span style="color:#323232;">(hello_world));
+</span><span style="color:#323232;">    Server::new(TcpListener::bind(</span><span style="color:#183691;">&quot;0.0.0.0:3000&quot;</span><span style="color:#323232;">))
+</span><span style="color:#323232;">        .</span><span style="color:#62a35c;">name</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;hello-world&quot;</span><span style="color:#323232;">)
+</span><span style="color:#323232;">        .</span><span style="color:#62a35c;">run</span><span style="color:#323232;">(app)
+</span><span style="color:#323232;">        .await
+</span><span style="color:#323232;">}
+</span></code></pre>
+</main><footer><p><a href="https://github.com/lambda-fairy/maud/tree/fb193d31462eea63eabfa705c93ccc56f5bb1eac">v0.27.0</a></p></footer>

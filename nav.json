@@ -1,0 +1,42 @@
+[
+  [
+    "index",
+    null
+  ],
+  [
+    "getting-started",
+    "Getting started\n"
+  ],
+  [
+    "text-escaping",
+    "Text and escaping\n"
+  ],
+  [
+    "elements-attributes",
+    "Elements and attributes\n"
+  ],
+  [
+    "splices-toggles",
+    "Splices and toggles\n"
+  ],
+  [
+    "control-structures",
+    "Control structures\n"
+  ],
+  [
+    "partials",
+    "Partials\n"
+  ],
+  [
+    "render-trait",
+    "The `Render` trait\n"
+  ],
+  [
+    "web-frameworks",
+    "Web framework integration\n"
+  ],
+  [
+    "faq",
+    "Frequently asked questions\n"
+  ]
+]

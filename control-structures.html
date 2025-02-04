@@ -1,0 +1,92 @@
+<!DOCTYPE html><meta charset="utf-8"><title>Control structures
+ – Maud, a macro for writing HTML</title><link rel="stylesheet" href="styles.css"><meta name="theme-color" content="#808"><meta name="viewport" content="width=device-width"><header><h1><a href=".">maud</a></h1></header><nav><ul><li><a href="getting-started.html">Getting started</a></li><li><a href="text-escaping.html">Text and escaping</a></li><li><a href="elements-attributes.html">Elements and attributes</a></li><li><a href="splices-toggles.html">Splices and toggles</a></li><li><b>Control structures</b></li><li><a href="partials.html">Partials</a></li><li><a href="render-trait.html">The <code>Render</code> trait</a></li><li><a href="web-frameworks.html">Web framework integration</a></li><li><a href="faq.html">Frequently asked questions</a></li></ul><ul><li><a href="https://docs.rs/maud/">API documentation</a></li><li><a href="https://github.com/lambda-fairy/maud">GitHub</a></li></ul></nav><main><h2>Control structures</h2><p>Maud provides various control structures for adding dynamic elements to your templates.</p>
+<h3><a href="#branching-with-if-and-else" aria-hidden="true" class="anchor" id="branching-with-if-and-else"></a>Branching with <code>@if</code> and <code>@else</code></h3>
+<p>Use <code>@if</code> and <code>@else</code> to branch on a boolean expression.
+As with Rust, braces are mandatory and the <code>@else</code> clause is optional.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#323232;">#[derive(PartialEq)]
+</span><span style="font-weight:bold;color:#a71d5d;">enum </span><span style="color:#323232;">Princess { Celestia, Luna, Cadance, TwilightSparkle }
+</span><span style="color:#323232;">
+</span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> user </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">Princess::Celestia;
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">@if</span><span style="color:#323232;"> user </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#323232;">Princess::Luna {
+</span><span style="color:#323232;">        h1 { </span><span style="color:#183691;">&quot;Super secret woona to-do list&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        ul {
+</span><span style="color:#323232;">            li { </span><span style="color:#183691;">&quot;Nuke the Crystal Empire&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">            li { </span><span style="color:#183691;">&quot;Kick a puppy&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">            li { </span><span style="color:#183691;">&quot;Evil laugh&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        }
+</span><span style="color:#323232;">    } </span><span style="font-weight:bold;color:#a71d5d;">@else if</span><span style="color:#323232;"> user </span><span style="font-weight:bold;color:#a71d5d;">== </span><span style="color:#323232;">Princess::Celestia {
+</span><span style="color:#323232;">        p { </span><span style="color:#183691;">&quot;Sister, please stop reading my diary. It&#39;s rude.&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    } </span><span style="font-weight:bold;color:#a71d5d;">@else </span><span style="color:#323232;">{
+</span><span style="color:#323232;">        p { </span><span style="color:#183691;">&quot;Nothing to see here; move along.&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<p><code>@if let</code> is supported as well:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> user </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#0086b3;">Some</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;Pinkie Pie&quot;</span><span style="color:#323232;">);
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    p {
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;Hello, &quot;
+</span><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">@if let </span><span style="color:#0086b3;">Some</span><span style="color:#323232;">(name) </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> user {
+</span><span style="color:#323232;">            (name)
+</span><span style="color:#323232;">        } </span><span style="font-weight:bold;color:#a71d5d;">@else </span><span style="color:#323232;">{
+</span><span style="color:#323232;">            </span><span style="color:#183691;">&quot;stranger&quot;
+</span><span style="color:#323232;">        }
+</span><span style="color:#323232;">        </span><span style="color:#183691;">&quot;!&quot;
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h3><a href="#looping-with-for" aria-hidden="true" class="anchor" id="looping-with-for"></a>Looping with <code>@for</code></h3>
+<p>Use <code>@for .. in ..</code> to loop over the elements of an iterator.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> names </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">[</span><span style="color:#183691;">&quot;Applejack&quot;</span><span style="color:#323232;">, </span><span style="color:#183691;">&quot;Rarity&quot;</span><span style="color:#323232;">, </span><span style="color:#183691;">&quot;Fluttershy&quot;</span><span style="color:#323232;">];
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    p { </span><span style="color:#183691;">&quot;My favorite ponies are:&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    ol {
+</span><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">@for</span><span style="color:#323232;"> name </span><span style="font-weight:bold;color:#a71d5d;">in &amp;</span><span style="color:#323232;">names {
+</span><span style="color:#323232;">            li { (name) }
+</span><span style="color:#323232;">        }
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h3><a href="#declaring-variables-with-let" aria-hidden="true" class="anchor" id="declaring-variables-with-let"></a>Declaring variables with <code>@let</code></h3>
+<p>Declare a new variable within a template using <code>@let</code>.
+This can be useful when working with values in a for loop.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> names </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">[</span><span style="color:#183691;">&quot;Applejack&quot;</span><span style="color:#323232;">, </span><span style="color:#183691;">&quot;Rarity&quot;</span><span style="color:#323232;">, </span><span style="color:#183691;">&quot;Fluttershy&quot;</span><span style="color:#323232;">];
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">@for</span><span style="color:#323232;"> name </span><span style="font-weight:bold;color:#a71d5d;">in &amp;</span><span style="color:#323232;">names {
+</span><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">@let</span><span style="color:#323232;"> first_letter </span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#323232;"> name.</span><span style="color:#62a35c;">chars</span><span style="color:#323232;">().</span><span style="color:#62a35c;">next</span><span style="color:#323232;">().</span><span style="color:#62a35c;">unwrap</span><span style="color:#323232;">();
+</span><span style="color:#323232;">        p {
+</span><span style="color:#323232;">            </span><span style="color:#183691;">&quot;The first letter of &quot;
+</span><span style="color:#323232;">            b { (name) }
+</span><span style="color:#323232;">            </span><span style="color:#183691;">&quot; is &quot;
+</span><span style="color:#323232;">            b { (first_letter) }
+</span><span style="color:#323232;">            </span><span style="color:#183691;">&quot;.&quot;
+</span><span style="color:#323232;">        }
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<h3><a href="#matching-with-match" aria-hidden="true" class="anchor" id="matching-with-match"></a>Matching with <code>@match</code></h3>
+<p>Pattern matching is supported with <code>@match</code>.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">enum </span><span style="color:#323232;">Princess { Celestia, Luna, Cadance, TwilightSparkle }
+</span><span style="color:#323232;">
+</span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> user </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">Princess::Celestia;
+</span><span style="color:#323232;">
+</span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">@match</span><span style="color:#323232;"> user {
+</span><span style="color:#323232;">        Princess::Luna </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#323232;">{
+</span><span style="color:#323232;">            h1 { </span><span style="color:#183691;">&quot;Super secret woona to-do list&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">            ul {
+</span><span style="color:#323232;">                li { </span><span style="color:#183691;">&quot;Nuke the Crystal Empire&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">                li { </span><span style="color:#183691;">&quot;Kick a puppy&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">                li { </span><span style="color:#183691;">&quot;Evil laugh&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">            }
+</span><span style="color:#323232;">        },
+</span><span style="color:#323232;">        Princess::Celestia </span><span style="font-weight:bold;color:#a71d5d;">=&gt; </span><span style="color:#323232;">{
+</span><span style="color:#323232;">            p { </span><span style="color:#183691;">&quot;Sister, please stop reading my diary. It&#39;s rude.&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        },
+</span><span style="color:#323232;">        </span><span style="font-weight:bold;color:#a71d5d;">_ =&gt;</span><span style="color:#323232;"> p { </span><span style="color:#183691;">&quot;Nothing to see here; move along.&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+</main><footer><p><a href="https://github.com/lambda-fairy/maud/tree/fb193d31462eea63eabfa705c93ccc56f5bb1eac">v0.27.0</a></p></footer>

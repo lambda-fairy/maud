@@ -1,0 +1,31 @@
+<!DOCTYPE html><meta charset="utf-8"><title>Getting started
+ – Maud, a macro for writing HTML</title><link rel="stylesheet" href="styles.css"><meta name="theme-color" content="#808"><meta name="viewport" content="width=device-width"><header><h1><a href=".">maud</a></h1></header><nav><ul><li><b>Getting started</b></li><li><a href="text-escaping.html">Text and escaping</a></li><li><a href="elements-attributes.html">Elements and attributes</a></li><li><a href="splices-toggles.html">Splices and toggles</a></li><li><a href="control-structures.html">Control structures</a></li><li><a href="partials.html">Partials</a></li><li><a href="render-trait.html">The <code>Render</code> trait</a></li><li><a href="web-frameworks.html">Web framework integration</a></li><li><a href="faq.html">Frequently asked questions</a></li></ul><ul><li><a href="https://docs.rs/maud/">API documentation</a></li><li><a href="https://github.com/lambda-fairy/maud">GitHub</a></li></ul></nav><main><h2>Getting started</h2><h3><a href="#add-maud-to-your-project" aria-hidden="true" class="anchor" id="add-maud-to-your-project"></a>Add Maud to your project</h3>
+<p>Once Rust is set up, create a new project with Cargo:</p>
+<pre style="background-color:#ffeeff;"><code class="language-sh"><span style="color:#323232;">cargo new --bin pony-greeter
+</span><span style="color:#62a35c;">cd</span><span style="color:#323232;"> pony-greeter
+</span></code></pre>
+<p>Add <code>maud</code> to your <code>Cargo.toml</code>:</p>
+<pre style="background-color:#ffeeff;"><code class="language-toml"><span style="color:#323232;">[dependencies]
+</span><span style="color:#323232;">maud = &quot;*&quot;
+</span></code></pre>
+<p>Then save the following to <code>src/main.rs</code>:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::html;
+</span><span style="color:#323232;">
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">main</span><span style="color:#323232;">() {
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> name </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#183691;">&quot;Lyra&quot;</span><span style="color:#323232;">;
+</span><span style="color:#323232;">    </span><span style="font-weight:bold;color:#a71d5d;">let</span><span style="color:#323232;"> markup </span><span style="font-weight:bold;color:#a71d5d;">= </span><span style="color:#323232;">html! {
+</span><span style="color:#323232;">        p { </span><span style="color:#183691;">&quot;Hi, &quot; </span><span style="color:#323232;">(name) </span><span style="color:#183691;">&quot;!&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">    };
+</span><span style="color:#323232;">    println!(</span><span style="color:#183691;">&quot;</span><span style="color:#0086b3;">{}</span><span style="color:#183691;">&quot;</span><span style="color:#323232;">, markup.</span><span style="color:#62a35c;">into_string</span><span style="color:#323232;">());
+</span><span style="color:#323232;">}
+</span></code></pre>
+<p><code>html!</code> takes a single argument: a template using Maud's custom syntax.
+This call expands to an expression of type <a href="https://docs.rs/maud/*/maud/type.Markup.html"><code>Markup</code></a>, which can then be converted to a <code>String</code> using <code>.into_string()</code>.</p>
+<p>Run this program with <code>cargo run</code>, and you should get the following:</p>
+<pre style="background-color:#ffeeff;"><code class="language-html"><span style="color:#323232;">&lt;</span><span style="color:#63a35c;">p</span><span style="color:#323232;">&gt;Hi, Lyra!&lt;/</span><span style="color:#63a35c;">p</span><span style="color:#323232;">&gt;
+</span></code></pre>
+<p>Congrats – you've written your first Maud program!</p>
+<h3><a href="#which-version-of-rust" aria-hidden="true" class="anchor" id="which-version-of-rust"></a>Which version of Rust?</h3>
+<p>While Maud works well on both stable and <a href="https://doc.rust-lang.org/book/appendix-07-nightly-rust.html">nightly</a> versions of Rust, the error messages are slightly better on nightly.
+For this reason, it is recommended to develop using nightly Rust, but test and deploy using stable.</p>
+</main><footer><p><a href="https://github.com/lambda-fairy/maud/tree/fb193d31462eea63eabfa705c93ccc56f5bb1eac">v0.27.0</a></p></footer>

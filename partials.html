@@ -1,0 +1,45 @@
+<!DOCTYPE html><meta charset="utf-8"><title>Partials
+ – Maud, a macro for writing HTML</title><link rel="stylesheet" href="styles.css"><meta name="theme-color" content="#808"><meta name="viewport" content="width=device-width"><header><h1><a href=".">maud</a></h1></header><nav><ul><li><a href="getting-started.html">Getting started</a></li><li><a href="text-escaping.html">Text and escaping</a></li><li><a href="elements-attributes.html">Elements and attributes</a></li><li><a href="splices-toggles.html">Splices and toggles</a></li><li><a href="control-structures.html">Control structures</a></li><li><b>Partials</b></li><li><a href="render-trait.html">The <code>Render</code> trait</a></li><li><a href="web-frameworks.html">Web framework integration</a></li><li><a href="faq.html">Frequently asked questions</a></li></ul><ul><li><a href="https://docs.rs/maud/">API documentation</a></li><li><a href="https://github.com/lambda-fairy/maud">GitHub</a></li></ul></nav><main><h2>Partials</h2><p>Maud does not have a built-in concept of partials or sub-templates.
+Instead, you can compose your markup with any function that returns <code>Markup</code>.</p>
+<p>The following example defines a <code>header</code> and <code>footer</code> function.
+These functions are combined to form the final <code>page</code>.</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="font-weight:bold;color:#a71d5d;">use </span><span style="color:#323232;">maud::{</span><span style="color:#0086b3;">DOCTYPE</span><span style="color:#323232;">, html, Markup};
+</span><span style="color:#323232;">
+</span><span style="font-style:italic;color:#969896;">/// A basic header with a dynamic `page_title`.
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">header</span><span style="color:#323232;">(page_title: </span><span style="font-weight:bold;color:#a71d5d;">&amp;str</span><span style="color:#323232;">) -&gt; Markup {
+</span><span style="color:#323232;">    html! {
+</span><span style="color:#323232;">        (</span><span style="color:#0086b3;">DOCTYPE</span><span style="color:#323232;">)
+</span><span style="color:#323232;">        meta charset</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;utf-8&quot;</span><span style="color:#323232;">;
+</span><span style="color:#323232;">        title { (page_title) }
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span><span style="color:#323232;">
+</span><span style="font-style:italic;color:#969896;">/// A static footer.
+</span><span style="font-weight:bold;color:#a71d5d;">fn </span><span style="font-weight:bold;color:#795da3;">footer</span><span style="color:#323232;">() -&gt; Markup {
+</span><span style="color:#323232;">    html! {
+</span><span style="color:#323232;">        footer {
+</span><span style="color:#323232;">            a href</span><span style="font-weight:bold;color:#a71d5d;">=</span><span style="color:#183691;">&quot;rss.atom&quot; </span><span style="color:#323232;">{ </span><span style="color:#183691;">&quot;RSS Feed&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">        }
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span><span style="color:#323232;">
+</span><span style="font-style:italic;color:#969896;">/// The final Markup, including `header` and `footer`.
+</span><span style="font-style:italic;color:#969896;">///
+</span><span style="font-style:italic;color:#969896;">/// Additionally takes a `greeting_box` that&#39;s `Markup`, not `&amp;str`.
+</span><span style="font-weight:bold;color:#a71d5d;">pub fn </span><span style="font-weight:bold;color:#795da3;">page</span><span style="color:#323232;">(title: </span><span style="font-weight:bold;color:#a71d5d;">&amp;str</span><span style="color:#323232;">, greeting_box: Markup) -&gt; Markup {
+</span><span style="color:#323232;">    html! {
+</span><span style="color:#323232;">        </span><span style="font-style:italic;color:#969896;">// Add the header markup to the page
+</span><span style="color:#323232;">        (</span><span style="color:#62a35c;">header</span><span style="color:#323232;">(title))
+</span><span style="color:#323232;">        h1 { (title) }
+</span><span style="color:#323232;">        (greeting_box)
+</span><span style="color:#323232;">        (</span><span style="color:#62a35c;">footer</span><span style="color:#323232;">())
+</span><span style="color:#323232;">    }
+</span><span style="color:#323232;">}
+</span></code></pre>
+<p>Using the <code>page</code> function will return the markup for the whole page.
+Here's an example:</p>
+<pre style="background-color:#ffeeff;"><code class="language-rust"><span style="color:#62a35c;">page</span><span style="color:#323232;">(</span><span style="color:#183691;">&quot;Hello!&quot;</span><span style="color:#323232;">, html! {
+</span><span style="color:#323232;">    div { </span><span style="color:#183691;">&quot;Greetings, Maud.&quot; </span><span style="color:#323232;">}
+</span><span style="color:#323232;">});
+</span></code></pre>
+</main><footer><p><a href="https://github.com/lambda-fairy/maud/tree/fb193d31462eea63eabfa705c93ccc56f5bb1eac">v0.27.0</a></p></footer>
