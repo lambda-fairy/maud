@@ -16,14 +16,11 @@ jobs:
     steps:
 
     - name: Check out repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@nightly
       with:
-        toolchain: nightly
-        profile: minimal
-        override: true
         components: clippy
 
     # Do *not* use `--all-features` here, as the optional dependencies take a
@@ -42,17 +39,14 @@ jobs:
     steps:
 
     - name: Check out repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         # Documentation build uses `git describe` which requires history
         fetch-depth: 0
 
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@nightly
       with:
-        toolchain: nightly
-        profile: minimal
-        override: true
         components: clippy
 
     - name: Build documentation
@@ -68,14 +62,10 @@ jobs:
     steps:
 
     - name: Check out repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        profile: minimal
-        override: true
+      uses: dtolnay/rust-toolchain@nightly
 
     - name: Doctest
       run: cd doctest && cargo test
@@ -87,15 +77,12 @@ jobs:
     steps:
 
     - name: Check out repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      # Nightly rustfmt is needed for the `imports_granularity` option
+      uses: dtolnay/rust-toolchain@nightly
       with:
-        # Nightly rustfmt is needed for the `imports_granularity` option
-        toolchain: nightly
-        profile: minimal
-        override: true
         components: rustfmt
 
     - name: Check formatting
