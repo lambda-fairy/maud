@@ -1,6 +1,5 @@
 #![doc(html_root_url = "https://docs.rs/maud_macros/0.27.0")]
-// TokenStream values are reference counted, and the mental overhead of tracking
-// lifetimes outweighs the marginal gains from explicit borrowing
+#![allow(clippy::large_enum_variant)]
 #![allow(clippy::needless_pass_by_value)]
 
 extern crate proc_macro;
