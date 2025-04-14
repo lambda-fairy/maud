@@ -383,6 +383,26 @@ mod axum_support {
     }
 }
 
+#[cfg(feature = "picoserve")]
+mod picoserve_support {
+    use crate::Markup;
+    use picoserve::{response::{Content}, io::Write};
+
+    impl Content for Markup {
+        fn content_type(&self) -> &'static str {
+            "text/html; charset=utf-8"
+        }
+
+        fn content_length(&self) -> usize {
+            self.0.len()
+        }
+
+        async fn write_content<W: Write>(self, writer: W) -> Result<(), W::Error> {
+            self.0.clone().write_content(writer).await
+        }
+    }
+}
+
 #[cfg(feature = "warp")]
 mod warp_support {
     use crate::PreEscaped;

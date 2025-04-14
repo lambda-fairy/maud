@@ -15,6 +15,7 @@ edition.workspace = true
 [features]
 default = []
 alloc = []
+picoserve = ["dep:picoserve"]
 
 # Web framework integrations
 actix-web = ["actix-web-dep", "futures-util"]
@@ -31,6 +32,7 @@ axum-core = { version = "0.4", optional = true }
 submillisecond = { version = "0.4.1", optional = true }
 http = { version = "1", optional = true }
 warp = { version = "0.3.6", optional = true }
+picoserve = { version = ">=0.13.3", optional = true }
 
 [dev-dependencies]
 trybuild = { version = "1.0.33", features = ["diff"] }
