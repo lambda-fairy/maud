@@ -1,6 +1,6 @@
 # Web framework integration
 
-Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], [Tide], [Axum] and [Poem].
+Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], [Tide], [Axum], [Poem], and [Salvo].
 
 [Actix]: https://actix.rs/
 [Rocket]: https://rocket.rs/
@@ -10,6 +10,7 @@ Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], [T
 [Warp]: https://seanmonstar.com/blog/warp/
 [Submillisecond]: https://github.com/lunatic-solutions/submillisecond
 [Poem]: https://github.com/poem-web/poem
+[Salvo]: https://salvo.rs
 
 # Actix
 
@@ -266,5 +267,40 @@ async fn main() -> Result<(), std::io::Error> {
         .name("hello-world")
         .run(app)
         .await
+}
+```
+
+# Salvo
+
+Salvo support is available with the "salvo" feature:
+
+```toml
+# ...
+[dependencies]
+maud = { version = "*", features = ["salvo"] }
+# ...
+```
+
+This adds an implementation of `Scribe` for `Markup`/`PreEscaped<String>`.
+This then allows you to use it directly as a response!
+
+```rust,no_run
+use maud::{html, Markup};
+use salvo::prelude::*;
+
+#[handler]
+async fn hello_world(res: &mut Response) {
+    res.render(html! {
+        h1 { "Hello, World!" }
+    });
+}
+
+#[tokio::main]
+async fn main() {
+    let app = Router::with_path("/").get(hello_world);
+
+    let listener = TcpListener::new("0.0.0.0:3000").bind().await;
+
+    Server::new(listener).serve(app).await;
 }
 ```
