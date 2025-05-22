@@ -5,12 +5,14 @@ version = "0.27.0"
 documentation = "https://docs.rs/maud/"
 description = "Compile-time HTML templates."
 categories = ["template-engine"]
+readme = "../README.md"
 
 authors.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
 edition.workspace = true
+include.workspace = true
 
 [features]
 default = []

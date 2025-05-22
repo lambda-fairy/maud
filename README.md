@@ -1,4 +1,4 @@
-# <img align="right" src="maud.png" alt="HTML5 rocks." title="HTML5 rocks."> maud 
+# <img align="right" src="https://raw.githubusercontent.com/lambda-fairy/maud/v0.27.0/maud.png" alt="HTML5 rocks." title="HTML5 rocks."> maud
 [![CI](https://github.com/lambda-fairy/maud/workflows/CI/badge.svg)](https://github.com/lambda-fairy/maud/actions) 
 [![Cargo](https://img.shields.io/crates/v/maud.svg)](https://crates.io/crates/maud) 
 [![API reference](https://docs.rs/maud/badge.svg)](https://docs.rs/maud/)

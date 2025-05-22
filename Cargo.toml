@@ -15,3 +15,4 @@ license = "MIT OR Apache-2.0"
 homepage = "https://maud.lambda.xyz/"
 repository = "https://github.com/lambda-fairy/maud"
 edition = "2021"
+include = ["LICENSE*", "benches", "src", "tests"]
