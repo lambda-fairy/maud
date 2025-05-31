@@ -432,7 +432,6 @@ mod salvo_support {
     use salvo_core::{http::Response, writing::Scribe};
 
     impl Scribe for PreEscaped<String> {
-        #[inline]
         fn render(self, res: &mut Response) {
             let _ = res.headers.insert(
                 CONTENT_TYPE,
