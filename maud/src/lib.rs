@@ -424,6 +424,24 @@ mod submillisecond_support {
     }
 }
 
+#[cfg(feature = "salvo")]
+mod salvo_support {
+    use crate::PreEscaped;
+    use alloc::string::String;
+    use http::{header::CONTENT_TYPE, HeaderValue};
+    use salvo_core::{http::Response, writing::Scribe};
+
+    impl Scribe for PreEscaped<String> {
+        fn render(self, res: &mut Response) {
+            let _ = res.headers.insert(
+                CONTENT_TYPE,
+                HeaderValue::from_static("text/html; charset=utf-8"),
+            );
+            let _ = res.write_body(self.into_string());
+        }
+    }
+}
+
 #[doc(hidden)]
 pub mod macro_private {
     use crate::{display, Render};
