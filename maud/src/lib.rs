@@ -11,7 +11,7 @@
 
 extern crate alloc;
 
-use alloc::{borrow::Cow, boxed::Box, string::String, sync::Arc};
+use alloc::{borrow::Cow, boxed::Box, string::String, sync::Arc, vec::Vec};
 use core::fmt::{self, Arguments, Display, Write};
 
 pub use maud_macros::html;
@@ -153,6 +153,30 @@ impl<T: Render + ?Sized> Render for Box<T> {
 impl<T: Render + ?Sized> Render for Arc<T> {
     fn render_to(&self, w: &mut String) {
         T::render_to(self, w);
+    }
+}
+
+impl<T: Render> Render for Vec<T> {
+    fn render_to(&self, w: &mut String) {
+        for item in self {
+            item.render_to(w);
+        }
+    }
+}
+
+impl<T: Render> Render for [T] {
+    fn render_to(&self, w: &mut String) {
+        for item in self {
+            item.render_to(w);
+        }
+    }
+}
+
+impl<T: Render> Render for Option<T> {
+    fn render_to(&self, w: &mut String) {
+        if let Some(ref value) = *self {
+            value.render_to(w);
+        }
     }
 }
 
