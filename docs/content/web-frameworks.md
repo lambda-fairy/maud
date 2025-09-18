@@ -1,6 +1,6 @@
 # Web framework integration
 
-Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], [Tide], [Axum], [Poem], and [Salvo].
+Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], [Tide], [Axum], [Poem], [Salvo], and [Ntex].
 
 [Actix]: https://actix.rs/
 [Rocket]: https://rocket.rs/
@@ -11,6 +11,7 @@ Maud includes support for these web frameworks: [Actix], [Rocket], [Rouille], [T
 [Submillisecond]: https://github.com/lunatic-solutions/submillisecond
 [Poem]: https://github.com/poem-web/poem
 [Salvo]: https://salvo.rs
+[Ntex]: https://ntex.rs/
 
 # Actix
 
@@ -302,5 +303,43 @@ async fn main() {
     let listener = TcpListener::new("0.0.0.0:3000").bind().await;
 
     Server::new(listener).serve(app).await;
+}
+```
+
+# Ntex
+
+ntex support is available with the "ntex" feature:
+
+```toml
+# ...
+[dependencies]
+maud = { version = "*", features = ["ntex"] }
+# ...
+```
+
+Actix request handlers can use a `Markup` that implements the `ntex::web::Responder` trait.
+
+```rust,no_run
+use ntex::web::{get, App, HttpServer, Responder};
+use maud::{html, Markup};
+use std::io;
+
+#[get("/")]
+async fn index() -> impl Responder {
+    html! {
+        html {
+            body {
+                h1 { "Hello World!" }
+            }
+        }
+    }
+}
+
+#[ntex::main]
+async fn main() -> io::Result<()> {
+    HttpServer::new(|| App::new().service(index))
+        .bind(("127.0.0.1", 8080))?
+        .run()
+        .await
 }
 ```

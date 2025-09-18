@@ -343,6 +343,51 @@ mod actix_support {
     }
 }
 
+#[cfg(feature = "ntex")]
+mod ntex_support {
+    use core::{
+        error::Error,
+        mem,
+        task::{Context, Poll},
+    };
+    use ntex::{
+        http::{
+            body::{BodySize, MessageBody},
+            header, StatusCode,
+        },
+        util::Bytes,
+        web::{ErrorRenderer, HttpRequest, HttpResponse, Responder},
+    };
+
+    use crate::PreEscaped;
+    use alloc::{rc::Rc, string::String};
+
+    impl MessageBody for PreEscaped<String> {
+        fn size(&self) -> BodySize {
+            self.0.size()
+        }
+
+        fn poll_next_chunk(
+            &mut self,
+            _: &mut Context<'_>,
+        ) -> Poll<Option<Result<Bytes, Rc<dyn Error>>>> {
+            if self.0.is_empty() {
+                Poll::Ready(None)
+            } else {
+                Poll::Ready(Some(Ok(Bytes::from(mem::take(&mut self.0).into_bytes()))))
+            }
+        }
+    }
+
+    impl<Err: ErrorRenderer> Responder<Err> for PreEscaped<String> {
+        async fn respond_to(self, _: &HttpRequest) -> HttpResponse {
+            HttpResponse::build(StatusCode::OK)
+                .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+                .body(self.0)
+        }
+    }
+}
+
 #[cfg(feature = "tide")]
 mod tide_support {
     use crate::PreEscaped;

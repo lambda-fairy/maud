@@ -21,6 +21,7 @@ default = []
 actix-web = ["actix-web-dep", "futures-util"]
 axum = ["axum-core", "http"]
 salvo = ["salvo_core", "http"]
+ntex = ["dep:ntex"]
 
 [dependencies]
 maud_macros = { version = "0.27.0", path = "../maud_macros" }
@@ -35,6 +36,7 @@ http = { version = "1", optional = true }
 warp = { version = "0.3.6", optional = true }
 poem = { version = "3", optional = true }
 salvo_core = { version = "0.78.0", optional = true }
+ntex = { version = "2.0", optional = true, default-features = false }
 
 [dev-dependencies]
 trybuild = { version = "1.0.33", features = ["diff"] }
