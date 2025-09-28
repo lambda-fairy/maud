@@ -317,7 +317,7 @@ maud = { version = "*", features = ["ntex"] }
 # ...
 ```
 
-Actix request handlers can use a `Markup` that implements the `ntex::web::Responder` trait.
+ntex request handlers can use a `Markup` that implements the `ntex::web::Responder` trait.
 
 ```rust,no_run
 use ntex::web::{get, App, HttpServer, Responder};
