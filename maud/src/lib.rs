@@ -347,7 +347,6 @@ mod actix_support {
 mod ntex_support {
     use core::{
         error::Error,
-        mem,
         task::{Context, Poll},
     };
     use ntex::{
@@ -369,13 +368,9 @@ mod ntex_support {
 
         fn poll_next_chunk(
             &mut self,
-            _: &mut Context<'_>,
+            cx: &mut Context<'_>,
         ) -> Poll<Option<Result<Bytes, Rc<dyn Error>>>> {
-            if self.0.is_empty() {
-                Poll::Ready(None)
-            } else {
-                Poll::Ready(Some(Ok(Bytes::from(mem::take(&mut self.0).into_bytes()))))
-            }
+            self.0.poll_next_chunk(cx)
         }
     }
 
