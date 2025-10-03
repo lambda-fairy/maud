@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 actix-web = { version = "4.0.0-rc.2", default-features = false, features = ["macros"] }
 ammonia = "3"
-maud = { path = "../maud", features = ["actix-web", "rocket", "tide", "axum", "warp", "submillisecond", "poem", "salvo"] }
+maud = { path = "../maud", features = ["actix-web", "rocket", "tide", "axum", "warp", "submillisecond", "poem", "salvo", "ntex"] }
 pulldown-cmark = "0.8"
 rocket = "0.5"
 rouille = "3"
@@ -18,6 +18,7 @@ axum = "0.8"
 warp = "0.3.6"
 poem = "3"
 salvo = "0.78.0"
+ntex = { version = "2" }
 
 [dependencies.async-std]
 version = "1.9.0"

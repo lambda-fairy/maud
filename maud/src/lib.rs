@@ -343,6 +343,58 @@ mod actix_support {
     }
 }
 
+#[cfg(feature = "ntex")]
+mod ntex_support {
+    use core::{
+        error::Error,
+        task::{Context, Poll},
+    };
+    use ntex::{
+        http::{
+            body::{Body, BodySize, MessageBody},
+            header, StatusCode,
+        },
+        util::Bytes,
+        web::{ErrorRenderer, HttpRequest, HttpResponse, Responder},
+    };
+
+    use crate::PreEscaped;
+    use alloc::{rc::Rc, string::String};
+
+    impl MessageBody for PreEscaped<String> {
+        fn size(&self) -> BodySize {
+            self.0.size()
+        }
+
+        fn poll_next_chunk(
+            &mut self,
+            cx: &mut Context<'_>,
+        ) -> Poll<Option<Result<Bytes, Rc<dyn Error>>>> {
+            self.0.poll_next_chunk(cx)
+        }
+    }
+
+    impl From<PreEscaped<String>> for Body {
+        fn from(s: PreEscaped<String>) -> Body {
+            s.0.into_bytes().into()
+        }
+    }
+
+    impl<'a> From<&'a PreEscaped<String>> for Body {
+        fn from(s: &'a PreEscaped<String>) -> Body {
+            Body::Bytes(Bytes::copy_from_slice(AsRef::<[u8]>::as_ref(&s.0)))
+        }
+    }
+
+    impl<Err: ErrorRenderer> Responder<Err> for PreEscaped<String> {
+        async fn respond_to(self, _: &HttpRequest) -> HttpResponse {
+            HttpResponse::build(StatusCode::OK)
+                .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+                .body(self.0)
+        }
+    }
+}
+
 #[cfg(feature = "tide")]
 mod tide_support {
     use crate::PreEscaped;
