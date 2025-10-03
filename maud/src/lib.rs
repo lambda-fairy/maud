@@ -351,7 +351,7 @@ mod ntex_support {
     };
     use ntex::{
         http::{
-            body::{BodySize, MessageBody},
+            body::{Body, BodySize, MessageBody},
             header, StatusCode,
         },
         util::Bytes,
@@ -371,6 +371,18 @@ mod ntex_support {
             cx: &mut Context<'_>,
         ) -> Poll<Option<Result<Bytes, Rc<dyn Error>>>> {
             self.0.poll_next_chunk(cx)
+        }
+    }
+
+    impl From<PreEscaped<String>> for Body {
+        fn from(s: PreEscaped<String>) -> Body {
+            s.0.into_bytes().into()
+        }
+    }
+
+    impl<'a> From<&'a PreEscaped<String>> for Body {
+        fn from(s: &'a PreEscaped<String>) -> Body {
+            Body::Bytes(Bytes::copy_from_slice(AsRef::<[u8]>::as_ref(&s.0)))
         }
     }
 
