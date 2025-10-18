@@ -18,6 +18,12 @@ pub use maud_macros::html;
 
 mod escape;
 
+#[cfg(feature = "json")]
+extern crate std;
+
+#[cfg(feature = "json")]
+pub mod json;
+
 /// An adapter that escapes HTML special characters.
 ///
 /// The following characters are escaped:
