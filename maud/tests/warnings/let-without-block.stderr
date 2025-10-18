@@ -2,4 +2,4 @@ error: `@let` bindings are only allowed inside blocks
  --> tests/warnings/let-without-block.rs:5:11
   |
 5 |         p.@let x = 1; {
-  |           ^^^^^^^^^^^
+  |           ^
