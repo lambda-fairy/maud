@@ -376,7 +376,7 @@ mod axum_support {
     use crate::PreEscaped;
     use alloc::string::String;
     use axum_core::response::{IntoResponse, Response};
-    use http::{header, HeaderMap, HeaderValue};
+    use http::{header, HeaderValue};
 
     impl IntoResponse for PreEscaped<String> {
         fn into_response(self) -> Response {
