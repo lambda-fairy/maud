@@ -18,6 +18,12 @@ pub use maud_macros::html;
 
 mod escape;
 
+#[cfg(feature = "json")]
+extern crate std;
+
+#[cfg(feature = "json")]
+pub mod json;
+
 /// An adapter that escapes HTML special characters.
 ///
 /// The following characters are escaped:
@@ -161,8 +167,7 @@ macro_rules! impl_render_with_display {
         $(
             impl Render for $ty {
                 fn render_to(&self, w: &mut String) {
-                    // TODO: remove the explicit arg when Rust 1.58 is released
-                    format_args!("{self}", self = self).render_to(w);
+                    format_args!("{self}").render_to(w);
                 }
             }
         )*
@@ -377,7 +382,7 @@ mod axum_support {
     use crate::PreEscaped;
     use alloc::string::String;
     use axum_core::response::{IntoResponse, Response};
-    use http::{header, HeaderMap, HeaderValue};
+    use http::{header, HeaderValue};
 
     impl IntoResponse for PreEscaped<String> {
         fn into_response(self) -> Response {
