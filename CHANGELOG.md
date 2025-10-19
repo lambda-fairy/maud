@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Add support for embedding HTML-safe JSON into pages
+  [#483](https://github.com/lambda-fairy/maud/pull/483)
+
 ## [0.27.0] - 2025-02-02
 
 - Add support for Submillisecond web framework
