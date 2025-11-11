@@ -56,7 +56,6 @@ fn expand(input: TokenStream, as_struct: bool) -> TokenStream {
             extern crate maud;
 
             maud::macro_private::RenderFn({
-                #[inline(always)]
                 |#output_ident: &mut String| {
                     #output_ident.reserve(#size_hint);
                     #stmts
