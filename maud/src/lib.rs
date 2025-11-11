@@ -479,7 +479,7 @@ pub mod macro_private {
     impl<F: Fn(&mut String)> Render for RenderFn<F> {
         #[inline(always)]
         fn render_to(&self, buffer: &mut String) {
-            (&self.0)(buffer)
+            (self.0)(buffer)
         }
     }
 
