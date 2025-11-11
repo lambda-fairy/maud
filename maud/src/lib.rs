@@ -16,6 +16,31 @@ use core::fmt::{self, Arguments, Display, Write};
 
 pub use maud_macros::html;
 
+/// Functionally the same as [`html`] but produces a struct that implements [`Render`].
+///
+/// You can
+///
+/// - Call `render()` to render the HTML as [`Markup`]
+/// - Call `render_to()` to render the HTML to a pre-existing `&mut String`
+/// - Pass this directly into an [`html`] invocation to add it as a component without allocating a new buffer.
+///
+/// ```
+/// use maud::{html, html_render, DOCTYPE};
+///
+/// let component = html_render! {
+///     p { "Wow, such component!" }
+/// };
+///
+/// let full = html! {
+///     (DOCTYPE)
+///     head {}
+///     html {
+///         (component)
+///     }
+/// };
+/// ```
+pub use maud_macros::html_render;
+
 mod escape;
 
 /// An adapter that escapes HTML special characters.
@@ -447,6 +472,15 @@ pub mod macro_private {
     use crate::{display, Render};
     use alloc::string::String;
     use core::fmt::Display;
+
+    #[repr(transparent)]
+    pub struct RenderFn<F>(pub F);
+
+    impl<F: Fn(&mut String)> Render for RenderFn<F> {
+        fn render_to(&self, buffer: &mut String) {
+            (self.0)(buffer)
+        }
+    }
 
     #[doc(hidden)]
     #[macro_export]

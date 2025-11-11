@@ -2,7 +2,7 @@
 
 extern crate test;
 
-use maud::{html, Markup};
+use maud::{html, html_render, Markup, Render};
 
 #[derive(Debug)]
 struct Entry {
@@ -11,7 +11,7 @@ struct Entry {
 }
 
 mod btn {
-    use maud::{html, Markup, Render};
+    use maud::{html_render, Render};
 
     #[derive(Copy, Clone)]
     pub enum RequestMethod {
@@ -42,24 +42,26 @@ mod btn {
     }
 
     impl Render for Button<'_> {
-        fn render(&self) -> Markup {
+        fn render_to(&self, buffer: &mut String) {
             match self.req_meth {
                 RequestMethod::Get => {
-                    html! { a.btn href=(self.path) { (self.label) } }
+                    let html = html_render! { a.btn href=(self.path) { (self.label) } };
+                    html.render_to(buffer);
                 }
                 RequestMethod::Post => {
-                    html! {
+                    let html = html_render! {
                         form method="POST" action=(self.path) {
                             input.btn type="submit" value=(self.label);
                         }
-                    }
+                    };
+                    html.render_to(buffer);
                 }
             }
         }
     }
 }
 
-fn layout<S: AsRef<str>>(title: S, inner: Markup) -> Markup {
+fn layout<S: AsRef<str>>(title: S, inner: impl Render) -> Markup {
     html! {
         html {
             head {
@@ -97,7 +99,7 @@ fn render_complicated_template(b: &mut test::Bencher) {
         use crate::btn::{Button, RequestMethod};
         layout(
             format!("Homepage of {year}"),
-            html! {
+            html_render! {
                 h1 { "Hello there!" }
 
                 @for entry in &teams {
