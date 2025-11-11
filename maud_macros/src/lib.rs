@@ -16,10 +16,15 @@ use syn::parse::{ParseStream, Parser};
 
 #[proc_macro]
 pub fn html(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    expand(input.into()).into()
+    expand(input.into(), false).into()
 }
 
-fn expand(input: TokenStream) -> TokenStream {
+#[proc_macro]
+pub fn html_render(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    expand(input.into(), true).into()
+}
+
+fn expand(input: TokenStream, as_struct: bool) -> TokenStream {
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
     let size_hint = input.to_string().len();
@@ -44,13 +49,28 @@ fn expand(input: TokenStream) -> TokenStream {
     let diag_tokens = diagnostics.into_iter().map(Diagnostic::emit_as_expr_tokens);
 
     let output_ident = Ident::new("__maud_output", Span::mixed_site());
-    let stmts = generate::generate(markups, output_ident.clone());
-    quote! {{
-        extern crate alloc;
-        extern crate maud;
-        let mut #output_ident = alloc::string::String::with_capacity(#size_hint);
-        #stmts
-        #(#diag_tokens)*
-        maud::PreEscaped(#output_ident)
-    }}
+    let stmts = generate::generate(markups, output_ident.clone(), as_struct);
+    if as_struct {
+        quote! {{
+            extern crate alloc;
+            extern crate maud;
+
+            maud::macro_private::RenderFn({
+                #[inline(always)]
+                |#output_ident: &mut String| {
+                    #stmts
+                    #(#diag_tokens)*
+                }
+            })
+        }}
+    } else {
+        quote! {{
+            extern crate alloc;
+            extern crate maud;
+            let mut #output_ident = alloc::string::String::with_capacity(#size_hint);
+            #stmts
+            #(#diag_tokens)*
+            maud::PreEscaped(#output_ident)
+        }}
+    }
 }

@@ -4,19 +4,23 @@ use syn::{parse_quote, token::Brace, Expr, Local};
 
 use crate::{ast::*, escape};
 
-pub fn generate(markups: Markups<Element>, output_ident: Ident) -> TokenStream {
+pub fn generate(markups: Markups<Element>, output_ident: Ident, as_struct: bool) -> TokenStream {
     let mut build = Builder::new(output_ident.clone());
-    Generator::new(output_ident).markups(markups, &mut build);
+    Generator::new(output_ident, as_struct).markups(markups, &mut build);
     build.finish()
 }
 
 struct Generator {
     output_ident: Ident,
+    as_struct: bool,
 }
 
 impl Generator {
-    fn new(output_ident: Ident) -> Generator {
-        Generator { output_ident }
+    fn new(output_ident: Ident, as_struct: bool) -> Generator {
+        Generator {
+            output_ident,
+            as_struct,
+        }
     }
 
     fn builder(&self) -> Builder {
@@ -66,7 +70,13 @@ impl Generator {
 
     fn splice(&self, expr: Expr, build: &mut Builder) {
         let output_ident = &self.output_ident;
-        build.push_tokens(quote!(maud::macro_private::render_to!(&(#expr), &mut #output_ident);));
+        if self.as_struct {
+            build.push_tokens(quote!(maud::macro_private::render_to!(&(#expr), #output_ident);));
+        } else {
+            build.push_tokens(
+                quote!(maud::macro_private::render_to!(&(#expr), &mut #output_ident);),
+            );
+        }
     }
 
     fn element(&self, element: Element, build: &mut Builder) {

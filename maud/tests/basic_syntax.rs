@@ -1,4 +1,4 @@
-use maud::{html, Markup};
+use maud::{html, html_render, Markup, Render};
 
 #[test]
 fn literals() {
@@ -371,5 +371,45 @@ fn div_shorthand_id_with_attrs() {
     assert_eq!(
         result.into_string(),
         r#"<div class="awesome-class" id="unique-id" contenteditable dir="rtl"></div>"#
+    );
+}
+
+#[test]
+fn html_component() {
+    let component = html_render! {
+        p {
+            "Hi!"
+            span { "Such component!" }
+        }
+    };
+
+    let result = html! {
+        (maud::DOCTYPE)
+        head {}
+        html {
+            h1 { ("Such webpage!") }
+            main {
+                (component)
+            }
+        }
+    };
+
+    let result_as_render = html_render! {
+        (maud::DOCTYPE)
+        head {}
+        html {
+            h1 { ("Such webpage!") }
+            main {
+                (component)
+            }
+        }
+    }
+    .render();
+
+    assert_eq!(result.0, result_as_render.0);
+
+    assert_eq!(
+        result.into_string(),
+        r#"<!DOCTYPE html><head></head><html><h1>Such webpage!</h1><main><p>Hi!<span>Such component!</span></p></main></html>"#
     );
 }
