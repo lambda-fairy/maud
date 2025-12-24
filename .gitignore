@@ -2,4 +2,3 @@ target
 /Cargo.lock
 docs/site
 doctest/Cargo.lock
-doctest/lib.rs
