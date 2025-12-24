@@ -1,4 +1,4 @@
-use maud::{html, Markup};
+use maud::{Markup, html};
 
 #[test]
 fn literals() {
@@ -328,7 +328,7 @@ fn id_shorthand() {
 
 #[test]
 fn id_string() {
-    let result = html! { h1 #"pinkie-123" { "Pinkie Pie" } };
+    let result = html! { h1 # "pinkie-123" { "Pinkie Pie" } };
     assert_eq!(
         result.into_string(),
         r#"<h1 id="pinkie-123">Pinkie Pie</h1>"#
