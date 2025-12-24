@@ -4,7 +4,7 @@ use proc_macro2::TokenStream;
 use proc_macro2_diagnostics::{Diagnostic, SpanDiagnosticExt};
 use quote::ToTokens;
 use syn::{
-    braced, bracketed,
+    Error, Expr, Ident, Lit, LitBool, LitInt, LitStr, Local, Pat, Stmt, braced, bracketed,
     ext::IdentExt,
     parenthesized,
     parse::{Lookahead1, Parse, ParseStream},
@@ -14,7 +14,6 @@ use syn::{
         At, Brace, Bracket, Colon, Comma, Dot, Else, Eq, FatArrow, For, If, In, Let, Match, Minus,
         Paren, Pound, Question, Semi, Slash, While,
     },
-    Error, Expr, Ident, Lit, LitBool, LitInt, LitStr, Local, Pat, Stmt,
 };
 
 #[derive(Debug, Clone)]
@@ -1076,7 +1075,7 @@ impl<E: ToTokens> ToTokens for MatchArm<E> {
 
 pub trait DiagnosticParse: Sized {
     fn diagnostic_parse(input: ParseStream, diagnostics: &mut Vec<Diagnostic>)
-        -> syn::Result<Self>;
+    -> syn::Result<Self>;
 }
 
 impl<T: DiagnosticParse> DiagnosticParse for Box<T> {

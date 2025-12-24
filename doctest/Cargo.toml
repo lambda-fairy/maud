@@ -2,13 +2,13 @@
 name = "doctest"
 version = "0.1.0"
 authors = ["Chris Wong <lambda.fairy@gmail.com>"]
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 actix-web = { version = "4.0.0-rc.2", default-features = false, features = ["macros"] }
-ammonia = "3"
+ammonia = "4"
 maud = { path = "../maud", features = ["actix-web", "rocket", "tide", "axum", "warp", "submillisecond", "poem", "salvo"] }
-pulldown-cmark = "0.8"
+pulldown-cmark = "0.13"
 rocket = "0.5"
 rouille = "3"
 submillisecond = "0.4.1"

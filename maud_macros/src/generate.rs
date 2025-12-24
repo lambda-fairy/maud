@@ -1,6 +1,6 @@
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::{quote, ToTokens};
-use syn::{parse_quote, token::Brace, Expr, Local};
+use quote::{ToTokens, quote};
+use syn::{Expr, Local, parse_quote, token::Brace};
 
 use crate::{ast::*, escape};
 

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Update to Rust 2024
+  [#487](https://github.com/lambda-fairy/maud/pull/487)
+
 ## [0.27.0] - 2025-02-02
 
 - Add support for Submillisecond web framework
