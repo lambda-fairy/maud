@@ -15,7 +15,7 @@ submillisecond = "0.4.1"
 tide = "0.16"
 tokio = { version = "1.9.0", features = ["rt", "macros", "rt-multi-thread"] }
 axum = "0.8"
-warp = "0.3.6"
+warp = { version = "0.4", features = ["server"] }
 poem = "3"
 salvo = "0.78.0"
 
