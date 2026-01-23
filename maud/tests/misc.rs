@@ -1,4 +1,4 @@
-use maud::html;
+use maud::{html, Render};
 
 #[test]
 fn issue_13() {
@@ -142,4 +142,36 @@ fn default() {
 fn render_arc() {
     let arc = std::sync::Arc::new("foo");
     assert_eq!(html! { (arc) }.into_string(), "foo");
+}
+
+#[test]
+fn render_vec_generics() {
+    let vec = vec![1, 2, 3];
+    assert_eq!(vec.render().into_string(), "123");
+    let vec = vec!["a", "b", "c"];
+    assert_eq!(vec.render().into_string(), "abc");
+    let vec = vec![String::from("a"), String::from("b"), String::from("c")];
+    assert_eq!(vec.render().into_string(), "abc");
+}
+
+#[test]
+fn render_slice_generics() {
+    let slice = &[1, 2, 3];
+    assert_eq!(slice.render().into_string(), "123");
+    let slice = &["a", "b", "c"];
+    assert_eq!(slice.render().into_string(), "abc");
+    let slice = &[String::from("a"), String::from("b"), String::from("c")];
+    assert_eq!(slice.render().into_string(), "abc");
+}
+
+#[test]
+fn render_option_generics() {
+    let option = Some(42);
+    assert_eq!(option.render().into_string(), "42");
+    let option = Some("foo");
+    assert_eq!(option.render().into_string(), "foo");
+    let option = Some(String::from("bar"));
+    assert_eq!(option.render().into_string(), "bar");
+    let option: Option<String> = None;
+    assert_eq!(option.render().into_string(), "");
 }
