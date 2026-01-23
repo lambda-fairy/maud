@@ -14,6 +14,9 @@ use proc_macro2_diagnostics::Diagnostic;
 use quote::quote;
 use syn::parse::{ParseStream, Parser};
 
+#[cfg(feature = "streaming")]
+mod streaming;
+
 #[proc_macro]
 pub fn html(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     expand(input.into()).into()
@@ -53,4 +56,10 @@ fn expand(input: TokenStream) -> TokenStream {
         #(#diag_tokens)*
         maud::PreEscaped(#output_ident)
     }}
+}
+
+#[cfg(feature = "streaming")]
+#[proc_macro]
+pub fn streaming_html(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    streaming::expand(input.into()).into()
 }

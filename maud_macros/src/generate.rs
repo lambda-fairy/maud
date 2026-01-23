@@ -10,13 +10,34 @@ pub fn generate(markups: Markups<Element>, output_ident: Ident) -> TokenStream {
     build.finish()
 }
 
+#[cfg(feature = "streaming")]
+pub fn generate_streaming(markups: Markups<Element>, output_ident: Ident) -> TokenStream {
+    let mut build = Builder::new(output_ident.clone());
+    Generator::new_streaming(output_ident).markups(markups, &mut build);
+    build.finish()
+}
+
 struct Generator {
     output_ident: Ident,
+    #[cfg(feature = "streaming")]
+    streaming: bool,
 }
 
 impl Generator {
     fn new(output_ident: Ident) -> Generator {
-        Generator { output_ident }
+        Generator {
+            output_ident,
+            #[cfg(feature = "streaming")]
+            streaming: false,
+        }
+    }
+
+    #[cfg(feature = "streaming")]
+    fn new_streaming(output_ident: Ident) -> Generator {
+        Generator {
+            output_ident,
+            streaming: true,
+        }
     }
 
     fn builder(&self) -> Builder {
@@ -191,6 +212,8 @@ impl Generator {
             ControlFlowKind::For(for_) => self.control_flow_for(for_, build),
             ControlFlowKind::While(while_) => self.control_flow_while(while_, build),
             ControlFlowKind::Match(match_) => self.control_flow_match(match_, build),
+            #[cfg(feature = "streaming")]
+            ControlFlowKind::Yield(yield_) => self.control_flow_yield(yield_, build),
         }
     }
 
@@ -302,6 +325,23 @@ impl Generator {
         });
 
         build.push_tokens(quote!(#match_token #expr #arm_block));
+    }
+
+    #[cfg(feature = "streaming")]
+    fn control_flow_yield(&self, YieldExpr { yield_token }: YieldExpr, build: &mut Builder) {
+        if !self.streaming {
+            build.push_tokens(
+                syn::Error::new_spanned(
+                    yield_token,
+                    "`yield` instructions are permitted only in `streaming_html`",
+                )
+                .into_compile_error(),
+            );
+        }
+        let output_ident = &self.output_ident;
+        build.push_tokens(
+            quote! { #yield_token maud::PreEscaped( ::core::mem::take( &mut #output_ident ) ) ; },
+        );
     }
 }
 

@@ -18,6 +18,9 @@ pub use maud_macros::html;
 
 mod escape;
 
+#[cfg(feature = "streaming")]
+pub mod streaming;
+
 /// An adapter that escapes HTML special characters.
 ///
 /// The following characters are escaped:
