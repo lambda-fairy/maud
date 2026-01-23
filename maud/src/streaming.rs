@@ -4,13 +4,28 @@
 
 pub use async_stream;
 
+use futures::{
+    future::{Ready, ready},
+    stream::{Once, once},
+};
 pub use maud_macros::streaming_html;
+
+use crate::{Markup, Render};
 
 /// A streaming document.
 ///
 /// The macro [`streaming_html`] extends to [`StreamingMarkup<impl Stream<Item = Markup> + Send + 'static>`]
 #[derive(Debug, Clone, Copy)]
 pub struct StreamingMarkup<S>(pub S);
+
+impl<T> From<T> for StreamingMarkup<Once<Ready<Markup>>>
+where
+    T: Render,
+{
+    fn from(value: T) -> Self {
+        Self(once(ready(value.render())))
+    }
+}
 
 #[cfg(feature = "axum")]
 mod axum_support {
