@@ -156,6 +156,14 @@ impl<T: Render + ?Sized> Render for Arc<T> {
     }
 }
 
+impl<T: Render> Render for Option<T> {
+    fn render_to(&self, w: &mut String) {
+        if let Some(inner) = self {
+            T::render_to(inner, w);
+        }
+    }
+}
+
 macro_rules! impl_render_with_display {
     ($($ty:ty)*) => {
         $(
