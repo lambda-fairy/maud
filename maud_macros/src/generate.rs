@@ -255,6 +255,8 @@ impl Generator {
         &self,
         ForExpr {
             for_token,
+            #[cfg(feature = "streaming")]
+            await_token,
             pat,
             in_token,
             expr,
@@ -262,7 +264,23 @@ impl Generator {
         }: ForExpr<E>,
         build: &mut Builder,
     ) {
+        #[cfg(feature = "streaming")]
+        {
+            if await_token.is_some() && !self.streaming {
+                build.push_tokens(
+                    syn::Error::new_spanned(
+                        await_token.unwrap(),
+                        "`fow await` instructions are permitted only in `streaming_html`",
+                    )
+                    .into_compile_error(),
+                );
+            }
+            build.push_tokens(quote!(#for_token #await_token #pat #in_token (#expr)));
+        }
+
+        #[cfg(not(feature = "streaming"))]
         build.push_tokens(quote!(#for_token #pat #in_token (#expr)));
+
         self.block(body, build);
     }
 

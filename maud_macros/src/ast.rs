@@ -3,6 +3,8 @@ use std::fmt::{self, Display, Formatter};
 use proc_macro2::TokenStream;
 use proc_macro2_diagnostics::{Diagnostic, SpanDiagnosticExt};
 use quote::ToTokens;
+#[cfg(feature = "streaming")]
+use syn::token::Await;
 use syn::{
     Error, Expr, Ident, Lit, LitBool, LitInt, LitStr, Local, Pat, Stmt, braced, bracketed,
     ext::IdentExt,
@@ -933,6 +935,8 @@ impl<E: ToTokens> ToTokens for IfOrBlock<E> {
 #[derive(Debug, Clone)]
 pub struct ForExpr<E> {
     pub for_token: For,
+    #[cfg(feature = "streaming")]
+    pub await_token: Option<Await>,
     pub pat: Pat,
     pub in_token: In,
     pub expr: Expr,
@@ -946,6 +950,8 @@ impl<E: MaybeElement> DiagnosticParse for ForExpr<E> {
     ) -> syn::Result<Self> {
         Ok(Self {
             for_token: input.parse()?,
+            #[cfg(feature = "streaming")]
+            await_token: input.parse()?,
             pat: input.call(Pat::parse_multi_with_leading_vert)?,
             in_token: input.parse()?,
             expr: input.call(Expr::parse_without_eager_brace)?,
@@ -957,6 +963,8 @@ impl<E: MaybeElement> DiagnosticParse for ForExpr<E> {
 impl<E: ToTokens> ToTokens for ForExpr<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.for_token.to_tokens(tokens);
+        #[cfg(feature = "streaming")]
+        self.await_token.to_tokens(tokens);
         self.pat.to_tokens(tokens);
         self.in_token.to_tokens(tokens);
         self.expr.to_tokens(tokens);
