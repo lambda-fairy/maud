@@ -3,6 +3,8 @@ use std::fmt::{self, Display, Formatter};
 use proc_macro2::TokenStream;
 use proc_macro2_diagnostics::{Diagnostic, SpanDiagnosticExt};
 use quote::ToTokens;
+#[cfg(feature = "streaming")]
+use syn::token::Await;
 use syn::{
     Error, Expr, Ident, Lit, LitBool, LitInt, LitStr, Local, Pat, Stmt, braced, bracketed,
     ext::IdentExt,
@@ -12,7 +14,7 @@ use syn::{
     spanned::Spanned,
     token::{
         At, Brace, Bracket, Colon, Comma, Dot, Else, Eq, FatArrow, For, If, In, Let, Match, Minus,
-        Paren, Pound, Question, Semi, Slash, While,
+        Paren, Pound, Question, Semi, Slash, While, Yield,
     },
 };
 
@@ -810,6 +812,15 @@ impl<E: MaybeElement> DiagnosticParse for ControlFlow<E> {
                     };
 
                     ControlFlowKind::Let(local)
+                } else if lookahead.peek(Yield) {
+                    #[cfg(feature = "streaming")]
+                    {
+                        ControlFlowKind::Yield(input.diagnostic_parse(diagnostics)?)
+                    }
+                    #[cfg(not(feature = "streaming"))]
+                    {
+                        return Err(lookahead.error());
+                    }
                 } else {
                     return Err(lookahead.error());
                 }
@@ -827,6 +838,8 @@ impl<E: ToTokens> ToTokens for ControlFlow<E> {
             ControlFlowKind::For(for_) => for_.to_tokens(tokens),
             ControlFlowKind::While(while_) => while_.to_tokens(tokens),
             ControlFlowKind::Match(match_) => match_.to_tokens(tokens),
+            #[cfg(feature = "streaming")]
+            ControlFlowKind::Yield(yield_) => yield_.to_tokens(tokens),
         }
     }
 }
@@ -838,6 +851,8 @@ pub enum ControlFlowKind<E> {
     For(ForExpr<E>),
     While(WhileExpr<E>),
     Match(MatchExpr<E>),
+    #[cfg(feature = "streaming")]
+    Yield(YieldExpr),
 }
 
 #[derive(Debug, Clone)]
@@ -920,6 +935,8 @@ impl<E: ToTokens> ToTokens for IfOrBlock<E> {
 #[derive(Debug, Clone)]
 pub struct ForExpr<E> {
     pub for_token: For,
+    #[cfg(feature = "streaming")]
+    pub await_token: Option<Await>,
     pub pat: Pat,
     pub in_token: In,
     pub expr: Expr,
@@ -933,6 +950,8 @@ impl<E: MaybeElement> DiagnosticParse for ForExpr<E> {
     ) -> syn::Result<Self> {
         Ok(Self {
             for_token: input.parse()?,
+            #[cfg(feature = "streaming")]
+            await_token: input.parse()?,
             pat: input.call(Pat::parse_multi_with_leading_vert)?,
             in_token: input.parse()?,
             expr: input.call(Expr::parse_without_eager_brace)?,
@@ -944,6 +963,8 @@ impl<E: MaybeElement> DiagnosticParse for ForExpr<E> {
 impl<E: ToTokens> ToTokens for ForExpr<E> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         self.for_token.to_tokens(tokens);
+        #[cfg(feature = "streaming")]
+        self.await_token.to_tokens(tokens);
         self.pat.to_tokens(tokens);
         self.in_token.to_tokens(tokens);
         self.expr.to_tokens(tokens);
@@ -1070,6 +1091,31 @@ impl<E: ToTokens> ToTokens for MatchArm<E> {
         if let Some(comma_token) = &self.comma_token {
             comma_token.to_tokens(tokens);
         }
+    }
+}
+
+#[cfg(feature = "streaming")]
+#[derive(Debug, Clone)]
+pub struct YieldExpr {
+    pub yield_token: Yield,
+}
+
+#[cfg(feature = "streaming")]
+impl DiagnosticParse for YieldExpr {
+    fn diagnostic_parse(
+        input: ParseStream,
+        _diagnostics: &mut Vec<Diagnostic>,
+    ) -> syn::Result<Self> {
+        Ok(Self {
+            yield_token: input.parse()?,
+        })
+    }
+}
+
+#[cfg(feature = "streaming")]
+impl ToTokens for YieldExpr {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.yield_token.to_tokens(tokens);
     }
 }
 
