@@ -4,6 +4,8 @@
 
 - Update to Rust 2024
   [#487](https://github.com/lambda-fairy/maud/pull/487)
+- Support platforms witout `alloc::sync` support.
+  [#491](https://github.com/lambda-fairy/maud/pull/491)
 
 ## [0.27.0] - 2025-02-02
 
