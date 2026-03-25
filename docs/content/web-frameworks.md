@@ -66,7 +66,6 @@ This adds a `Responder` implementation for the `Markup` type, so you can return 
 ```rust,no_run
 use maud::{html, Markup};
 use rocket::{get, routes};
-use std::borrow::Cow;
 
 #[get("/<name>")]
 fn hello(name: &str) -> Markup {
