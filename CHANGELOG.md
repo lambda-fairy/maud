@@ -6,6 +6,8 @@
   [#487](https://github.com/lambda-fairy/maud/pull/487)
 - Add support for embedding HTML-safe JSON into pages
   [#483](https://github.com/lambda-fairy/maud/pull/483)
+- Support platforms witout `alloc::sync` support.
+  [#492](https://github.com/lambda-fairy/maud/pull/492)
 
 ## [0.27.0] - 2025-02-02
 
