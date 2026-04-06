@@ -4,6 +4,8 @@
 
 - Update to Rust 2024
   [#487](https://github.com/lambda-fairy/maud/pull/487)
+- Add support for embedding HTML-safe JSON into pages
+  [#483](https://github.com/lambda-fairy/maud/pull/483)
 - Support platforms witout `alloc::sync` support.
   [#492](https://github.com/lambda-fairy/maud/pull/492)
 
