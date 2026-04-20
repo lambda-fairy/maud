@@ -31,6 +31,12 @@ jobs:
     - name: Check Clippy
       run: cargo clippy --workspace --all-targets -- -D warnings
 
+    # Building --all-targets for a no_std environment fails because the tests depend on std
+    - name: Try no_std build
+      run: |
+        rustup target add thumbv6m-none-eabi
+        cargo build --release --workspace --lib --bins --examples --target thumbv6m-none-eabi
+
   # Please keep this in sync with `publish-docs.yml`
   documentation:
     name: Documentation
