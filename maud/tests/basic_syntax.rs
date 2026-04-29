@@ -325,6 +325,12 @@ fn mixed_shorthand_and_dynamic_class_attribute() {
 }
 
 #[test]
+fn mixed_shorthand_and_literal_class_attribute() {
+    let result = html! { div.alert class="warning" {} };
+    assert_eq!(result.into_string(), r#"<div class="alert warning"></div>"#);
+}
+
+#[test]
 fn mixed_shorthand_and_optional_class_attribute() {
     let result = html! { div.alert class=[Some("warning")] {} };
     assert_eq!(result.into_string(), r#"<div class="alert warning"></div>"#);
