@@ -318,6 +318,28 @@ fn mixed_classes() {
 }
 
 #[test]
+fn mixed_shorthand_and_dynamic_class_attribute() {
+    let warning = "warning";
+    let result = html! { div.alert class=(warning) {} };
+    assert_eq!(result.into_string(), r#"<div class="alert warning"></div>"#);
+}
+
+#[test]
+fn mixed_shorthand_and_literal_class_attribute() {
+    let result = html! { div.alert class="warning" {} };
+    assert_eq!(result.into_string(), r#"<div class="alert warning"></div>"#);
+}
+
+#[test]
+fn mixed_shorthand_and_optional_class_attribute() {
+    let result = html! { div.alert class=[Some("warning")] {} };
+    assert_eq!(result.into_string(), r#"<div class="alert warning"></div>"#);
+
+    let result = html! { div.alert class=[None as Option<&str>] {} };
+    assert_eq!(result.into_string(), r#"<div class="alert"></div>"#);
+}
+
+#[test]
 fn id_shorthand() {
     let result = html! { p { "Hi, " span #thing { "Lyra" } "!" } };
     assert_eq!(

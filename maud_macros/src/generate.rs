@@ -4,6 +4,17 @@ use syn::{Expr, Local, parse_quote, token::Brace};
 
 use crate::{ast::*, escape};
 
+enum ClassAttr {
+    Direct(HtmlNameOrMarkup),
+    Dynamic(Markup<NoElement>),
+    Deferred(DeferredClassAttr),
+}
+
+enum DeferredClassAttr {
+    Toggled { value: HtmlNameOrMarkup, cond: Expr },
+    Optional(Expr),
+}
+
 pub fn generate(markups: Markups<Element>, output_ident: Ident) -> TokenStream {
     let mut build = Builder::new(output_ident.clone());
     Generator::new(output_ident).markups(markups, &mut build);
@@ -140,32 +151,57 @@ impl Generator {
         let (classes, id, named_attrs) = split_attrs(attrs);
 
         if !classes.is_empty() {
-            let mut toggle_class_exprs = vec![];
+            let mut deferred_classes = vec![];
 
             build.push_str(" ");
             self.name(parse_quote!(class), build);
             build.push_str("=\"");
-            for (i, (name, toggler)) in classes.into_iter().enumerate() {
-                if let Some(toggler) = toggler {
-                    toggle_class_exprs.push((i > 0, name, toggler));
-                } else {
-                    if i > 0 {
-                        build.push_str(" ");
+            for (i, class) in classes.into_iter().enumerate() {
+                match class {
+                    ClassAttr::Direct(name) => {
+                        if i > 0 {
+                            build.push_str(" ");
+                        }
+                        self.name_or_markup(name, build);
                     }
-                    self.name_or_markup(name, build);
+                    ClassAttr::Dynamic(value) => {
+                        if i > 0 {
+                            build.push_str(" ");
+                        }
+                        self.markup(value, build);
+                    }
+                    ClassAttr::Deferred(class) => {
+                        deferred_classes.push((i > 0, class));
+                    }
                 }
             }
 
-            for (not_first, name, toggler) in toggle_class_exprs {
-                let body = {
-                    let mut build = self.builder();
-                    if not_first {
-                        build.push_str(" ");
+            for (not_first, class) in deferred_classes {
+                match class {
+                    DeferredClassAttr::Toggled { value, cond } => {
+                        let body = {
+                            let mut build = self.builder();
+                            if not_first {
+                                build.push_str(" ");
+                            }
+                            self.name_or_markup(value, &mut build);
+                            build.finish()
+                        };
+                        build.push_tokens(quote!(if (#cond) { #body }));
                     }
-                    self.name_or_markup(name, &mut build);
-                    build.finish()
-                };
-                build.push_tokens(quote!(if (#toggler) { #body }));
+                    DeferredClassAttr::Optional(cond) => {
+                        let inner_value: Expr = parse_quote!(inner_value);
+                        let body = {
+                            let mut build = self.builder();
+                            if not_first {
+                                build.push_str(" ");
+                            }
+                            self.splice(inner_value.clone(), &mut build);
+                            build.finish()
+                        };
+                        build.push_tokens(quote!(if let Some(#inner_value) = (#cond) { #body }));
+                    }
+                }
             }
 
             build.push_str("\"");
@@ -311,7 +347,7 @@ impl Generator {
 fn split_attrs(
     attrs: Vec<Attribute>,
 ) -> (
-    Vec<(HtmlNameOrMarkup, Option<Expr>)>,
+    Vec<ClassAttr>,
     Option<HtmlNameOrMarkup>,
     Vec<(HtmlName, AttributeType)>,
 ) {
@@ -321,15 +357,31 @@ fn split_attrs(
 
     for attr in attrs {
         match attr {
-            Attribute::Class { name, toggler, .. } => {
-                classes.push((name, toggler.map(|toggler| toggler.cond)))
-            }
+            Attribute::Class { name, toggler, .. } => match toggler {
+                Some(toggler) => classes.push(ClassAttr::Deferred(DeferredClassAttr::Toggled {
+                    value: name,
+                    cond: toggler.cond,
+                })),
+                None => classes.push(ClassAttr::Direct(name)),
+            },
             Attribute::Id { name, .. } => id = Some(name),
+            Attribute::Named { name, attr_type } if is_class_attr_name(&name) => match attr_type {
+                AttributeType::Normal { value, .. } => classes.push(ClassAttr::Dynamic(value)),
+                AttributeType::Optional {
+                    toggler: Toggler { cond, .. },
+                    ..
+                } => classes.push(ClassAttr::Deferred(DeferredClassAttr::Optional(cond))),
+                AttributeType::Empty(_) => named_attrs.push((name, attr_type)),
+            },
             Attribute::Named { name, attr_type } => named_attrs.push((name, attr_type)),
         }
     }
 
     (classes, id, named_attrs)
+}
+
+fn is_class_attr_name(name: &HtmlName) -> bool {
+    name.to_string() == "class"
 }
 
 ////////////////////////////////////////////////////////
