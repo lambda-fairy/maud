@@ -43,6 +43,7 @@ serde_json = { version = "1", optional = true }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
+rustversion = "1"
 trybuild = { version = "1.0.33", features = ["diff"] }
 
 [package.metadata.docs.rs]
