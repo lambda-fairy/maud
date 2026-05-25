@@ -8,6 +8,7 @@
   [#483](https://github.com/lambda-fairy/maud/pull/483)
 - Support platforms witout `alloc::sync` support.
   [#492](https://github.com/lambda-fairy/maud/pull/492)
+ - Remove Tide support and documentation references (see branch `remove-tide`).
 
 ## [0.27.0] - 2025-02-02
 
