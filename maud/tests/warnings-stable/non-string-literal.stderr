@@ -1,0 +1,51 @@
+error: literal must be double-quoted: `"42"`
+ --> tests/warnings-stable/non-string-literal.rs:5:9
+  |
+5 |         42
+  |         ^^
+
+error: literal must be double-quoted: `"42usize"`
+ --> tests/warnings-stable/non-string-literal.rs:6:9
+  |
+6 |         42usize
+  |         ^^^^^^^
+
+error: literal must be double-quoted: `"42.0"`
+ --> tests/warnings-stable/non-string-literal.rs:7:9
+  |
+7 |         42.0
+  |         ^^^^
+
+error: literal must be double-quoted: `"a"`
+ --> tests/warnings-stable/non-string-literal.rs:8:9
+  |
+8 |         'a'
+  |         ^^^
+
+error: expected string
+ --> tests/warnings-stable/non-string-literal.rs:9:9
+  |
+9 |         b"a"
+  |         ^^^^
+
+error: expected string
+  --> tests/warnings-stable/non-string-literal.rs:10:9
+   |
+10 |         b'a'
+   |         ^^^^
+
+error: attribute value must be a string
+       = help: to declare an empty attribute, omit the equals sign: `disabled`
+       = help: to toggle the attribute, use square brackets: `disabled[some_boolean_flag]`
+  --> tests/warnings-stable/non-string-literal.rs:13:15
+   |
+13 |         input disabled=true;
+   |               ^^^^^^^^^^^^^
+
+error: attribute value must be a string
+       = help: to declare an empty attribute, omit the equals sign: `disabled`
+       = help: to toggle the attribute, use square brackets: `disabled[some_boolean_flag]`
+  --> tests/warnings-stable/non-string-literal.rs:14:15
+   |
+14 |         input disabled=false;
+   |               ^^^^^^^^^^^^^^
