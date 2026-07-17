@@ -7,7 +7,7 @@ use syn::{
     Error, Expr, Ident, Lit, LitBool, LitInt, LitStr, Local, Pat, Stmt, braced, bracketed,
     ext::IdentExt,
     parenthesized,
-    parse::{Lookahead1, Parse, ParseStream},
+    parse::{Lookahead1, Parse, ParseStream, discouraged::Speculative},
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
     token::{
@@ -104,7 +104,7 @@ impl<E: MaybeElement> DiagnosticParse for Markup<E> {
         let markup = Self::diagnostic_parse_in_block(input, diagnostics)?;
 
         if let Self::ControlFlow(ControlFlow {
-            kind: ControlFlowKind::Let(_),
+            kind: ControlFlowKind::Let(_) | ControlFlowKind::LetElse(_),
             ..
         }) = &markup
         {
@@ -805,11 +805,19 @@ impl<E: MaybeElement> DiagnosticParse for ControlFlow<E> {
                 } else if lookahead.peek(Match) {
                     ControlFlowKind::Match(input.diagnostic_parse(diagnostics)?)
                 } else if lookahead.peek(Let) {
-                    let Stmt::Local(local) = input.parse()? else {
-                        unreachable!()
-                    };
+                    let fork = input.fork();
+                    let mut let_else_diagnostics = Vec::new();
+                    if let Ok(let_else) = fork.diagnostic_parse(&mut let_else_diagnostics) {
+                        input.advance_to(&fork);
+                        diagnostics.extend(let_else_diagnostics);
+                        ControlFlowKind::LetElse(let_else)
+                    } else {
+                        let Stmt::Local(local) = input.parse()? else {
+                            unreachable!()
+                        };
 
-                    ControlFlowKind::Let(local)
+                        ControlFlowKind::Let(local)
+                    }
                 } else {
                     return Err(lookahead.error());
                 }
@@ -823,6 +831,7 @@ impl<E: ToTokens> ToTokens for ControlFlow<E> {
         self.at_token.to_tokens(tokens);
         match &self.kind {
             ControlFlowKind::Let(local) => local.to_tokens(tokens),
+            ControlFlowKind::LetElse(let_else) => let_else.to_tokens(tokens),
             ControlFlowKind::If(if_) => if_.to_tokens(tokens),
             ControlFlowKind::For(for_) => for_.to_tokens(tokens),
             ControlFlowKind::While(while_) => while_.to_tokens(tokens),
@@ -834,10 +843,71 @@ impl<E: ToTokens> ToTokens for ControlFlow<E> {
 #[derive(Debug, Clone)]
 pub enum ControlFlowKind<E> {
     Let(Local),
+    LetElse(LetElse<E>),
     If(IfExpr<E>),
     For(ForExpr<E>),
     While(WhileExpr<E>),
     Match(MatchExpr<E>),
+}
+
+#[derive(Debug, Clone)]
+pub struct LetElse<E> {
+    pub let_token: Let,
+    pub pat: Pat,
+    pub eq_token: Eq,
+    pub expr: Expr,
+    pub else_token: Else,
+    pub body: Block<E>,
+    pub semi_token: Option<Semi>,
+}
+
+impl<E: MaybeElement> DiagnosticParse for LetElse<E> {
+    fn diagnostic_parse(
+        input: ParseStream,
+        diagnostics: &mut Vec<Diagnostic>,
+    ) -> syn::Result<Self> {
+        let let_token = input.parse()?;
+        let mut pat = input.call(Pat::parse_single)?;
+
+        if input.peek(Colon) {
+            let colon_token = input.parse()?;
+            let ty = input.parse()?;
+            pat = Pat::Type(syn::PatType {
+                attrs: Vec::new(),
+                pat: Box::new(pat),
+                colon_token,
+                ty: Box::new(ty),
+            });
+        }
+
+        let eq_token = input.parse()?;
+        let expr = input.call(Expr::parse_without_eager_brace)?;
+        let else_token = input.parse()?;
+        let body = input.diagnostic_parse(diagnostics)?;
+        let semi_token = input.parse().ok();
+
+        Ok(Self {
+            let_token,
+            pat,
+            eq_token,
+            expr,
+            else_token,
+            body,
+            semi_token,
+        })
+    }
+}
+
+impl<E: ToTokens> ToTokens for LetElse<E> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.let_token.to_tokens(tokens);
+        self.pat.to_tokens(tokens);
+        self.eq_token.to_tokens(tokens);
+        self.expr.to_tokens(tokens);
+        self.else_token.to_tokens(tokens);
+        self.body.to_tokens(tokens);
+        self.semi_token.to_tokens(tokens);
+    }
 }
 
 #[derive(Debug, Clone)]

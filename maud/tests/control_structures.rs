@@ -48,6 +48,64 @@ fn if_let() {
 }
 
 #[test]
+fn let_else() {
+    for &(input, output) in &[
+        (
+            Some("yay"),
+            "<div>before<span>value = yay</span>after</div>",
+        ),
+        (None, "<div>before<span>No value</span></div>"),
+    ] {
+        let result = html! {
+            div {
+                "before"
+                @let Some(value) = input else {
+                    span { "No value" }
+                }
+                span { "value = " (value) }
+                "after"
+            }
+        };
+        assert_eq!(result.into_string(), output);
+    }
+}
+
+#[test]
+fn let_else_stops_only_current_block() {
+    let result = html! {
+        section {
+            div {
+                @let Some(_value) = None::<&str> else {
+                    "fallback"
+                };
+                "unreachable"
+            }
+            "after"
+        }
+    };
+
+    assert_eq!(
+        result.into_string(),
+        "<section><div>fallback</div>after</section>"
+    );
+}
+
+#[test]
+fn let_else_stops_only_current_iteration() {
+    let inputs = [Some("one"), None, Some("three")];
+    let result = html! {
+        @for input in inputs {
+            @let Some(value) = input else {
+                "missing"
+            }
+            (value) ","
+        }
+    };
+
+    assert_eq!(result.into_string(), "one,missingthree,");
+}
+
+#[test]
 fn while_expr() {
     let mut numbers = (0..3).peekable();
     let result = html! {

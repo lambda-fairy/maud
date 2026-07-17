@@ -24,7 +24,23 @@ impl Generator {
     }
 
     fn markups<E: Into<Element>>(&self, markups: Markups<E>, build: &mut Builder) {
-        for markup in markups.markups {
+        let mut markups = markups.markups.into_iter();
+        while let Some(markup) = markups.next() {
+            if let Markup::ControlFlow(ControlFlow {
+                kind: ControlFlowKind::LetElse(let_else),
+                ..
+            }) = markup
+            {
+                self.control_flow_let_else(
+                    let_else,
+                    Markups {
+                        markups: markups.collect(),
+                    },
+                    build,
+                );
+                return;
+            }
+
             self.markup(markup, build);
         }
     }
@@ -188,6 +204,13 @@ impl Generator {
         match control_flow.kind {
             ControlFlowKind::If(if_) => self.control_flow_if(if_, build),
             ControlFlowKind::Let(let_) => self.control_flow_let(let_, build),
+            ControlFlowKind::LetElse(let_else) => self.control_flow_let_else(
+                let_else,
+                Markups {
+                    markups: Vec::new(),
+                },
+                build,
+            ),
             ControlFlowKind::For(for_) => self.control_flow_for(for_, build),
             ControlFlowKind::While(while_) => self.control_flow_while(while_, build),
             ControlFlowKind::Match(match_) => self.control_flow_match(match_, build),
@@ -226,6 +249,40 @@ impl Generator {
 
     fn control_flow_let(&self, let_: Local, build: &mut Builder) {
         build.push_tokens(let_.to_token_stream());
+    }
+
+    fn control_flow_let_else<E: Into<Element>>(
+        &self,
+        LetElse {
+            let_token,
+            pat,
+            eq_token,
+            expr,
+            else_token,
+            body,
+            semi_token: _,
+        }: LetElse<E>,
+        rest: Markups<E>,
+        build: &mut Builder,
+    ) {
+        let then_branch = {
+            let mut build = self.builder();
+            self.markups(rest, &mut build);
+            build.finish()
+        };
+        let else_branch = {
+            let mut build = self.builder();
+            self.markups(body.markups, &mut build);
+            build.finish()
+        };
+
+        build.push_tokens(quote! {
+            if #let_token #pat #eq_token (#expr) {
+                #then_branch
+            } #else_token {
+                #else_branch
+            }
+        });
     }
 
     fn control_flow_for<E: Into<Element>>(
