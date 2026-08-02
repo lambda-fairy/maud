@@ -5,6 +5,7 @@
 extern crate proc_macro;
 
 mod ast;
+mod check;
 mod escape;
 mod generate;
 
@@ -16,10 +17,17 @@ use syn::parse::{ParseStream, Parser};
 
 #[proc_macro]
 pub fn html(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    expand(input.into()).into()
+    expand(input.into(), true).into()
 }
 
-fn expand(input: TokenStream) -> TokenStream {
+/// Like [`html`], but does not check that elements are closed in a way that
+/// is valid for void elements.
+#[proc_macro]
+pub fn html_unchecked(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    expand(input.into(), false).into()
+}
+
+fn expand(input: TokenStream, check: bool) -> TokenStream {
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
     let size_hint = input.to_string().len();
@@ -40,6 +48,10 @@ fn expand(input: TokenStream) -> TokenStream {
             }};
         }
     };
+
+    if check {
+        check::check_elements(&markups, &mut diagnostics);
+    }
 
     let diag_tokens = diagnostics.into_iter().map(Diagnostic::emit_as_expr_tokens);
 

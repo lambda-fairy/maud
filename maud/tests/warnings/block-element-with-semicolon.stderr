@@ -1,0 +1,39 @@
+error: `<div>` is not a void element, so it cannot be closed with `;`
+ --> tests/warnings/block-element-with-semicolon.rs:5:12
+  |
+5 |         div;
+  |            ^
+  |
+  = help: change this to `{}`
+
+error: `<p>` is not a void element, so it cannot be closed with `;`
+ --> tests/warnings/block-element-with-semicolon.rs:6:10
+  |
+6 |         p;
+  |          ^
+  |
+  = help: change this to `{}`
+
+error: `<my-custom-element>` is not a void element, so it cannot be closed with `;`
+ --> tests/warnings/block-element-with-semicolon.rs:7:26
+  |
+7 |         my-custom-element;
+  |                          ^
+  |
+  = help: change this to `{}`
+
+error: `<div>` is not a void element, so it cannot be closed with `;`
+ --> tests/warnings/block-element-with-semicolon.rs:8:15
+  |
+8 |         .thing;
+  |               ^
+  |
+  = help: change this to `{}`
+
+error: `<span>` is not a void element, so it cannot be closed with `;`
+  --> tests/warnings/block-element-with-semicolon.rs:10:17
+   |
+10 |             span;
+   |                 ^
+   |
+   = help: change this to `{}`
