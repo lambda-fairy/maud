@@ -10,6 +10,8 @@
   [#492](https://github.com/lambda-fairy/maud/pull/492)
 - Remove Tide support and documentation references.
   [#501](https://github.com/lambda-fairy/maud/pull/501)
+- Add check for correct closing method of html element. `html_unchecked!` skips this check.
+  [#505](https://github.com/lambda-fairy/maud/pull/505)
 
 ## [0.27.0] - 2025-02-02
 
