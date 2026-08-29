@@ -23,13 +23,15 @@ jobs:
       with:
         components: clippy
 
-    # Do *not* use `--all-features` here, as the optional dependencies take a
-    # long time to build, and will be tested in the "examples" job anyway
+    # Do *not* use `--all-features` here, as the web framework dependencies take
+    # a long time to build, and will be tested in the "doctest" job anyway. That
+    # job does not cover the `json` feature though, and enabling it only adds
+    # `serde_json` to the build, so turn it on explicitly here.
     - name: Run tests
-      run: cargo test --workspace --all-targets
+      run: cargo test --workspace --all-targets --features maud/json
 
     - name: Check Clippy
-      run: cargo clippy --workspace --all-targets -- -D warnings
+      run: cargo clippy --workspace --all-targets --features maud/json -- -D warnings
 
     # Building --all-targets for a no_std environment fails because the tests depend on std
     - name: Try no_std build
