@@ -33,6 +33,23 @@
 //! no pre- or post-processing required; it could be copied and pasted from the
 //! source document into a `.json` file and it would work.
 //!
+//! # Element content only
+//!
+//! The output of this module is safe to embed in element content, such as a
+//! `<script>` tag, but **not** in an attribute value. Quotes are left as-is –
+//! they cannot be escaped without producing invalid JSON – so JSON spliced into
+//! an attribute will terminate that attribute at its first string delimiter:
+//!
+//! ```rust
+//! # use maud::html;
+//! let value = serde_json::json!({ "q": "hi" });
+//! assert_eq!(
+//!   // The `data-x` attribute ends before the JSON does.
+//!   r#"<div data-x="{"q":"hi"}"></div>"#,
+//!   html! { div data-x=(value) {} }.into_string(),
+//! );
+//! ```
+//!
 //! [advice-whatwg]:
 //!     https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
 //! [advice-json-ld]:
