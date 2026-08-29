@@ -10,6 +10,10 @@
   [#492](https://github.com/lambda-fairy/maud/pull/492)
 - Remove Tide support and documentation references.
   [#501](https://github.com/lambda-fairy/maud/pull/501)
+- Render HTML-safe JSON for `serde_json::value::RawValue`. Note that this
+  changes how a spliced `RawValue` is rendered: as JSON, rather than
+  HTML-escaped through its `Display` implementation.
+  [#XXX](https://github.com/lambda-fairy/maud/pull/XXX)
 
 ## [0.27.0] - 2025-02-02
 
