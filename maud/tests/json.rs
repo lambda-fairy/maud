@@ -3,20 +3,22 @@
 use maud::{Render, html, json::Json};
 use serde_json::{Value, json};
 
+const EXAMPLE_TEXT: &str = "<Fish & Chips>";
+const EXAMPLE_TEXT_JSON: &str = "\"\\u003cFish \\u0026 Chips\\u003e\"";
 const EXAMPLE_HTML: &str = "</script><!--";
 const EXAMPLE_HTML_JSON: &str = "\"\\u003c/script\\u003e\\u003c!--\"";
 
 #[test]
 fn render_value_escape_significant_chars() {
-    let value = json!("<Fish & Chips>");
-    let expected = "\"\\u003cFish \\u0026 Chips\\u003e\"";
+    let value = json!(EXAMPLE_TEXT);
+    let expected = EXAMPLE_TEXT_JSON;
     let observed = value.render().into_string();
     assert_eq!(expected, observed);
 }
 
 #[test]
 fn render_value_parse_escaped_chars() {
-    let value = json!("<Fish & Chips>");
+    let value = json!(EXAMPLE_TEXT);
     let rendered = value.render().into_string();
     let parsed: Value = serde_json::from_str(&rendered).unwrap();
     assert_eq!(value, parsed);
@@ -37,15 +39,15 @@ struct Name<'a>(&'a str);
 
 #[test]
 fn render_wrapper_escape_significant_chars() {
-    let name = Name("<Fish & Chips>");
-    let expected = "\"\\u003cFish \\u0026 Chips\\u003e\"";
+    let name = Name(EXAMPLE_TEXT);
+    let expected = EXAMPLE_TEXT_JSON;
     let observed = Json(name).render().into_string();
     assert_eq!(expected, observed);
 }
 
 #[test]
 fn render_wrapper_parse_escaped_chars() {
-    let name = Name("<Fish & Chips>");
+    let name = Name(EXAMPLE_TEXT);
     let rendered = Json(&name).render().into_string();
     let parsed: Value = serde_json::from_str(&rendered).unwrap();
     assert_eq!(name.0, parsed);
