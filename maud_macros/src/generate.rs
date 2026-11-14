@@ -23,13 +23,13 @@ impl Generator {
         Builder::new(self.output_ident.clone())
     }
 
-    fn markups<E: Into<Element>>(&self, markups: Markups<E>, build: &mut Builder) {
+    fn markups<E: MaybeElement>(&self, markups: Markups<E>, build: &mut Builder) {
         for markup in markups.markups {
             self.markup(markup, build);
         }
     }
 
-    fn markup<E: Into<Element>>(&self, markup: Markup<E>, build: &mut Builder) {
+    fn markup<E: MaybeElement>(&self, markup: Markup<E>, build: &mut Builder) {
         match markup {
             Markup::Block(block) => {
                 if block.markups.markups.iter().any(|markup| {
@@ -47,14 +47,14 @@ impl Generator {
                 }
             }
             Markup::Lit(lit) => build.push_escaped(&lit.to_string()),
-            Markup::Splice { expr, .. } => self.splice(expr, build),
+            Markup::Splice { expr, .. } => self.splice(expr, E::ATTR, build),
             Markup::Element(element) => self.element(element.into(), build),
             Markup::ControlFlow(control_flow) => self.control_flow(control_flow, build),
             Markup::Semi(_) => {}
         }
     }
 
-    fn block<E: Into<Element>>(&self, block: Block<E>, build: &mut Builder) {
+    fn block<E: MaybeElement>(&self, block: Block<E>, build: &mut Builder) {
         let markups = {
             let mut build = self.builder();
             self.markups(block.markups, &mut build);
@@ -64,9 +64,19 @@ impl Generator {
         build.push_tokens(quote!({ #markups }));
     }
 
-    fn splice(&self, expr: Expr, build: &mut Builder) {
+    fn splice(&self, expr: Expr, attr: bool, build: &mut Builder) {
         let output_ident = &self.output_ident;
-        build.push_tokens(quote!(maud::macro_private::render_to!(&(#expr), &mut #output_ident);));
+        let render = quote!(maud::macro_private::render_to!(&(#expr), &mut #output_ident););
+        build.push_tokens(if attr {
+            let start = Ident::new("__maud_start", Span::mixed_site());
+            quote!({
+                let #start = #output_ident.len();
+                #render
+                maud::macro_private::escape_quotes_from(&mut #output_ident, #start);
+            })
+        } else {
+            render
+        });
     }
 
     fn element(&self, element: Element, build: &mut Builder) {
@@ -114,7 +124,7 @@ impl Generator {
                     build.push_str(" ");
                     self.name(name, &mut build);
                     build.push_str("=\"");
-                    self.splice(inner_value.clone(), &mut build);
+                    self.splice(inner_value.clone(), true, &mut build);
                     build.push_str("\"");
                     build.finish()
                 };
@@ -184,7 +194,7 @@ impl Generator {
         }
     }
 
-    fn control_flow<E: Into<Element>>(&self, control_flow: ControlFlow<E>, build: &mut Builder) {
+    fn control_flow<E: MaybeElement>(&self, control_flow: ControlFlow<E>, build: &mut Builder) {
         match control_flow.kind {
             ControlFlowKind::If(if_) => self.control_flow_if(if_, build),
             ControlFlowKind::Let(let_) => self.control_flow_let(let_, build),
@@ -194,7 +204,7 @@ impl Generator {
         }
     }
 
-    fn control_flow_if<E: Into<Element>>(
+    fn control_flow_if<E: MaybeElement>(
         &self,
         IfExpr {
             if_token,
@@ -213,7 +223,7 @@ impl Generator {
         }
     }
 
-    fn control_flow_if_or_block<E: Into<Element>>(
+    fn control_flow_if_or_block<E: MaybeElement>(
         &self,
         if_or_block: IfOrBlock<E>,
         build: &mut Builder,
@@ -228,7 +238,7 @@ impl Generator {
         build.push_tokens(let_.to_token_stream());
     }
 
-    fn control_flow_for<E: Into<Element>>(
+    fn control_flow_for<E: MaybeElement>(
         &self,
         ForExpr {
             for_token,
@@ -243,7 +253,7 @@ impl Generator {
         self.block(body, build);
     }
 
-    fn control_flow_while<E: Into<Element>>(
+    fn control_flow_while<E: MaybeElement>(
         &self,
         WhileExpr {
             while_token,
@@ -256,7 +266,7 @@ impl Generator {
         self.block(body, build);
     }
 
-    fn control_flow_match<E: Into<Element>>(
+    fn control_flow_match<E: MaybeElement>(
         &self,
         MatchExpr {
             match_token,
