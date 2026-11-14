@@ -38,6 +38,23 @@ fn attributes() {
 }
 
 #[test]
+fn attribute_splices_cannot_close_the_quote() {
+    let evil = maud::PreEscaped(r#"x" onclick="alert(1)"#);
+    let result = html! {
+        a .(evil) #(evil) .c[true] .{ (evil) }[true] title=(evil) href=[Some(evil)] {}
+        b title=@if true { (evil) } {}
+        i title=@match 1 { _ => (evil) } {}
+    };
+    let q = "x&quot; onclick=&quot;alert(1)";
+    assert_eq!(
+        result.into_string(),
+        format!(
+            r#"<a class="{q} c {q}" id="{q}" title="{q}" href="{q}"></a><b title="{q}"></b><i title="{q}"></i>"#
+        )
+    );
+}
+
+#[test]
 fn class_shorthand() {
     let pinkie_class = "pinkie";
     let result = html! { p.(pinkie_class) { "Fun!" } };

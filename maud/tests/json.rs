@@ -37,3 +37,12 @@ fn render_wrapper_parse_escaped_chars() {
     let parsed: Value = serde_json::from_str(&rendered).unwrap();
     assert_eq!(name.0, parsed);
 }
+
+#[test]
+fn render_value_in_attribute() {
+    let value = json!({ "name": "x onmouseover=alert(1) y" });
+    let observed = maud::html! { div data-user=(value) {} }.into_string();
+    let expected =
+        r#"<div data-user="{&quot;name&quot;:&quot;x onmouseover=alert(1) y&quot;}"></div>"#;
+    assert_eq!(expected, observed);
+}

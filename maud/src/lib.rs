@@ -451,6 +451,16 @@ pub mod macro_private {
 
     pub use render_to;
 
+    /// Attribute values are always double-quoted, so a raw `"` written by a
+    /// splice (e.g. from `PreEscaped` or JSON) would end the attribute early.
+    pub fn escape_quotes_from(buffer: &mut String, start: usize) {
+        if buffer.as_bytes()[start..].contains(&b'"') {
+            let escaped = buffer[start..].replace('"', "&quot;");
+            buffer.truncate(start);
+            buffer.push_str(&escaped);
+        }
+    }
+
     pub struct ChooseRenderOrDisplay<T>(pub T);
 
     pub struct ViaRenderTag;

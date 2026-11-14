@@ -10,6 +10,9 @@
   [#492](https://github.com/lambda-fairy/maud/pull/492)
 - Remove Tide support and documentation references.
   [#501](https://github.com/lambda-fairy/maud/pull/501)
+- Escape `"` in spliced attribute values. `PreEscaped` and `Markup` splices in
+  attributes no longer pass a raw `"` through.
+  [#510](https://github.com/lambda-fairy/maud/pull/510)
 
 ## [0.27.0] - 2025-02-02
 

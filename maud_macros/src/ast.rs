@@ -141,7 +141,10 @@ impl<E: ToTokens> ToTokens for Markup<E> {
 /// An attribute accepts almost the same syntax as an element body, except child elements aren't
 /// allowed. To enable code reuse, introduce a trait that abstracts over whether an element is
 /// allowed or not.
-pub trait MaybeElement: Sized + ToTokens {
+pub trait MaybeElement: Sized + ToTokens + Into<Element> {
+    /// Whether this markup is emitted inside a quoted attribute value.
+    const ATTR: bool;
+
     /// If an element can be parsed here, returns `Some` with a parser for the rest of the element.
     fn should_parse(lookahead: &Lookahead1<'_>) -> Option<DiagnosticParseFn<Self>>;
 }
@@ -154,6 +157,8 @@ pub type DiagnosticParseFn<T> = fn(ParseStream, &mut Vec<Diagnostic>) -> syn::Re
 pub enum NoElement {}
 
 impl MaybeElement for NoElement {
+    const ATTR: bool = true;
+
     fn should_parse(
         _lookahead: &Lookahead1<'_>,
     ) -> Option<fn(ParseStream, &mut Vec<Diagnostic>) -> syn::Result<Self>> {
@@ -181,6 +186,8 @@ impl From<NoElement> for Element {
 }
 
 impl MaybeElement for Element {
+    const ATTR: bool = false;
+
     fn should_parse(
         lookahead: &Lookahead1<'_>,
     ) -> Option<fn(ParseStream, &mut Vec<Diagnostic>) -> syn::Result<Self>> {
