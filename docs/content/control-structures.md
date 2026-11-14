@@ -91,6 +91,26 @@ html! {
 # ;
 ```
 
+## `@let` / `else`
+
+Use `@let` with `else` to render fallback markup and stop processing the
+current enclosing block when the pattern does not match:
+
+```rust
+let value = Some("Lyra");
+# let _ = maud::
+html! {
+    div {
+        @let Some(value) = value else {
+            span { "No value" }
+        }
+
+        span { "value = " (value) }
+    }
+}
+# ;
+```
+
 ## Matching with `@match`
 
 Pattern matching is supported with `@match`.
