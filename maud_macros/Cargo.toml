@@ -13,10 +13,10 @@ edition.workspace = true
 include.workspace = true
 
 [dependencies]
-syn = { version = "2", features = ["extra-traits", "full"] }
+syn = { version = "3", features = ["extra-traits", "full"] }
 quote = "1.0.7"
 proc-macro2 = "1.0.23"
-proc-macro2-diagnostics = { version = "0.10", default-features = false }
+proc-macro2-diagnostics = { version = "0.11", features = ["nightly"] }
 
 [lib]
 name = "maud_macros"
