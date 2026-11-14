@@ -1,8 +1,8 @@
 //! Format JSON strings for use in HTML, especially `<script>` tags.
 //!
 //! This module provides a [`Json`] wrapper type which will render its inner
-//! value as HTML-safe JSON, and an implementation of [`Render`] for
-//! [`serde_json::Value`] as a convenience.
+//! value as HTML-safe JSON, and implementations of [`Render`] for
+//! [`serde_json::Value`] and [`serde_json::value::RawValue`] as a convenience.
 //!
 //! # Notes
 //!
@@ -32,6 +32,23 @@
 //! The JSON content is still entirely valid and able to be parsed as-is, with
 //! no pre- or post-processing required; it could be copied and pasted from the
 //! source document into a `.json` file and it would work.
+//!
+//! # Element content only
+//!
+//! The output of this module is safe to embed in element content, such as a
+//! `<script>` tag, but **not** in an attribute value. Quotes are left as-is –
+//! they cannot be escaped without producing invalid JSON – so JSON spliced into
+//! an attribute will terminate that attribute at its first string delimiter:
+//!
+//! ```rust
+//! # use maud::html;
+//! let value = serde_json::json!({ "q": "hi" });
+//! assert_eq!(
+//!   // The `data-x` attribute ends before the JSON does.
+//!   r#"<div data-x="{"q":"hi"}"></div>"#,
+//!   html! { div data-x=(value) {} }.into_string(),
+//! );
+//! ```
 //!
 //! [advice-whatwg]:
 //!     https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements
@@ -84,22 +101,24 @@ use crate::Render;
 
 /// A wrapper that renders the inner value as HTML-safe JSON.
 ///
-/// Note that [`Render`] is implemented for [`serde_json::Value`]. If you
-/// already have one of those, you don't need this wrapper, though it will do no
-/// harm.
+/// Note that [`Render`] is implemented for [`serde_json::Value`] and
+/// [`serde_json::value::RawValue`]. If you already have one of those, you don't
+/// need this wrapper, though it will do no harm.
 #[derive(Debug, Clone)]
 pub struct Json<T: Serialize>(pub T);
 
 impl<T: Serialize> Render for Json<T> {
+    /// Appends an HTML-safe JSON representation of `self` to the given buffer.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the JSON value cannot be serialized. `serde_json` says:
+    ///
+    /// > Serialization can fail if `T`’s implementation of `Serialize` decides
+    /// > to fail, or if `T` contains a map with non-string keys.
+    ///
     fn render_to(&self, buffer: &mut alloc::string::String) {
-        // SAFETY: We trust `serde_json` to produce UTF-8; see also the
-        // commentary in `HtmlSafeJsonFormatter` for why it is UTF-8 safe.
-        let mut writer = unsafe { buffer.as_mut_vec() };
-        let mut serializer =
-            serde_json::ser::Serializer::with_formatter(&mut writer, HtmlSafeJsonFormatter);
-        self.0
-            .serialize(&mut serializer)
-            .expect("could not serialize JSON");
+        render_to_buffer(&self.0, buffer);
     }
 }
 
@@ -112,22 +131,43 @@ impl<T: Serialize> Render for Json<T> {
 impl Render for serde_json::Value {
     /// Appends an HTML-safe JSON representation of `self` to the given buffer.
     ///
-    /// # Panics
-    ///
-    /// Panics if the JSON value cannot be serialized. `serde_json` says:
-    ///
-    /// > Serialization can fail if `T`’s implementation of `Serialize` decides
-    /// > to fail, or if `T` contains a map with non-string keys.
-    ///
+    /// Serialization cannot fail here – the keys of a [`Map`][`serde_json::Map`]
+    /// are always strings, and a [`Number`][`serde_json::Number`] is always
+    /// finite – so, unlike [`Json`], this will not panic, beyond the usual
+    /// allocation failure that any growing buffer is subject to.
     fn render_to(&self, buffer: &mut alloc::string::String) {
-        // SAFETY: We trust `serde_json` to produce UTF-8; see also the
-        // commentary in `HtmlSafeJsonFormatter` for why it is UTF-8 safe.
-        let mut writer = unsafe { buffer.as_mut_vec() };
-        let mut serializer =
-            serde_json::ser::Serializer::with_formatter(&mut writer, HtmlSafeJsonFormatter);
-        self.serialize(&mut serializer)
-            .expect("could not serialize JSON");
+        render_to_buffer(self, buffer);
     }
+}
+
+/// Implement [`Render`] for [`serde_json::value::RawValue`] directly.
+///
+/// Implementing for [`T: Serialize`][`Serialize`] is not possible because it's
+/// too broad; [`Render`] is already implemented for several types that also
+/// have [`Serialize`] implementations. The [`Json`] wrapper type is available
+/// as a workaround.
+impl Render for serde_json::value::RawValue {
+    /// Appends an HTML-safe JSON representation of `self` to the given buffer.
+    ///
+    /// Serialization cannot fail here – a
+    /// [`RawValue`][`serde_json::value::RawValue`] is already-serialized JSON
+    /// text – so, unlike [`Json`], this will not panic, beyond the usual
+    /// allocation failure that any growing buffer is subject to.
+    fn render_to(&self, buffer: &mut alloc::string::String) {
+        render_to_buffer(self, buffer);
+    }
+}
+
+/// Appends an HTML-safe JSON representation of `object` to the given buffer.
+fn render_to_buffer<T: Serialize>(object: T, buffer: &mut alloc::string::String) {
+    // SAFETY: We trust `serde_json` to produce UTF-8; see also the commentary
+    // in `HtmlSafeJsonFormatter` for why it is UTF-8 safe.
+    let mut writer = unsafe { buffer.as_mut_vec() };
+    let mut serializer =
+        serde_json::ser::Serializer::with_formatter(&mut writer, HtmlSafeJsonFormatter);
+    object
+        .serialize(&mut serializer)
+        .expect("could not serialize JSON");
 }
 
 struct HtmlSafeJsonFormatter;
@@ -137,31 +177,59 @@ impl serde_json::ser::Formatter for HtmlSafeJsonFormatter {
     ///
     /// It replaces `<`, `>`, and `&` characters with `\u003c`, `\u003e`, and
     /// `\u0026` Unicode escape sequences respectively.
-    ///
-    /// For performance, it does this by scanning byte-wise for these three
-    /// characters and writing the string fragment in chunks. This maintains
-    /// valid UTF-8 output because these characters are all single-byte ASCII
-    /// characters and are unambiguous in a UTF-8 stream.
     fn write_string_fragment<W>(&mut self, writer: &mut W, fragment: &str) -> std::io::Result<()>
     where
-        W: ?Sized + ::std::io::Write,
+        W: ?Sized + std::io::Write,
     {
-        use serde_json::ser::CharEscape::AsciiControl;
-
-        let mut offset = 0;
-        for (index, byte) in fragment.bytes().enumerate() {
-            if matches!(byte, b'<' | b'>' | b'&') {
-                if index > offset {
-                    writer.write_all(fragment.as_bytes()[offset..index].as_ref())?;
-                }
-                self.write_char_escape(writer, AsciiControl(byte))?;
-                offset = index + 1;
-            }
-        }
-        if fragment.len() > offset {
-            writer.write_all(fragment.as_bytes()[offset..].as_ref())?;
-        }
-
-        Ok(())
+        write_escaped_fragment(writer, fragment)
     }
+
+    /// Writes a raw fragment to the specified writer.
+    ///
+    /// It replaces `<`, `>`, and `&` characters with `\u003c`, `\u003e`, and
+    /// `\u0026` Unicode escape sequences respectively.
+    ///
+    /// Unlike a string fragment, this receives an entire JSON document, and the
+    /// scan is not aware of string boundaries. That is sound because none of
+    /// these three characters can appear outside a string in well-formed JSON,
+    /// which every safe constructor of
+    /// [`RawValue`][`serde_json::value::RawValue`] guarantees.
+    fn write_raw_fragment<W>(&mut self, writer: &mut W, fragment: &str) -> std::io::Result<()>
+    where
+        W: ?Sized + std::io::Write,
+    {
+        write_escaped_fragment(writer, fragment)
+    }
+}
+
+/// Writes a JSON fragment to the specified writer.
+///
+/// It replaces `<`, `>`, and `&` characters with `\u003c`, `\u003e`, and
+/// `\u0026` Unicode escape sequences respectively.
+///
+/// For performance, it does this by scanning byte-wise for these three
+/// characters and writing the string fragment in chunks. This maintains
+/// valid UTF-8 output because these characters are all single-byte ASCII
+/// characters and are unambiguous in a UTF-8 stream.
+fn write_escaped_fragment<W>(writer: &mut W, fragment: &str) -> std::io::Result<()>
+where
+    W: ?Sized + std::io::Write,
+{
+    use serde_json::ser::{CharEscape::AsciiControl, CompactFormatter, Formatter};
+
+    let mut offset = 0;
+    for (index, byte) in fragment.bytes().enumerate() {
+        if matches!(byte, b'<' | b'>' | b'&') {
+            if index > offset {
+                writer.write_all(fragment.as_bytes()[offset..index].as_ref())?;
+            }
+            CompactFormatter.write_char_escape(writer, AsciiControl(byte))?;
+            offset = index + 1;
+        }
+    }
+    if fragment.len() > offset {
+        writer.write_all(fragment.as_bytes()[offset..].as_ref())?;
+    }
+
+    Ok(())
 }
