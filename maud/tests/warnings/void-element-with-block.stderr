@@ -1,0 +1,31 @@
+error: `<br>` is a void element and cannot have a closing tag
+ --> $DIR/void-element-with-block.rs:5:12
+  |
+5 |         br {}
+  |            ^
+  |
+  = help: change this to `;`
+
+error: `<img>` is a void element and cannot have a closing tag
+ --> $DIR/void-element-with-block.rs:6:29
+  |
+6 |         img alt="some text" {}
+  |                             ^
+  |
+  = help: change this to `;`
+
+error: `<meta>` is a void element and cannot have a closing tag
+ --> $DIR/void-element-with-block.rs:7:30
+  |
+7 |         meta charset="utf-8" {}
+  |                              ^
+  |
+  = help: change this to `;`
+
+error: `<hr>` is a void element and cannot have a closing tag
+ --> $DIR/void-element-with-block.rs:9:20
+  |
+9 |             a { hr {} }
+  |                    ^
+  |
+  = help: change this to `;`
